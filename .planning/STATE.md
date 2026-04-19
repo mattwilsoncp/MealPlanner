@@ -61,9 +61,10 @@ Phase 2 (Meal Planning) complete:
 Phase 3 progress:
 - 03-01: Inventory schema contracts ✅ (Complete)
 - 03-02: Inventory CRUD/list/filter/expiration + quick-add ✅ (Complete)
+- 03-03: Barcode scan page + local-first UPC fallback ✅ (Complete)
 - 03-05: Shopping checklist actions, UI, and navigation wiring ✅ (Complete)
 
-**Next:** Phase 3 (Inventory & Shopping) — 03-03 / 03-04 remaining
+**Next:** Phase 3 (Inventory & Shopping) — 03-04 remaining
 
 ---
 
@@ -78,6 +79,7 @@ Phase 3 progress:
 | 5 | 2026-04-19 | 3 | Completed 03-01: inventory schema, forms, and migrations |
 | 6 | 2026-04-19 | 3 | Completed 03-05: shopping interaction workflows and navigation wiring |
 | 7 | 2026-04-19 | 3 | Completed 03-02: inventory UI CRUD/filter/expiration + quick-add API |
+| 8 | 2026-04-19 | 3 | Completed 03-03: barcode scan lookup/create workflow with local-first UPC fallback |
 
 ---
 
@@ -91,3 +93,4 @@ Phase 3 progress:
 - Phase 2 started: MealPlan model with weekly view created
 - Shopping checklist interactions now support secure toggle/delete/clear item workflows
 - Inventory workflows now include household-scoped filters, grouped rendering, expiration triage, and CSRF-protected quick-add.
+- Barcode workflows now include dedicated scan UI, local household dedupe by barcode, UPC fallback lookup, and create-from-lookup endpoint.

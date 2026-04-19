@@ -122,10 +122,10 @@
 
 ### Barcode Scanning
 
-- [ ] **BAR-01**: Dedicated barcode scan page
-- [ ] **BAR-02**: Barcode lookup checks user's existing inventory first
-- [ ] **BAR-03**: If not found, query UPC Item DB API
-- [ ] **BAR-04**: Create inventory item from API data (name, size, brand, image, barcode, category)
+- [x] **BAR-01**: Dedicated barcode scan page
+- [x] **BAR-02**: Barcode lookup checks user's existing inventory first
+- [x] **BAR-03**: If not found, query UPC Item DB API
+- [x] **BAR-04**: Create inventory item from API data (name, size, brand, image, barcode, category)
 
 ### "What Can I Make?"
 
@@ -181,7 +181,7 @@
 | COOK-01 through COOK-08 | 2 | Complete |
 | SHOP-01 through SHOP-07 | 3 | — |
 | INV-01 through INV-12 | 3 | — |
-| BAR-01 through BAR-04 | 3 | — |
+| BAR-01 through BAR-04 | 3 | Complete |
 | MATCH-01 through MATCH-06 | 4 | — |
 | UI-01 through UI-06 | All | Complete |
 
