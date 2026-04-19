@@ -50,3 +50,27 @@ class MealPlan(models.Model):
     @property
     def is_custom(self):
         return self.recipe is None
+
+
+class SideDish(models.Model):
+    """Side dishes linked to a meal plan entry."""
+
+    meal_plan = models.ForeignKey(
+        MealPlan, on_delete=models.CASCADE, related_name="side_dishes"
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="as_side_dish",
+    )
+    custom_side = models.CharField(max_length=200, null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.recipe.title if self.recipe else self.custom_side or "Side dish"
