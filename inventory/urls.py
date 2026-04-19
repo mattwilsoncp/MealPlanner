@@ -25,6 +25,11 @@ urlpatterns = [
         name="inventory_quick_add",
     ),
     path(
+        "api/barcode/lookup/",
+        views.BarcodeLookupView.as_view(),
+        name="barcode_lookup_api",
+    ),
+    path(
         "create/api/",
         views.InventoryQuickAddView.as_view(),
         name="inventory_create_api",

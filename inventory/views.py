@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -10,6 +11,10 @@ from django.views.generic import CreateView, DeleteView, ListView, UpdateView, V
 
 from .forms import InventoryItemForm, InventoryQuickAddForm
 from .models import InventoryItem
+from .services.upc_lookup import lookup_upc
+
+
+BARCODE_PATTERN = re.compile(r"^\d{8,14}$")
 
 
 class InventoryListView(LoginRequiredMixin, ListView):
@@ -181,4 +186,65 @@ class InventoryQuickAddView(LoginRequiredMixin, View):
                 "location": item.location,
             },
             status=201,
+        )
+
+
+class BarcodeLookupView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        barcode = (request.POST.get("barcode") or "").strip()
+
+        if not BARCODE_PATTERN.match(barcode):
+            return JsonResponse(
+                {
+                    "error": "invalid_barcode",
+                    "message": "Barcode must be 8 to 14 numeric digits.",
+                },
+                status=400,
+            )
+
+        local_item = InventoryItem.objects.filter(
+            household=request.user.household,
+            barcode=barcode,
+        ).first()
+        if local_item:
+            return JsonResponse(
+                {
+                    "source": "local",
+                    "item": {
+                        "id": local_item.id,
+                        "name": local_item.name,
+                        "barcode": local_item.barcode,
+                        "quantity": str(local_item.quantity),
+                        "unit": local_item.unit,
+                        "category": local_item.category,
+                    },
+                }
+            )
+
+        upc_result = lookup_upc(barcode)
+        if not upc_result.get("ok"):
+            return JsonResponse(
+                {
+                    "source": "upc",
+                    "error": upc_result.get("error", "upc_lookup_failed"),
+                    "message": upc_result.get(
+                        "message",
+                        "Unable to retrieve data from UPC service.",
+                    ),
+                },
+                status=502,
+            )
+
+        return JsonResponse(
+            {
+                "source": "upc",
+                "item": {
+                    "title": upc_result.get("title", ""),
+                    "brand": upc_result.get("brand", ""),
+                    "size": upc_result.get("size", ""),
+                    "image_url": upc_result.get("image_url", ""),
+                    "category": upc_result.get("category", ""),
+                    "barcode": upc_result.get("barcode", barcode),
+                },
+            }
         )
