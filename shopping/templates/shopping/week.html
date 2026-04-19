@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping List{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Shopping List - Week of {{ week_start }}</h1>
+  <ul>
+    {% for item in shopping_items %}
+      <li>{{ item.quantity }} {{ item.unit }} {{ item.name }}</li>
+    {% empty %}
+      <li>No items needed this week.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

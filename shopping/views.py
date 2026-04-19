@@ -1,0 +1,64 @@
+from datetime import date, datetime, timedelta
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.views import View
+from django.views.generic import TemplateView
+
+from .models import ShoppingListWeek
+from .services import generate_week_shopping_list
+
+
+def _current_monday():
+    today = date.today()
+    return today - timedelta(days=today.weekday())
+
+
+def _parse_week_start(raw_value):
+    if not raw_value:
+        return _current_monday()
+
+    try:
+        parsed = datetime.strptime(raw_value, "%Y-%m-%d").date()
+    except ValueError:
+        return _current_monday()
+
+    return parsed - timedelta(days=parsed.weekday())
+
+
+class ShoppingWeekView(LoginRequiredMixin, TemplateView):
+    template_name = "shopping/week.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        week_start = _parse_week_start(self.request.GET.get("week_start"))
+        household = self.request.user.household
+
+        shopping_week = ShoppingListWeek.objects.filter(
+            household=household,
+            week_start=week_start,
+        ).first()
+
+        if shopping_week is None:
+            shopping_week = generate_week_shopping_list(household, week_start)
+
+        context["shopping_week"] = shopping_week
+        context["shopping_items"] = shopping_week.items.all()
+        context["week_start"] = week_start
+        context["previous_week"] = week_start - timedelta(days=7)
+        context["next_week"] = week_start + timedelta(days=7)
+        return context
+
+
+class RegenerateShoppingWeekView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        week_start = _parse_week_start(request.POST.get("week_start"))
+        generate_week_shopping_list(
+            household=request.user.household,
+            week_start=week_start,
+            regenerate=True,
+        )
+        return redirect(
+            f"{reverse('shopping:week')}?week_start={week_start.isoformat()}"
+        )

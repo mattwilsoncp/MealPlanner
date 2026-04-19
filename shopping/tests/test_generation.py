@@ -1,13 +1,16 @@
 from datetime import date
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 
 from household.models import Household
 from ingredients.models import Ingredient, IngredientLink
 from inventory.models import InventoryItem
 from meal_planner_app.models import MealPlan, MealType
 from recipes.models import Recipe
+from shopping.models import ShoppingListWeek
 from shopping.services import compute_meal_match, generate_week_shopping_list
 
 
@@ -131,3 +134,81 @@ class ShoppingGenerationServiceTests(TestCase):
         self.assertEqual(stats["available_count"], 2)
         self.assertEqual(stats["total_count"], 3)
         self.assertAlmostEqual(stats["match_percentage"], 66.67, places=2)
+
+
+class ShoppingWeekViewTests(TestCase):
+    def setUp(self):
+        self.household = Household.objects.create(name="Web Home")
+        self.week_start = date(2026, 4, 13)
+        self.user = get_user_model().objects.create_user(
+            username="shopper",
+            password="pass1234",
+            household=self.household,
+        )
+        self.client.force_login(self.user)
+
+    def _create_recipe_with_meal(self):
+        recipe = Recipe.objects.create(
+            household=self.household,
+            title="Pasta",
+            needs_review=False,
+        )
+        ingredient = Ingredient.objects.create(household=self.household, name="Noodles")
+        IngredientLink.objects.create(
+            recipe=recipe,
+            ingredient=ingredient,
+            quantity=Decimal("1.00"),
+            unit="box",
+            order=0,
+        )
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=date(2026, 4, 14),
+            meal_type=MealType.DINNER,
+            recipe=recipe,
+        )
+        return recipe
+
+    def test_week_view_auto_generates_when_missing(self):
+        self._create_recipe_with_meal()
+
+        response = self.client.get(
+            reverse("shopping:week"),
+            {"week_start": self.week_start.isoformat()},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        week = ShoppingListWeek.objects.get(
+            household=self.household,
+            week_start=self.week_start,
+        )
+        self.assertEqual(week.items.count(), 1)
+
+    def test_regenerate_view_forces_rebuild_for_requested_week(self):
+        self._create_recipe_with_meal()
+        week = generate_week_shopping_list(self.household, self.week_start)
+        self.assertEqual(week.items.count(), 1)
+
+        InventoryItem.objects.create(
+            household=self.household,
+            name="Noodles",
+            quantity=Decimal("1.00"),
+            unit="box",
+            category="pantry",
+            location="pantry",
+        )
+
+        response = self.client.post(
+            reverse("shopping:regenerate_week"),
+            {"week_start": self.week_start.isoformat()},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        week.refresh_from_db()
+        self.assertEqual(week.items.count(), 0)
+
+    def test_invalid_week_start_defaults_to_current_monday(self):
+        response = self.client.get(
+            reverse("shopping:week"), {"week_start": "not-a-date"}
+        )
+        self.assertEqual(response.status_code, 200)
