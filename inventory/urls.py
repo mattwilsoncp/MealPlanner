@@ -21,7 +21,12 @@ urlpatterns = [
     path("expired/", views.InventoryExpiredView.as_view(), name="inventory_expired"),
     path(
         "api/quick-add/",
-        views.InventoryQuickAddAPIView.as_view(),
+        views.InventoryQuickAddView.as_view(),
         name="inventory_quick_add",
+    ),
+    path(
+        "create/api/",
+        views.InventoryQuickAddView.as_view(),
+        name="inventory_create_api",
     ),
 ]

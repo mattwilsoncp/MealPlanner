@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -5,11 +6,9 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
 
-from .forms import InventoryItemForm
+from .forms import InventoryItemForm, InventoryQuickAddForm
 from .models import InventoryItem
 
 
@@ -121,36 +120,39 @@ class InventoryExpiredView(LoginRequiredMixin, ListView):
         ).order_by("expiration_date", "name")
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class InventoryQuickAddAPIView(LoginRequiredMixin, CreateView):
-    model = InventoryItem
-    form_class = InventoryItemForm
-    template_name = "inventory/inventory_form.html"
-    success_url = reverse_lazy("inventory:inventory_list")
-
-    def form_valid(self, form):
-        form.instance.household = self.request.user.household
-        return super().form_valid(form)
+class InventoryQuickAddView(LoginRequiredMixin, View):
+    def _get_payload(self, request):
+        if "application/json" in request.content_type:
+            try:
+                return json.loads(request.body.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return None
+        return request.POST.dict()
 
     def post(self, request, *args, **kwargs):
-        if request.headers.get("Content-Type") == "application/json":
-            import json
-
-            try:
-                data = json.loads(request.body)
-            except json.JSONDecodeError:
-                return JsonResponse({"error": "Invalid JSON payload"}, status=400)
-
-            item = InventoryItem.objects.create(
-                household=request.user.household,
-                name=data.get("name"),
-                quantity=data.get("quantity", 1),
-                unit=data.get("unit", "piece"),
-                category=data.get("category", "other"),
-                location=data.get("location", "pantry"),
-                expiration_date=data.get("expiration_date"),
-                notes=data.get("notes", ""),
+        payload = self._get_payload(request)
+        if payload is None:
+            return JsonResponse(
+                {"errors": {"__all__": [{"message": "Invalid JSON payload"}]}},
+                status=400,
             )
-            return JsonResponse({"id": item.id, "name": item.name}, status=201)
 
-        return super().post(request, *args, **kwargs)
+        form = InventoryQuickAddForm(payload)
+        if not form.is_valid():
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+        item = form.save(commit=False)
+        item.household = request.user.household
+        item.save()
+
+        return JsonResponse(
+            {
+                "id": item.id,
+                "name": item.name,
+                "quantity": str(item.quantity),
+                "unit": item.unit,
+                "category": item.category,
+                "location": item.location,
+            },
+            status=201,
+        )
