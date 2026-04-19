@@ -112,12 +112,12 @@
 - [ ] **INV-03**: User can filter inventory by category
 - [ ] **INV-04**: User can filter inventory by location
 - [ ] **INV-05**: User can search inventory
-- [ ] **INV-06**: User can add inventory item (name, quantity, unit, category, location, expiration, notes, image, barcode)
+- [x] **INV-06**: User can add inventory item (name, quantity, unit, category, location, expiration, notes, image, barcode)
 - [ ] **INV-07**: User can edit inventory item
 - [ ] **INV-08**: User can delete inventory item
 - [ ] **INV-09**: User can view expiring items
 - [ ] **INV-10**: User can view expired items
-- [ ] **INV-11**: User can configure expiring-item threshold days
+- [x] **INV-11**: User can configure expiring-item threshold days
 - [ ] **INV-12**: User can quick-add inventory from recipe/cooking pages
 
 ### Barcode Scanning
