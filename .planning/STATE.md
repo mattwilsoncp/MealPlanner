@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Phase 6 Complete |
+| Status | Milestone v1 Closed |
 | Mode | YOLO |
 | Granularity | Coarse |
-| Phase | 6 (Verification Closure) Complete |
+| Phase | Milestone Complete |
 
 ---
 
@@ -76,7 +76,7 @@ Phase 5 complete:
 Phase 6 complete:
 - 06-01: Phase verification artifacts + milestone audit refresh ✅ (Complete)
 
-**Next:** Run `/gsd-close-milestone v1` to finalize milestone closure.
+**Next:** Start next milestone with `/gsd-new-milestone`.
 
 ---
 
@@ -96,6 +96,7 @@ Phase 6 complete:
 | 10 | 2026-04-19 | 4 | Completed 04-01 and 04-02; closed Phase 4 and reached milestone completion |
 | 11 | 2026-04-19 | 5 | Completed 05-01 and 05-02; closed audit gap requirements for Phase 1 |
 | 12 | 2026-04-19 | 6 | Completed 06-01; generated phase verification artifacts and refreshed milestone audit to ready_to_close |
+| 13 | 2026-04-19 | v1 | Archived v1 milestone roadmap/requirements and created tag-ready closeout |
 
 ---
 

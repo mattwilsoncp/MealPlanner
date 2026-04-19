@@ -4,9 +4,22 @@
 
 A Django-based meal planning web application that helps users organize recipes, plan weekly meals, manage inventory, and generate shopping lists. The app emphasizes recipe organization as its core value, with meal planning and inventory management as supporting features.
 
+## Current State
+
+- **Milestone:** v1 shipped (2026-04-19)
+- **Status:** Production-ready MVP with recipe, planning, inventory, shopping, barcode, and discovery flows delivered
+- **Verification:** Phase verification artifacts exist for phases 1-4 and milestone audit is `ready_to_close`
+
 ## Core Value
 
 **Recipe organization** — the app must excel at helping users store, find, and manage their recipes. Every feature should enhance, not distract from, this primary goal.
+
+## Next Milestone Goals
+
+- Improve recipe ingestion (URL import and normalization)
+- Expand planning UX (drag/drop and planner filtering)
+- Add collaborative household capabilities
+- Introduce nutrition-goal tracking and suggestion workflows
 
 ## Context
 
@@ -36,54 +49,17 @@ Users struggle with:
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Django + Postgres | User-provided spec - mature, well-tested stack | — Pending |
-| Server-rendered templates | User preference for selective JS enhancement | — Pending |
-| Tailwind + DaisyUI | User-provided spec - rapid UI development | — Pending |
-| User-scoped via households | Allows future multi-user household sharing | — Pending |
+| Django + Postgres | User-provided spec - mature, well-tested stack | ✓ Confirmed in v1 |
+| Server-rendered templates | User preference for selective JS enhancement | ✓ Confirmed in v1 |
+| Tailwind + DaisyUI | User-provided spec - rapid UI development | ✓ Confirmed in v1 |
+| User-scoped via households | Allows future multi-user household sharing | ✓ Confirmed in v1 |
 
 ## Requirements
 
-### Validated
+v1 requirements were archived to `.planning/milestones/v1-REQUIREMENTS.md`.
 
-(None yet — ship to validate)
-
-### Active
-
-- [ ] User authentication (login/logout/signup)
-- [ ] Household context management
-- [ ] Recipe CRUD (create, read, update, delete)
-- [ ] Recipe search and filtering
-- [ ] Recipe sorting (rating, date)
-- [ ] Recipe rating system (1-5 scale with notes)
-- [ ] Recipe tags and categorization
-- [ ] Recipe photo upload
-- [ ] Recipe review workflow
-- [ ] Ingredient-to-inventory linking
-- [ ] Weekly meal planner
-- [ ] Meal types (breakfast, lunch, dinner, snack)
-- [ ] Multiple meals per type per day
-- [ ] Custom meal notes
-- [ ] Meal rating
-- [ ] On-hand ideas feature
-- [ ] Leftover-aware planning
-- [ ] Side dishes for meals
-- [ ] Cooking reconciliation
-- [ ] Shopping list generation
-- [ ] Shopping list management
-- [ ] Inventory CRUD
-- [ ] Inventory categorization and location
-- [ ] Inventory expiration tracking
-- [ ] Barcode scanning and lookup
-- [ ] "What Can I Make?" recipe matching
-- [ ] Expiration-aware recipe suggestions
-
-### Out of Scope
-
-- [ ] Drag-and-drop meal movement between days — complex, not essential
-- [ ] Recipe filtering by cuisine/category on meal planner — can add later
-- [ ] Light mode UI — dark mode sufficient for v1
-- [ ] Multi-user real-time collaboration — household-scoped for now
+Use `/gsd-new-milestone` to define fresh active requirements for the next milestone.
 
 ---
 
-*Last updated: 2026-04-19 after initialization*
+*Last updated: 2026-04-19 after v1 milestone closure*
