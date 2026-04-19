@@ -520,3 +520,251 @@ class JsonLeftoverRecipesView(LoginRequiredMixin, View):
         )
 
         return JsonResponse({"recipes": list(recipes)})
+
+
+# Cooking Reconciliation Views
+
+
+class CookingHomeView(LoginRequiredMixin, TemplateView):
+    """Show meals ready to cook today."""
+
+    template_name = "meal_planner/cooking_home.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        from datetime import timedelta
+
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+
+        # Get meals for today or yesterday, or marked for cooking
+        meals = MealPlan.objects.filter(
+            household=self.request.user.household,
+            meal_date__in=[today, yesterday],
+        ).select_related("recipe")
+
+        # Filter to meals with recipes
+        cooking_meals = []
+        for meal in meals:
+            if meal.recipe:
+                cooking_meals.append(
+                    {
+                        "id": meal.id,
+                        "recipe_id": meal.recipe.id,
+                        "recipe_title": meal.recipe.title,
+                        "meal_date": meal.meal_date.strftime("%Y-%m-%d"),
+                        "meal_type": meal.meal_type,
+                        "meal_type_display": meal.get_meal_type_display(),
+                    }
+                )
+
+        context["cooking_meals"] = cooking_meals
+        return context
+
+
+class CookingReconciliationView(LoginRequiredMixin, DetailView):
+    """Show recipe ingredients vs inventory for reconciliation."""
+
+    model = MealPlan
+    template_name = "meal_planner/cooking.html"
+    pk_url_kwarg = "meal_id"
+
+    def get_object(self):
+        return get_object_or_404(
+            MealPlan,
+            pk=self.kwargs["meal_id"],
+            household=self.request.user.household,
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        meal = self.get_object()
+
+        # Get recipe ingredients
+        from ingredients.models import IngredientLink
+
+        recipe_ingredients = []
+        for ing in IngredientLink.objects.filter(recipe=meal.recipe).select_related(
+            "ingredient", "inventory_item"
+        ):
+            recipe_ingredients.append(
+                {
+                    "id": ing.id,
+                    "ingredient_id": ing.ingredient.id,
+                    "name": ing.ingredient.name,
+                    "quantity": ing.quantity,
+                    "unit": ing.unit,
+                    "inventory_item_id": ing.inventory_item.id
+                    if ing.inventory_item
+                    else None,
+                    "inventory_name": (
+                        ing.inventory_item.name if ing.inventory_item else None
+                    ),
+                    "inventory_quantity": (
+                        ing.inventory_item.quantity if ing.inventory_item else None
+                    ),
+                }
+            )
+
+        # Get household inventory items
+        from inventory.models import InventoryItem
+
+        inventory_items = InventoryItem.objects.filter(
+            household=self.request.user.household
+        ).order_by("name")
+
+        inventory = []
+        for item in inventory_items:
+            inventory.append(
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "quantity": item.quantity,
+                    "unit": item.unit,
+                }
+            )
+
+        context["recipe"] = meal.recipe
+        context["recipe_ingredients"] = recipe_ingredients
+        context["inventory_items"] = inventory
+        context["meal_id"] = meal.id
+
+        return context
+
+
+def json_reconciliation_data(request, meal_id):
+    """Return ingredients and inventory for a meal as JSON."""
+    meal = get_object_or_404(MealPlan, pk=meal_id, household=request.user.household)
+
+    if not meal.recipe:
+        return JsonResponse({"error": "No recipe linked to this meal"}, status=400)
+
+    from ingredients.models import IngredientLink
+
+    # Get recipe ingredients
+    ingredients = []
+    for ing in IngredientLink.objects.filter(recipe=meal.recipe).select_related(
+        "ingredient", "inventory_item"
+    ):
+        ingredients.append(
+            {
+                "id": ing.id,
+                "name": ing.ingredient.name,
+                "quantity": float(ing.quantity),
+                "unit": ing.unit,
+            }
+        )
+
+    # Get household inventory
+    from inventory.models import InventoryItem
+
+    inventory = []
+    for item in InventoryItem.objects.filter(household=request.user.household):
+        inventory.append(
+            {
+                "id": item.id,
+                "name": item.name,
+                "quantity": float(item.quantity),
+                "unit": item.unit,
+            }
+        )
+
+    return JsonResponse({"ingredients": ingredients, "inventory": inventory})
+
+
+class ProcessCookingView(LoginRequiredMixin, View):
+    """Process used ingredients and update inventory after cooking."""
+
+    def post(self, request, meal_id):
+        meal = get_object_or_404(MealPlan, pk=meal_id, household=request.user.household)
+
+        if not meal.recipe:
+            return JsonResponse({"error": "No recipe linked to this meal"}, status=400)
+
+        # Get used ingredient IDs from POST
+        used_ingredient_ids = request.POST.getlist("used_ingredient_ids[]")
+
+        # Get updated inventory IDs (moved to used)
+        used_inventory_ids = request.POST.getlist("used_inventory_ids[]")
+
+        from ingredients.models import IngredientLink
+        from inventory.models import InventoryItem
+        from django.db import transaction
+
+        updated_inventory = []
+
+        with transaction.atomic():
+            # Process used recipe ingredients
+            for ing_id in used_ingredient_ids:
+                try:
+                    ing_link = IngredientLink.objects.get(id=ing_id, recipe=meal.recipe)
+                    # If linked to inventory, decrement quantity
+                    if ing_link.inventory_item:
+                        inv_item = ing_link.inventory_item
+                        inv_item.quantity -= ing_link.quantity
+                        if inv_item.quantity < 0:
+                            inv_item.quantity = 0
+                        inv_item.save()
+                        updated_inventory.append(
+                            {
+                                "id": inv_item.id,
+                                "name": inv_item.name,
+                                "quantity": float(inv_item.quantity),
+                                "unit": inv_item.unit,
+                            }
+                        )
+                except (IngredientLink.DoesNotExist, ValueError):
+                    continue
+
+            # Process inventory items moved to "used/ran out"
+            for inv_id in used_inventory_ids:
+                try:
+                    inv_item = InventoryItem.objects.get(
+                        id=inv_id, household=request.user.household
+                    )
+                    # Mark as used - set quantity to 0
+                    inv_item.quantity = 0
+                    inv_item.save()
+                    updated_inventory.append(
+                        {
+                            "id": inv_item.id,
+                            "name": inv_item.name,
+                            "quantity": 0,
+                            "unit": inv_item.unit,
+                        }
+                    )
+                except (InventoryItem.DoesNotExist, ValueError):
+                    continue
+
+            # Mark meal as cooked with timestamp
+            from django.utils import timezone
+
+            # Add cooked_at field if it exists, otherwise just log it
+            if hasattr(meal, "cooked_at"):
+                meal.cooked_at = timezone.now()
+                meal.save()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "updated_inventory": updated_inventory,
+            }
+        )
+
+
+class MarkIngredientUsedView(LoginRequiredMixin, View):
+    """AJAX endpoint to toggle ingredient usage."""
+
+    def post(self, request, meal_id):
+        ingredient_link_id = request.POST.get("ingredient_link_id")
+        is_used = request.POST.get("is_used") == "true"
+
+        from ingredients.models import IngredientLink
+
+        try:
+            ing_link = IngredientLink.objects.get(id=ingredient_link_id)
+        except IngredientLink.DoesNotExist:
+            return JsonResponse({"error": "Ingredient link not found"}, status=404)
+
+        return JsonResponse({"success": True, "is_used": is_used})
