@@ -23,6 +23,11 @@ urlpatterns = [
         views.RecipeDetailView.as_view(),
         name="api_recipe_detail",
     ),
+    path(
+        "api/meals/<int:meal_id>/side_dishes/",
+        views.json_side_dishes,
+        name="api_side_dishes",
+    ),
     # Meal CRUD URLs
     path("meal/add/", views.AddMealView.as_view(), name="add_meal"),
     path("meal/<int:meal_id>/edit/", views.EditMealView.as_view(), name="edit_meal"),

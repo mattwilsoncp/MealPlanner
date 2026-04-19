@@ -17,8 +17,8 @@ from django.core.serializers import serialize
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 
-from .models import MealPlan, MealType
-from .forms import MealPlanForm
+from .models import MealPlan, MealType, SideDish
+from .forms import MealPlanForm, SideDishForm
 from recipes.models import Recipe
 
 
@@ -117,6 +117,19 @@ def json_week_meals(request):
     # Serialize
     data = []
     for meal in meals:
+        # Get side dishes
+        side_dishes = []
+        for sd in meal.side_dishes.all():
+            side_dishes.append(
+                {
+                    "id": sd.id,
+                    "recipe_id": sd.recipe.id if sd.recipe else None,
+                    "recipe_title": sd.recipe.title if sd.recipe else None,
+                    "custom_side": sd.custom_side,
+                    "order": sd.order,
+                }
+            )
+
         data.append(
             {
                 "id": meal.id,
@@ -128,6 +141,7 @@ def json_week_meals(request):
                 "custom_meal": meal.custom_meal,
                 "notes": meal.notes,
                 "meal_rating": meal.meal_rating,
+                "side_dishes": side_dishes,
             }
         )
 
@@ -166,7 +180,46 @@ class AddMealView(LoginRequiredMixin, CreateView):
         self.request.user.message_set.create(
             message=f"Meal added: {form.instance.recipe or form.instance.custom_meal}"
         )
-        return super().form_valid(form)
+        # Save the meal first to get an ID
+        response = super().form_valid(form)
+
+        # Save side dishes
+        self._save_side_dishes(form.instance)
+
+        return response
+
+    def _save_side_dishes(self, meal):
+        """Save side dishes from form data."""
+        # Process each side dish from POST data
+        prefix = "side_dishes-"
+        for key in self.request.POST:
+            if key.startswith(prefix):
+                # Extract index from key like "side_dishes-0-recipe"
+                parts = key.split("-")
+                if len(parts) >= 2:
+                    try:
+                        index = int(parts[1])
+                    except ValueError:
+                        continue
+
+                    # Skip if marked for deletion
+                    delete_key = f"{prefix}{index}-DELETE"
+                    if self.request.POST.get(delete_key):
+                        continue
+
+                    recipe_id = self.request.POST.get(f"{prefix}{index}-recipe")
+                    custom_side = self.request.POST.get(
+                        f"{prefix}{index}-custom_side", ""
+                    )
+                    order = self.request.POST.get(f"{prefix}{index}-order", str(index))
+
+                    if recipe_id or custom_side:
+                        SideDish.objects.create(
+                            meal_plan=meal,
+                            recipe_id=recipe_id if recipe_id else None,
+                            custom_side=custom_side or None,
+                            order=int(order) if order else index,
+                        )
 
 
 class EditMealView(LoginRequiredMixin, UpdateView):
@@ -189,7 +242,47 @@ class EditMealView(LoginRequiredMixin, UpdateView):
         self.request.user.message_set.create(
             message=f"Meal updated: {form.instance.recipe or form.instance.custom_meal}"
         )
-        return super().form_valid(form)
+        response = super().form_valid(form)
+
+        # Save side dishes
+        self._save_side_dishes(form.instance)
+
+        return response
+
+    def _save_side_dishes(self, meal):
+        """Save side dishes from form data - delete existing and recreate."""
+        # Delete existing side dishes for this meal
+        meal.side_dishes.all().delete()
+
+        # Process each side dish from POST data
+        prefix = "side_dishes-"
+        for key in self.request.POST:
+            if key.startswith(prefix):
+                parts = key.split("-")
+                if len(parts) >= 2:
+                    try:
+                        index = int(parts[1])
+                    except ValueError:
+                        continue
+
+                    # Skip if marked for deletion
+                    delete_key = f"{prefix}{index}-DELETE"
+                    if self.request.POST.get(delete_key):
+                        continue
+
+                    recipe_id = self.request.POST.get(f"{prefix}{index}-recipe")
+                    custom_side = self.request.POST.get(
+                        f"{prefix}{index}-custom_side", ""
+                    )
+                    order = self.request.POST.get(f"{prefix}{index}-order", str(index))
+
+                    if recipe_id or custom_side:
+                        SideDish.objects.create(
+                            meal_plan=meal,
+                            recipe_id=recipe_id if recipe_id else None,
+                            custom_side=custom_side or None,
+                            order=int(order) if order else index,
+                        )
 
 
 @method_decorator(require_POST, name="dispatch")
@@ -270,3 +363,22 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
             ],
         }
         return JsonResponse(data)
+
+
+def json_side_dishes(request, meal_id):
+    """Return side dishes for a meal as JSON."""
+    meal = get_object_or_404(MealPlan, pk=meal_id, household=request.user.household)
+
+    side_dishes = []
+    for sd in meal.side_dishes.all():
+        side_dishes.append(
+            {
+                "id": sd.id,
+                "recipe_id": sd.recipe.id if sd.recipe else None,
+                "recipe_title": sd.recipe.title if sd.recipe else None,
+                "custom_side": sd.custom_side,
+                "order": sd.order,
+            }
+        )
+
+    return JsonResponse({"side_dishes": side_dishes})

@@ -32,7 +32,31 @@
         </a>
     </div>
 
-    <!-- Week Grid -->
+    <!-- Recipe Detail Modal -->
+<div id="recipe-modal" class="modal hidden">
+    <div class="modal-box bg-base-200 max-w-2xl">
+        <h3 id="recipe-modal-title" class="font-bold text-xl mb-2"></h3>
+        <p id="recipe-modal-description" class="text-base-content/80 mb-4"></p>
+        
+        <div class="mb-4">
+            <h4 class="font-semibold">Ingredients</h4>
+            <ul id="recipe-modal-ingredients" class="list-disc list-inside text-sm"></ul>
+        </div>
+        
+        <div class="mb-4">
+            <h4 class="font-semibold">Instructions</h4>
+            <ol id="recipe-modal-instructions" class="list-decimal list-inside text-sm"></ol>
+        </div>
+        
+        <div class="modal-action">
+            <a id="recipe-modal-full-link" href="" class="btn btn-primary">View Full Recipe</a>
+            <button onclick="closeRecipeModal()" class="btn">Close</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" onclick="closeRecipeModal()"></div>
+</div>
+
+<!-- Week Grid -->
     <div class="grid grid-cols-7 gap-2">
         {% for day in week_days %}
         <div class="bg-base-200 rounded-lg p-2 min-h-[300px]">
@@ -79,10 +103,77 @@ async function loadWeekMeals(startDate, endDate) {
     try {
         const response = await fetch(`/api/meals/?start=${startDate}&end=${endDate}`);
         const data = await response.json();
+        // Also load side dishes for each meal
+        for (let meal of data.meals) {
+            meal.side_dishes = await loadSideDishes(meal.id);
+        }
         renderMeals(data.meals);
     } catch (error) {
         console.error('Error loading meals:', error);
     }
+}
+
+// Load side dishes for a meal
+async function loadSideDishes(mealId) {
+    try {
+        const response = await fetch(`/api/meals/${mealId}/side_dishes/`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.side_dishes || [];
+        }
+    } catch (error) {
+        console.error('Error loading side dishes:', error);
+    }
+    return [];
+}
+
+// Show recipe detail modal
+async function showRecipeDetail(recipeId) {
+    try {
+        const response = await fetch(`/planner/api/recipes/${recipeId}/`);
+        const recipe = await response.json();
+        
+        document.getElementById('recipe-modal-title').textContent = recipe.title;
+        document.getElementById('recipe-modal-description').textContent = recipe.description || '';
+        
+        // Ingredients list
+        const ingredientsList = document.getElementById('recipe-modal-ingredients');
+        ingredientsList.innerHTML = '';
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
+            recipe.ingredients.forEach(ing => {
+                const li = document.createElement('li');
+                li.textContent = `${ing.quantity} ${ing.unit} ${ing.name}`;
+                ingredientsList.appendChild(li);
+            });
+        } else {
+            ingredientsList.innerHTML = '<li class="text-base-content/50">No ingredients listed</li>';
+        }
+        
+        // Instructions list
+        const instructionsList = document.getElementById('recipe-modal-instructions');
+        instructionsList.innerHTML = '';
+        if (recipe.instructions && recipe.instructions.length > 0) {
+            recipe.instructions.forEach(inst => {
+                const li = document.createElement('li');
+                li.textContent = inst.text;
+                instructionsList.appendChild(li);
+            });
+        } else {
+            instructionsList.innerHTML = '<li class="text-base-content/50">No instructions listed</li>';
+        }
+        
+        // Full recipe link
+        document.getElementById('recipe-modal-full-link').href = `/recipes/${recipeId}/`;
+        
+        // Show modal
+        document.getElementById('recipe-modal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading recipe:', error);
+    }
+}
+
+function closeRecipeModal() {
+    document.getElementById('recipe-modal').classList.add('hidden');
 }
 
 // Render meals into the grid
@@ -132,11 +223,26 @@ function createMealCard(meal) {
                         onclick="rateMeal(${meal.id}, ${i})">★</span>`;
     }
     
+    // Recipe link with modal or direct link
+    let mealHtml = '';
+    if (meal.recipe_id) {
+        mealHtml = `<span class="cursor-pointer text-primary hover:underline" 
+                       onclick="showRecipeDetail(${meal.recipe_id})">${mealName}</span>`;
+    } else {
+        mealHtml = `<span class="font-medium">${mealName}</span>`;
+    }
+    
+    // Side dishes display
+    let sideDishesHtml = '';
+    if (meal.side_dishes && meal.side_dishes.length > 0) {
+        const sides = meal.side_dishes.map(s => s.recipe_title || s.custom_side).join(', ');
+        sideDishesHtml = `<div class="text-xs text-base-content/60 mt-1">with ${sides}</div>`;
+    }
+    
     div.innerHTML = `
         <div class="flex justify-between items-start">
             <div class="flex-1">
-                ${href ? `<a href="${href}" class="font-medium text-primary hover:underline">${mealName}</a>` 
-                       : `<span class="font-medium">${mealName}</span>`}
+                ${mealHtml}
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a href="/planner/meal/${meal.id}/edit/" class="btn btn-xs btn-ghost p-0.5" title="Edit">
@@ -151,6 +257,7 @@ function createMealCard(meal) {
                 </button>
             </div>
         </div>
+        ${sideDishesHtml}
         ${meal.notes ? `<div class="text-xs text-base-content/60 mt-1 truncate">${meal.notes}</div>` : ''}
         <div class="mt-1 text-xs rating-stars" data-meal-id="${meal.id}">${ratingHtml}</div>
     `;
