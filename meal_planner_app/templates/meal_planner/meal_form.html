@@ -81,6 +81,19 @@
                     {% endif %}
                 </div>
                 
+                <!-- Side Dishes Section -->
+                <div class="border-t border-base-300 pt-4 mt-4">
+                    <h3 class="font-semibold text-lg mb-3">Side Dishes</h3>
+                    
+                    <div id="side-dishes-container" class="space-y-3">
+                        <!-- Side dish forms rendered here -->
+                    </div>
+                    
+                    <button type="button" id="add-side-dish" class="btn btn-ghost btn-sm mt-2">
+                        + Add Side Dish
+                    </button>
+                </div>
+                
                 <!-- Form errors -->
                 {% if form.non_field_errors %}
                 <div class="alert alert-error mb-4">
@@ -104,10 +117,95 @@
 
 {% block extra_js %}
 <script>
+let sideDishCount = 0;
+let recipes = [];
+
+// Load recipes for side dish dropdown
+async function loadRecipes() {
+    try {
+        const response = await fetch('{% url "meal_planner:api_recipe_select" %}');
+        const data = await response.json();
+        recipes = data.recipes || [];
+    } catch (error) {
+        console.error('Error loading recipes:', error);
+    }
+}
+
+// Create a side dish form
+function createSideDishForm(index, initialData = {}) {
+    const div = document.createElement('div');
+    div.className = 'bg-base-300 p-3 rounded relative';
+    div.dataset.index = index;
+    
+    // Recipe dropdown options
+    let recipeOptions = '<option value="">-- Select Recipe --</option>';
+    recipes.forEach(r => {
+        const selected = initialData.recipe_id === r.id ? 'selected' : '';
+        recipeOptions += `<option value="${r.id}" ${selected}>${r.title}</option>`;
+    });
+    
+    div.innerHTML = `
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium">Side Dish ${index + 1}</span>
+            <button type="button" class="btn btn-xs btn-ghost text-error" onclick="removeSideDish(${index})">✕</button>
+        </div>
+        <div class="form-control mb-2">
+            <label class="label py-1">
+                <span class="label-text-alt">Recipe</span>
+            </label>
+            <select name="side_dishes-${index}-recipe" class="select select-bordered select-sm">
+                ${recipeOptions}
+            </select>
+        </div>
+        <div class="form-control mb-2">
+            <label class="label py-1">
+                <span class="label-text-alt">Or Custom Side Dish</span>
+            </label>
+            <input type="text" name="side_dishes-${index}-custom_side" 
+                   class="input input-bordered input-sm"
+                   value="${initialData.custom_side || ''}"
+                   placeholder="Enter custom side dish">
+        </div>
+        <div class="flex gap-2">
+            <div class="form-control w-20">
+                <label class="label py-1">
+                    <span class="label-text-alt">Order</span>
+                </label>
+                <input type="number" name="side_dishes-${index}-order" 
+                       class="input input-bordered input-sm"
+                       value="${initialData.order || index}">
+            </div>
+        </div>
+    `;
+    return div;
+}
+
+function addSideDish(initialData = {}) {
+    const container = document.getElementById('side-dishes-container');
+    const form = createSideDishForm(sideDishCount, initialData);
+    container.appendChild(form);
+    sideDishCount++;
+}
+
+function removeSideDish(index) {
+    const container = document.getElementById('side-dishes-container');
+    const form = container.querySelector(`[data-index="${index}"]`);
+    if (form) {
+        // Mark for deletion
+        const deleteInput = document.createElement('input');
+        deleteInput.type = 'hidden';
+        deleteInput.name = `side_dishes-${index}-DELETE`;
+        deleteInput.value = 'on';
+        form.appendChild(deleteInput);
+        form.style.display = 'none';
+    }
+}
+
 // Toggle custom meal field based on recipe selection
 document.addEventListener('DOMContentLoaded', function() {
     const recipeSelect = document.getElementById('id_recipe');
     const customMealInput = document.getElementById('id_custom_meal');
+    const addSideDishBtn = document.getElementById('add-side-dish');
     
     function toggleCustomMeal() {
         if (recipeSelect && customMealInput) {
@@ -123,6 +221,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (recipeSelect) {
         recipeSelect.addEventListener('change', toggleCustomMeal);
         toggleCustomMeal(); // Initial state
+    }
+    
+    // Side dish functionality
+    if (addSideDishBtn) {
+        loadRecipes().then(() => {
+            addSideDishBtn.addEventListener('click', () => addSideDish());
+        });
     }
 });
 </script>
