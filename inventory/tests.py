@@ -16,3 +16,42 @@ class InventoryItemModelTests(TestCase):
 
         self.assertIn(("household", "name"), index_fields)
         self.assertIn(("household", "expiration_date"), index_fields)
+
+
+class InventoryFormsTests(TestCase):
+    def test_inventory_forms_are_exported(self):
+        from inventory.forms import InventoryItemForm, InventoryQuickAddForm
+
+        self.assertIsNotNone(InventoryItemForm)
+        self.assertIsNotNone(InventoryQuickAddForm)
+
+    def test_negative_quantity_is_rejected(self):
+        from inventory.forms import InventoryItemForm
+
+        form = InventoryItemForm(
+            data={
+                "name": "Milk",
+                "quantity": "-1",
+                "unit": "piece",
+                "category": "dairy",
+                "location": "refrigerator",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("quantity", form.errors)
+
+    def test_zero_quantity_is_valid(self):
+        from inventory.forms import InventoryItemForm
+
+        form = InventoryItemForm(
+            data={
+                "name": "Used Up Stock",
+                "quantity": "0",
+                "unit": "piece",
+                "category": "other",
+                "location": "pantry",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
