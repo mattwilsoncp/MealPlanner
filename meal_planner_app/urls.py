@@ -35,4 +35,32 @@ urlpatterns = [
         "meal/<int:meal_id>/delete/", views.DeleteMealView.as_view(), name="delete_meal"
     ),
     path("meal/<int:meal_id>/rate/", views.RateMealView.as_view(), name="rate_meal"),
+    # On-Hand Ideas URLs
+    path("on-hand/", views.OnHandIdeasView.as_view(), name="on_hand_ideas"),
+    path(
+        "on-hand/add-to-meal/",
+        views.AddOnHandToMealView.as_view(),
+        name="add_on_hand_to_meal",
+    ),
+    # On-Hand API endpoints
+    path(
+        "api/recipe/<int:recipe_id>/toggle-on-hand/",
+        views.ToggleOnHandIdeaView.as_view(),
+        name="toggle_on_hand",
+    ),
+    path(
+        "api/recipe/<int:recipe_id>/toggle-leftover/",
+        views.ToggleLeftoverWorthyView.as_view(),
+        name="toggle_leftover",
+    ),
+    path(
+        "api/on-hand/recipes/",
+        views.JsonOnHandRecipesView.as_view(),
+        name="api_on_hand_recipes",
+    ),
+    path(
+        "api/leftover/recipes/",
+        views.JsonLeftoverRecipesView.as_view(),
+        name="api_leftover_recipes",
+    ),
 ]

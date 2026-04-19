@@ -382,3 +382,141 @@ def json_side_dishes(request, meal_id):
         )
 
     return JsonResponse({"side_dishes": side_dishes})
+
+
+# On-Hand Ideas Views
+
+
+class OnHandIdeasView(LoginRequiredMixin, TemplateView):
+    """Display modal with on-hand idea recipes."""
+
+    template_name = "meal_planner/on_hand_ideas.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get on-hand recipes with their ratings
+        from ratings.models import Rating
+
+        recipes = Recipe.objects.filter(
+            household=self.request.user.household,
+            on_hand_idea=True,
+        ).order_by("title")
+
+        # Add rating to each recipe
+        on_hand_recipes = []
+        for recipe in recipes:
+            rating_obj = Rating.objects.filter(recipe=recipe).first()
+            recipe.rating = rating_obj.rating if rating_obj else 0
+            on_hand_recipes.append(recipe)
+
+        context["on_hand_recipes"] = on_hand_recipes
+        return context
+
+
+class ToggleOnHandIdeaView(LoginRequiredMixin, View):
+    """Toggle on_hand_idea flag on a recipe."""
+
+    def post(self, request, recipe_id):
+        recipe = get_object_or_404(
+            Recipe, pk=recipe_id, household=request.user.household
+        )
+
+        recipe.on_hand_idea = not recipe.on_hand_idea
+        recipe.save()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "on_hand_idea": recipe.on_hand_idea,
+            }
+        )
+
+
+class ToggleLeftoverWorthyView(LoginRequiredMixin, View):
+    """Toggle leftover_worthy flag on a recipe."""
+
+    def post(self, request, recipe_id):
+        recipe = get_object_or_404(
+            Recipe, pk=recipe_id, household=request.user.household
+        )
+
+        recipe.leftover_worthy = not recipe.leftover_worthy
+        recipe.save()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "leftover_worthy": recipe.leftover_worthy,
+            }
+        )
+
+
+class AddOnHandToMealView(LoginRequiredMixin, View):
+    """Add on-hand recipe directly to a meal slot."""
+
+    def post(self, request):
+        recipe_id = request.POST.get("recipe_id")
+        meal_date = request.POST.get("meal_date")
+        meal_type = request.POST.get("meal_type")
+
+        if not all([recipe_id, meal_date, meal_type]):
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        recipe = get_object_or_404(
+            Recipe, pk=recipe_id, household=request.user.household
+        )
+
+        # Parse date
+        try:
+            from datetime import datetime
+
+            parsed_date = datetime.strptime(meal_date, "%Y-%m-%d").date()
+        except ValueError:
+            return JsonResponse({"error": "Invalid date format"}, status=400)
+
+        # Create meal
+        meal = MealPlan.objects.create(
+            household=request.user.household,
+            recipe=recipe,
+            meal_date=parsed_date,
+            meal_type=meal_type,
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "meal_id": meal.id,
+            }
+        )
+
+
+class JsonOnHandRecipesView(LoginRequiredMixin, View):
+    """Return on-hand recipes as JSON for API access."""
+
+    def get(self, request):
+        recipes = (
+            Recipe.objects.filter(
+                household=request.user.household,
+                on_hand_idea=True,
+            )
+            .values("id", "title", "on_hand_idea", "leftover_worthy")
+            .order_by("title")
+        )
+
+        return JsonResponse({"recipes": list(recipes)})
+
+
+class JsonLeftoverRecipesView(LoginRequiredMixin, View):
+    """Return leftover-worthy recipes as JSON."""
+
+    def get(self, request):
+        recipes = (
+            Recipe.objects.filter(
+                household=request.user.household,
+                leftover_worthy=True,
+            )
+            .values("id", "title", "leftover_worthy")
+            .order_by("title")
+        )
+
+        return JsonResponse({"recipes": list(recipes)})
