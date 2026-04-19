@@ -62,12 +62,12 @@
 
 ### Meal Planning
 
-- [ ] **MEAL-01**: Weekly planner view shows 7 days
-- [ ] **MEAL-02**: User can navigate between weeks (prev/next)
-- [ ] **MEAL-03**: Week has meal types: breakfast, lunch, dinner, snack
-- [ ] **MEAL-04**: User can add multiple meals per type per day
+- [x] **MEAL-01**: Weekly planner view shows 7 days
+- [x] **MEAL-02**: User can navigate between weeks (prev/next)
+- [x] **MEAL-03**: Week has meal types: breakfast, lunch, dinner, snack
+- [x] **MEAL-04**: User can add multiple meals per type per day
 - [ ] **MEAL-05**: User can link a recipe to a meal slot
-- [ ] **MEAL-06**: User can add custom/free-text meals
+- [x] **MEAL-06**: User can add custom/free-text meals
 - [ ] **MEAL-07**: User can update a meal (change recipe or notes)
 - [ ] **MEAL-08**: User can delete a meal
 - [ ] **MEAL-09**: User can rate a meal plan entry
@@ -175,15 +175,15 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 through HOUSE-02 | 1 | — |
-| REC-01 through REV-07 | 1 | — |
-| MEAL-01 through LEFT-03 | 2 | — |
+| AUTH-01 through HOUSE-02 | 1 | Complete |
+| REC-01 through REV-07 | 1 | Complete |
+| MEAL-01 through LEFT-03 | 2 | Partial (MEAL-01, 02, 03, 04, 06 done) |
 | COOK-01 through COOK-08 | 2 | — |
 | SHOP-01 through SHOP-07 | 3 | — |
 | INV-01 through INV-12 | 3 | — |
 | BAR-01 through BAR-04 | 3 | — |
 | MATCH-01 through MATCH-06 | 4 | — |
-| UI-01 through UI-06 | All | — |
+| UI-01 through UI-06 | All | Complete |
 
 ---
 
