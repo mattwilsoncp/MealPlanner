@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.title }} - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card bg-base-300 shadow-xl">
+        {% if recipe.photo %}
+        <figure>
+            <img src="{{ recipe.photo.url }}" alt="{{ recipe.title }}" class="w-full max-h-96 object-cover">
+        </figure>
+        {% endif %}
+        <div class="card-body">
+            <div class="flex justify-between items-start">
+                <h1 class="card-title text-3xl">{{ recipe.title }}</h1>
+                <div class="flex gap-2">
+                    <a href="{% url 'recipes:recipe_update' recipe.pk %}" class="btn btn-sm btn-outline">Edit</a>
+                    <a href="{% url 'recipes:recipe_delete' recipe.pk %}" class="btn btn-sm btn-outline btn-error">Delete</a>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-2">
+                {% if recipe.on_hand_idea %}
+                <span class="badge badge-info">On Hand Idea</span>
+                {% endif %}
+                {% if recipe.leftover_worthy %}
+                <span class="badge badge-success">Leftover Worthy</span>
+                {% endif %}
+                {% if recipe.needs_review %}
+                <span class="badge badge-warning">Needs Review</span>
+                {% endif %}
+            </div>
+
+            {% if recipe.description %}
+            <div class="mt-4">
+                <h2 class="text-xl font-semibold">Description</h2>
+                <p class="mt-2 whitespace-pre-wrap">{{ recipe.description }}</p>
+            </div>
+            {% endif %}
+
+            {% if recipe.video_url %}
+            <div class="mt-4">
+                <h2 class="text-xl font-semibold">Video</h2>
+                <a href="{{ recipe.video_url }}" target="_blank" class="btn btn-outline btn-sm mt-2">
+                    Watch Video
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="text-base-content/50 text-sm mt-4">
+                Created: {{ recipe.created_at|date:"F j, Y" }}
+                {% if recipe.updated_at != recipe.created_at %}
+                | Updated: {{ recipe.updated_at|date:"F j, Y" }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Back to Recipes</a>
+    </div>
+</div>
+{% endblock %}

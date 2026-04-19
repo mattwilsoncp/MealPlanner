@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Meal Planner{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+    <nav class="navbar bg-base-300 shadow-sm">
+        <div class="container mx-auto">
+            <div class="flex-1">
+                <a href="{% url 'home' %}" class="btn btn-ghost text-xl">Meal Planner</a>
+            </div>
+            <div class="flex-none">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li>
+                        <details>
+                            <summary>Recipes</summary>
+                            <ul class="bg-base-300 rounded-box z-10 p-2 shadow">
+                                <li><a href="{% url 'recipes:recipe_list' %}">All Recipes</a></li>
+                                <li><a href="{% url 'recipes:recipe_create' %}">Add Recipe</a></li>
+                            </ul>
+                        </details>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li>
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost">Logout</button>
+                        </form>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4">
+        {% if messages %}
+        <div class="messages mb-4">
+            {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

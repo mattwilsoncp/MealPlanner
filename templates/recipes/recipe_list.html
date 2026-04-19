@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Recipes - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">My Recipes</h1>
+    <a href="{% url 'recipes:recipe_create' %}" class="btn btn-primary">Add Recipe</a>
+</div>
+
+{% if recipes %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for recipe in recipes %}
+    <div class="card bg-base-300 shadow-xl">
+        {% if recipe.photo %}
+        <figure>
+            <img src="{{ recipe.photo.url }}" alt="{{ recipe.title }}" class="w-full h-48 object-cover">
+        </figure>
+        {% else %}
+        <figure>
+            <div class="w-full h-48 bg-base-200 flex items-center justify-center">
+                <span class="text-base-content/50">No Photo</span>
+            </div>
+        </figure>
+        {% endif %}
+        <div class="card-body">
+            <h2 class="card-title">
+                <a href="{% url 'recipes:recipe_detail' recipe.pk %}" class="link link-primary">
+                    {{ recipe.title }}
+                </a>
+            </h2>
+            <p class="text-base-content/70 line-clamp-2">{{ recipe.description|truncatechars:100 }}</p>
+            <div class="flex gap-2 mt-2">
+                {% if recipe.on_hand_idea %}
+                <span class="badge badge-info">On Hand</span>
+                {% endif %}
+                {% if recipe.leftover_worthy %}
+                <span class="badge badge-success">Leftover Worthy</span>
+                {% endif %}
+                {% if recipe.needs_review %}
+                <span class="badge badge-warning">Needs Review</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card bg-base-300">
+    <div class="card-body items-center text-center">
+        <h2 class="card-title">No recipes yet</h2>
+        <p class="text-base-content/70">Start by adding your first recipe!</p>
+        <div class="card-actions justify-end">
+            <a href="{% url 'recipes:recipe_create' %}" class="btn btn-primary">Add Recipe</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

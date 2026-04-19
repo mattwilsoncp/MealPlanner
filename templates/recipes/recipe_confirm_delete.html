@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Recipe - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="card bg-base-300 shadow-xl">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">Delete Recipe?</h1>
+            <p class="py-4">
+                Are you sure you want to delete "<strong>{{ object.title }}</strong>"?
+                This action cannot be undone.
+            </p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-actions justify-end">
+                    <a href="{% url 'recipes:recipe_detail' object.pk %}" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-error">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
