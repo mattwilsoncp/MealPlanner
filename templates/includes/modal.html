@@ -1,0 +1,41 @@
+{% comment %}Reusable modal component. Usage:
+    {% include 'includes/modal.html' with modal_id='my-modal' modal_title='My Title' %}
+    Or with Alpine.js:
+    <button @click="$dispatch('open-modal', {id: 'my-modal'})">Open</button>
+{% endcomment %}
+{% load static %}
+
+<template x-teleport="body">
+    <dialog id="{{ modal_id }}" class="modal" @open-modal.window="if ($event.detail.id === '{{ modal_id }}') $el.showModal()">
+        <div class="modal-box bg-base-300">
+            <h3 class="font-bold text-lg">{{ modal_title }}</h3>
+            {% if modal_content %}
+                {{ modal_content }}
+            {% else %}
+                {% block modal_body %}{% endblock %}
+            {% endif %}
+            <div class="modal-action">
+                <form method="dialog">
+                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="Close">✕</button>
+                </form>
+                {% block modal_actions %}{% endblock %}
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+</template>
+
+<script>
+    // Helper functions for modal control (can be used in any template)
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.showModal();
+    }
+    
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.close();
+    }
+</script>

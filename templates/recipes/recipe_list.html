@@ -3,6 +3,27 @@
 {% block title %}Recipes - Meal Planner{% endblock %}
 
 {% block content %}
+<div x-data="{ 
+    toggling: {},
+    async toggleReview(recipeId, needsReview) {
+        this.toggling[recipeId] = true;
+        try {
+            const res = await fetch(`/recipes/api/${recipeId}/toggle-review/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Reload to update UI
+                window.location.reload();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.toggling[recipeId] = false;
+        }
+    }
+}">
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold">My Recipes</h1>
     <a href="{% url 'recipes:recipe_create' %}" class="btn btn-primary">Add Recipe</a>
@@ -72,7 +93,7 @@
             </div>
             {% endif %}
             {% endwith %}
-            <div class="flex gap-2 mt-2">
+            <div class="flex gap-2 mt-2 flex-wrap">
                 {% if recipe.on_hand_idea %}
                 <span class="badge badge-info">On Hand</span>
                 {% endif %}
@@ -81,11 +102,18 @@
                 {% endif %}
                 {% if recipe.needs_review %}
                 <span class="badge badge-warning">Needs Review</span>
+                <button @click="toggleReview({{ recipe.pk }}, {{ recipe.needs_review|yesno:'true,false' }})" 
+                        class="btn btn-xs btn-ghost" 
+                        :disabled="toggling[{{ recipe.pk }}]">
+                    <span x-show="toggling[{{ recipe.pk }}]" class="loading loading-spinner loading-xs"></span>
+                    <span x-show="!toggling[{{ recipe.pk }}">Mark Ready</span>
+                </button>
                 {% endif %}
             </div>
         </div>
     </div>
     {% endfor %}
+</div>
 </div>
 {% else %}
 <div class="card bg-base-300">
