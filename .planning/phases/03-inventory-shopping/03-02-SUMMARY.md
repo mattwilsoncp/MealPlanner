@@ -96,10 +96,18 @@ Each task was committed atomically:
 - **Verification:** Inventory tests pass and expiration page renders both sections.
 - **Committed in:** `60366d0`
 
+**3. [Rule 3 - Blocking] `gsd-sdk` command unavailable for automated state handlers**
+- **Found during:** Plan wrap-up (state update stage)
+- **Issue:** Environment lacked `gsd-sdk`, so prescribed state mutation commands could not run.
+- **Fix:** Applied equivalent updates manually to `STATE.md`, `ROADMAP.md`, and `REQUIREMENTS.md`, then committed those docs in metadata commit.
+- **Files modified:** `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`
+- **Verification:** Files reflect 03-02 completion and INV requirement checkoffs.
+- **Committed in:** `b85ebef`
+
 ---
 
-**Total deviations:** 2 auto-fixed (1 bug, 1 missing critical)
-**Impact on plan:** Both fixes were required for continuity and complete expiration triage behavior; no architectural scope change.
+**Total deviations:** 3 auto-fixed (1 bug, 1 missing critical, 1 blocking)
+**Impact on plan:** All fixes were required for continuity/completeness; no architectural scope change.
 
 ## Issues Encountered
 None.
