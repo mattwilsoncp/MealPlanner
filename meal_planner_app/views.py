@@ -142,6 +142,17 @@ class AddMealView(LoginRequiredMixin, CreateView):
         kwargs["request"] = self.request
         return kwargs
 
+    def get_initial(self):
+        """Pre-fill date and meal_type from query params."""
+        initial = super().get_initial()
+        date_param = self.request.GET.get("date")
+        type_param = self.request.GET.get("type")
+        if date_param:
+            initial["meal_date"] = date_param
+        if type_param:
+            initial["meal_type"] = type_param
+        return initial
+
     def form_valid(self, form):
         """Set household before saving."""
         form.instance.household = self.request.user.household
