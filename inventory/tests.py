@@ -201,3 +201,61 @@ class InventoryViewTests(TestCase):
         self.assertIn("Expiring Soon", expiring_names)
         self.assertNotIn("Outside Threshold", expiring_names)
         self.assertIn("Already Expired", expired_names)
+
+
+class InventoryQuickAddApiTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Quick Add Home")
+        self.user = user_model.objects.create_user(
+            username="quick-add-user",
+            password="pass1234",
+            household=self.household,
+        )
+        self.client.force_login(self.user)
+
+    def test_quick_add_success_returns_created_item_payload(self):
+        response = self.client.post(
+            reverse("inventory:inventory_quick_add"),
+            data={
+                "name": "Yogurt",
+                "quantity": "2",
+                "unit": "piece",
+                "category": "dairy",
+                "location": "refrigerator",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        payload = response.json()
+        self.assertIn("id", payload)
+        self.assertEqual(payload["name"], "Yogurt")
+        self.assertEqual(str(payload["quantity"]), "2")
+        self.assertEqual(payload["unit"], "piece")
+        self.assertEqual(payload["category"], "dairy")
+        self.assertEqual(payload["location"], "refrigerator")
+
+    def test_quick_add_invalid_payload_returns_field_errors(self):
+        response = self.client.post(
+            reverse("inventory:inventory_quick_add"),
+            data={"quantity": "-1"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertIn("errors", payload)
+        self.assertIn("name", payload["errors"])
+
+    def test_quick_add_requires_csrf_token(self):
+        csrf_client = self.client_class(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+
+        response = csrf_client.post(
+            reverse("inventory:inventory_quick_add"),
+            data={"name": "Milk", "quantity": "1"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 403)
