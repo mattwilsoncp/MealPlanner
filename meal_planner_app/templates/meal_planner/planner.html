@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Weekly Meal Planner{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Week Navigation Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=-1" 
+               class="btn btn-primary btn-outline btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+            </a>
+            <h1 class="text-2xl font-bold">
+                Week of {{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}
+            </h1>
+            <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=1" 
+               class="btn btn-primary btn-outline btn-sm">
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+        
+        <!-- Today button -->
+        <a href="{% url 'meal_planner:planner' %}" class="btn btn-ghost btn-sm">
+            Today
+        </a>
+    </div>
+
+    <!-- Week Grid -->
+    <div class="grid grid-cols-7 gap-2">
+        {% for day in week_days %}
+        <div class="bg-base-200 rounded-lg p-2 min-h-[300px]">
+            <!-- Day Header -->
+            <div class="text-center mb-3 border-b border-base-300 pb-2">
+                <div class="text-sm text-base-content/70">{{ day.day_name }}</div>
+                <div class="text-xl font-bold">{{ day.date|date:"d" }}</div>
+                <div class="text-xs text-base-content/50">{{ day.date|date:"M" }}</div>
+            </div>
+
+            <!-- Meal Type Sections -->
+            {% for meal_type in meal_types %}
+            <div class="mb-3">
+                <div class="text-xs font-semibold uppercase text-base-content/70 mb-1">
+                    {{ meal_type }}
+                </div>
+                <div class="space-y-2">
+                    <!-- Meals for this type/day would be rendered here by JS -->
+                    <div class="meal-slots" data-date="{{ day.date_str }}" data-type="{{ meal_type }}">
+                        <!-- Placeholder for meals -->
+                    </div>
+                    
+                    <!-- Add Meal Button -->
+                    <button class="btn btn-xs btn-ghost w-full" 
+                            onclick="showAddMealModal('{{ day.date_str }}', '{{ meal_type }}')">
+                        + Add
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Meal Modal -->
+<dialog id="add_meal_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Add Meal</h3>
+        
+        <form id="add_meal_form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="meal_date" id="modal_meal_date">
+            <input type="hidden" name="meal_type" id="modal_meal_type">
+            
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Recipe</span>
+                </label>
+                <select name="recipe" id="recipe_select" class="select select-bordered">
+                    <option value="">-- Select Recipe (optional) --</option>
+                    {% for recipe in recipes %}
+                    <option value="{{ recipe.id }}">{{ recipe.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Or Custom Meal Name</span>
+                </label>
+                <input type="text" name="custom_meal" id="custom_meal_input" 
+                       placeholder="e.g., Leftovers, Delivery, Quick meal" 
+                       class="input input-bordered">
+            </div>
+            
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Notes</span>
+                </label>
+                <textarea name="notes" class="textarea textarea-bordered" 
+                          placeholder="Optional notes..."></textarea>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('add_meal_modal').close()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Meal</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+// Show add meal modal
+function showAddMealModal(date, mealType) {
+    document.getElementById('modal_meal_date').value = date;
+    document.getElementById('modal_meal_type').value = mealType;
+    document.getElementById('add_meal_modal').showModal();
+}
+
+// Load meals for the week
+async function loadWeekMeals(startDate, endDate) {
+    try {
+        const response = await fetch(`/api/meals/?start=${startDate}&end=${endDate}`);
+        const data = await response.json();
+        renderMeals(data.meals);
+    } catch (error) {
+        console.error('Error loading meals:', error);
+    }
+}
+
+// Render meals into the grid
+function renderMeals(meals) {
+    // Clear existing meals
+    document.querySelectorAll('.meal-slots').forEach(slot => {
+        slot.innerHTML = '';
+    });
+    
+    // Group meals by date and type
+    const mealsByDateType = {};
+    meals.forEach(meal => {
+        const key = `${meal.meal_date}-${meal.meal_type}`;
+        mealsByDateType[key] = meal;
+    });
+    
+    // Render meals into slots
+    document.querySelectorAll('.meal-slots').forEach(slot => {
+        const date = slot.dataset.date;
+        const type = slot.dataset.type;
+        const key = `${date}-${type}`;
+        const meal = mealsByDateType[key];
+        
+        if (meal) {
+            const mealCard = createMealCard(meal);
+            slot.innerHTML = '';
+            slot.appendChild(mealCard);
+        } else {
+            slot.innerHTML = '<div class="text-xs text-base-content/40 italic">No meals planned</div>';
+        }
+    });
+}
+
+// Create meal card element
+function createMealCard(meal) {
+    const div = document.createElement('div');
+    div.className = 'bg-base-300 rounded p-2 text-sm';
+    
+    let mealName = meal.custom_meal || meal.recipe_title || 'No meal';
+    let href = meal.recipe_id ? `/recipes/${meal.recipe_id}/` : null;
+    
+    div.innerHTML = `
+        ${href ? `<a href="${href}" class="font-medium text-primary hover:underline">${mealName}</a>` 
+               : `<span class="font-medium">${mealName}</span>`}
+        ${meal.notes ? `<div class="text-xs text-base-content/60 mt-1 truncate">${meal.notes}</div>` : ''}
+    `;
+    
+    return div;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Get start and end dates from context
+    const startDate = '{{ start_date|date:"Y-m-d" }}';
+    const endDate = '{{ end_date|date:"Y-m-d" }}';
+    
+    // Load meals
+    if (startDate && endDate) {
+        loadWeekMeals(startDate, endDate);
+    }
+});
+</script>
+{% endblock %}
