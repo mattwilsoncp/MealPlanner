@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit Meal{% else %}Add Meal{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-lg">
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="card-title mb-4">
+                {% if object %}Edit Meal{% else %}Add Meal{% endif %}
+            </h2>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Date -->
+                <div class="form-control mb-4">
+                    <label class="label" for="id_meal_date">
+                        <span class="label-text">Date</span>
+                    </label>
+                    {{ form.meal_date }}
+                    {% if form.meal_date.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.meal_date.errors }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Meal Type -->
+                <div class="form-control mb-4">
+                    <label class="label" for="id_meal_type">
+                        <span class="label-text">Meal Type</span>
+                    </label>
+                    {{ form.meal_type }}
+                    {% if form.meal_type.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.meal_type.errors }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Recipe -->
+                <div class="form-control mb-4">
+                    <label class="label" for="id_recipe">
+                        <span class="label-text">Recipe (optional)</span>
+                    </label>
+                    {{ form.recipe }}
+                    {% if form.recipe.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.recipe.errors }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Custom Meal - shown when no recipe selected -->
+                <div class="form-control mb-4">
+                    <label class="label" for="id_custom_meal">
+                        <span class="label-text">Or Custom Meal Name</span>
+                    </label>
+                    <div class="text-xs text-base-content/60 mb-2">
+                        Enter a custom meal if not using a recipe
+                    </div>
+                    {{ form.custom_meal }}
+                    {% if form.custom_meal.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.custom_meal.errors }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Notes -->
+                <div class="form-control mb-4">
+                    <label class="label" for="id_notes">
+                        <span class="label-text">Notes (optional)</span>
+                    </label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.notes.errors }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Form errors -->
+                {% if form.non_field_errors %}
+                <div class="alert alert-error mb-4">
+                    {% for error in form.non_field_errors %}
+                    <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="card-actions justify-end mt-6">
+                    <a href="{% url 'meal_planner:planner' %}" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Meal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle custom meal field based on recipe selection
+document.addEventListener('DOMContentLoaded', function() {
+    const recipeSelect = document.getElementById('id_recipe');
+    const customMealInput = document.getElementById('id_custom_meal');
+    
+    function toggleCustomMeal() {
+        if (recipeSelect && customMealInput) {
+            if (recipeSelect.value) {
+                customMealInput.closest('.form-control').style.display = 'none';
+                customMealInput.value = '';
+            } else {
+                customMealInput.closest('.form-control').style.display = 'block';
+            }
+        }
+    }
+    
+    if (recipeSelect) {
+        recipeSelect.addEventListener('change', toggleCustomMeal);
+        toggleCustomMeal(); // Initial state
+    }
+});
+</script>
+{% endblock %}
