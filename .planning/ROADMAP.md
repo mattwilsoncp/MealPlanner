@@ -51,6 +51,15 @@
 
 - None — this is the foundation
 
+### Plans
+
+- [x] 01-01-PLAN.md — Django project setup, authentication, household model
+- [x] 01-02-PLAN.md — Recipe model and CRUD operations
+- [x] 01-03-PLAN.md — Ingredient, Instruction, Tag, Rating models
+- [x] 01-04-PLAN.md — Recipe search, sorting, needs_review filtering
+- [x] 01-05-PLAN.md — Recipe review workflow with reconciliation
+- [x] 01-06-PLAN.md — UI polish with responsive design, modals, JSON endpoints
+
 ---
 
 ## Phase 2: Meal Planning
