@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "inventory",
     "reviews",
     "meal_planner_app",
+    "shopping",
 ]
 
 MIDDLEWARE = [
