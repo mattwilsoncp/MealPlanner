@@ -1,80 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}Add Inventory Item{% endblock %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Inventory Item{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto">
-    <h1 class="text-2xl font-bold mb-6">Add Inventory Item</h1>
-    
-    <form method="post" class="card bg-base-300 p-6">
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">{% if object %}Edit{% else %}Add{% endif %} Inventory Item</h1>
+
+    <form method="post" enctype="multipart/form-data" class="card bg-base-300 p-6 space-y-4">
         {% csrf_token %}
-        
-        <div class="form-control mb-4">
-            <label class="label">
-                <span class="label-text">Name</span>
-            </label>
-            <input type="text" name="name" required class="input input-bordered">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-error">
+            {{ form.non_field_errors }}
         </div>
-        
-        <div class="flex gap-4 mb-4">
-            <div class="form-control flex-1">
-                <label class="label">
-                    <span class="label-text">Quantity</span>
-                </label>
-                <input type="number" name="quantity" required class="input input-bordered" step="0.01" min="0">
+        {% endif %}
+
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="form-control md:col-span-2">
+                <label class="label" for="{{ form.name.id_for_label }}"><span class="label-text">Name</span></label>
+                {{ form.name }}
+                {% if form.name.errors %}<p class="text-error text-sm mt-1">{{ form.name.errors|join:", " }}</p>{% endif %}
             </div>
-            
-            <div class="form-control flex-1">
-                <label class="label">
-                    <span class="label-text">Unit</span>
-                </label>
-                <select name="unit" class="select select-bordered">
-                    {% for choice in form.unit.field.choices %}
-                    <option value="{{ choice.0 }}">{{ choice.1 }}</option>
-                    {% endfor %}
-                </select>
+
+            <div class="form-control">
+                <label class="label" for="{{ form.quantity.id_for_label }}"><span class="label-text">Quantity</span></label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}<p class="text-error text-sm mt-1">{{ form.quantity.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div class="form-control">
+                <label class="label" for="{{ form.unit.id_for_label }}"><span class="label-text">Unit</span></label>
+                {{ form.unit }}
+            </div>
+
+            <div class="form-control">
+                <label class="label" for="{{ form.category.id_for_label }}"><span class="label-text">Category</span></label>
+                {{ form.category }}
+            </div>
+            <div class="form-control">
+                <label class="label" for="{{ form.location.id_for_label }}"><span class="label-text">Location</span></label>
+                {{ form.location }}
+            </div>
+
+            <div class="form-control">
+                <label class="label" for="{{ form.expiration_date.id_for_label }}"><span class="label-text">Expiration Date</span></label>
+                {{ form.expiration_date }}
+            </div>
+            <div class="form-control">
+                <label class="label" for="{{ form.barcode.id_for_label }}"><span class="label-text">Barcode</span></label>
+                {{ form.barcode }}
+            </div>
+
+            <div class="form-control md:col-span-2">
+                <label class="label" for="{{ form.notes.id_for_label }}"><span class="label-text">Notes</span></label>
+                {{ form.notes }}
+            </div>
+
+            <div class="form-control md:col-span-2">
+                <label class="label" for="{{ form.image.id_for_label }}"><span class="label-text">Image Upload</span></label>
+                {{ form.image }}
             </div>
         </div>
-        
-        <div class="form-control mb-4">
-            <label class="label">
-                <span class="label-text">Category</span>
-            </label>
-            <select name="category" class="select select-bordered">
-                {% for choice in form.category.field.choices %}
-                <option value="{{ choice.0 }}">{{ choice.1 }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-control mb-4">
-            <label class="label">
-                <span class="label-text">Location</span>
-            </label>
-            <select name="location" class="select select-bordered">
-                {% for choice in form.location.field.choices %}
-                <option value="{{ choice.0 }}">{{ choice.1 }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-control mb-4">
-            <label class="label">
-                <span class="label-text">Expiration Date (optional)</span>
-            </label>
-            <input type="date" name="expiration_date" class="input input-bordered">
-        </div>
-        
-        <div class="form-control mb-4">
-            <label class="label">
-                <span class="label-text">Notes (optional)</span>
-            </label>
-            <textarea name="notes" class="textarea textarea-bordered"></textarea>
-        </div>
-        
-        <div class="flex justify-between mt-6">
+
+        <div class="flex justify-between mt-4">
             <a href="{% url 'inventory:inventory_list' %}" class="btn btn-ghost">Cancel</a>
-            <button type="submit" class="btn btn-primary">Add Item</button>
+            <button type="submit" class="btn btn-primary">{% if object %}Save Changes{% else %}Add Item{% endif %}</button>
         </div>
     </form>
 </div>

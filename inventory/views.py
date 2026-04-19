@@ -92,7 +92,7 @@ class InventoryDeleteView(LoginRequiredMixin, DeleteView):
 
 class InventoryExpiringView(LoginRequiredMixin, ListView):
     model = InventoryItem
-    template_name = "inventory/inventory_list.html"
+    template_name = "inventory/inventory_expiring.html"
     context_object_name = "items"
 
     def get_queryset(self):
@@ -106,10 +106,21 @@ class InventoryExpiringView(LoginRequiredMixin, ListView):
             expiration_date__lte=threshold_date,
         ).order_by("expiration_date", "name")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        context["expiring_items"] = context["items"]
+        context["expired_items"] = InventoryItem.objects.filter(
+            household=self.request.user.household,
+            expiration_date__lt=today,
+        ).order_by("expiration_date", "name")
+        context["is_expired_page"] = False
+        return context
+
 
 class InventoryExpiredView(LoginRequiredMixin, ListView):
     model = InventoryItem
-    template_name = "inventory/inventory_list.html"
+    template_name = "inventory/inventory_expiring.html"
     context_object_name = "items"
 
     def get_queryset(self):
@@ -118,6 +129,21 @@ class InventoryExpiredView(LoginRequiredMixin, ListView):
             household=self.request.user.household,
             expiration_date__lt=today,
         ).order_by("expiration_date", "name")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        threshold_date = today + timedelta(
+            days=self.request.user.household.expiring_threshold_days
+        )
+        context["expired_items"] = context["items"]
+        context["expiring_items"] = InventoryItem.objects.filter(
+            household=self.request.user.household,
+            expiration_date__gte=today,
+            expiration_date__lte=threshold_date,
+        ).order_by("expiration_date", "name")
+        context["is_expired_page"] = True
+        return context
 
 
 class InventoryQuickAddView(LoginRequiredMixin, View):
