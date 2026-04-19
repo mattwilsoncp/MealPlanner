@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Add Inventory Item{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Add Inventory Item</h1>
+    
+    <form method="post" class="card bg-base-300 p-6">
+        {% csrf_token %}
+        
+        <div class="form-control mb-4">
+            <label class="label">
+                <span class="label-text">Name</span>
+            </label>
+            <input type="text" name="name" required class="input input-bordered">
+        </div>
+        
+        <div class="flex gap-4 mb-4">
+            <div class="form-control flex-1">
+                <label class="label">
+                    <span class="label-text">Quantity</span>
+                </label>
+                <input type="number" name="quantity" required class="input input-bordered" step="0.01" min="0">
+            </div>
+            
+            <div class="form-control flex-1">
+                <label class="label">
+                    <span class="label-text">Unit</span>
+                </label>
+                <select name="unit" class="select select-bordered">
+                    {% for choice in form.unit.field.choices %}
+                    <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-control mb-4">
+            <label class="label">
+                <span class="label-text">Category</span>
+            </label>
+            <select name="category" class="select select-bordered">
+                {% for choice in form.category.field.choices %}
+                <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-control mb-4">
+            <label class="label">
+                <span class="label-text">Location</span>
+            </label>
+            <select name="location" class="select select-bordered">
+                {% for choice in form.location.field.choices %}
+                <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-control mb-4">
+            <label class="label">
+                <span class="label-text">Expiration Date (optional)</span>
+            </label>
+            <input type="date" name="expiration_date" class="input input-bordered">
+        </div>
+        
+        <div class="form-control mb-4">
+            <label class="label">
+                <span class="label-text">Notes (optional)</span>
+            </label>
+            <textarea name="notes" class="textarea textarea-bordered"></textarea>
+        </div>
+        
+        <div class="flex justify-between mt-6">
+            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">Add Item</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

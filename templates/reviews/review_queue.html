@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Recipe Review Queue{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Recipe Review Queue</h1>
+        <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Back to Recipes</a>
+    </div>
+
+    {% if not recipes %}
+    <div class="card bg-base-300 p-8 text-center">
+        <p class="text-lg">No recipes need review.</p>
+        <p class="text-sm opacity-70 mt-2">All recipes are ready for use!</p>
+        <a href="{% url 'recipes:recipe_list' %}" class="btn btn-primary mt-4">View All Recipes</a>
+    </div>
+    {% else %}
+    <div class="space-y-4">
+        {% for recipe in recipes %}
+        <div class="card bg-base-300 shadow">
+            <div class="card-body">
+                <h2 class="card-title">{{ recipe.title }}</h2>
+                <p class="text-sm opacity-70">{{ recipe.description|truncatewords:30 }}</p>
+                
+                <div class="flex items-center gap-2 mt-2 text-sm">
+                    <span class="badge badge-info">Needs Review</span>
+                    <span class="opacity-70">{{ recipe.ingredients.count }} ingredients</span>
+                </div>
+
+                <div class="card-actions justify-end mt-4">
+                    <a href="{% url 'reviews:recipe_reconcile' recipe.pk %}" class="btn btn-outline btn-primary">
+                        Reconcile Ingredients
+                    </a>
+                    <a href="{% url 'reviews:mark_ready' recipe.pk %}" class="btn btn-success">
+                        Mark Ready
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
