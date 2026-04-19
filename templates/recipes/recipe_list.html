@@ -8,6 +8,20 @@
     <a href="{% url 'recipes:recipe_create' %}" class="btn btn-primary">Add Recipe</a>
 </div>
 
+<!-- Search and Sort Form -->
+<form method="get" action="." class="flex flex-wrap gap-2 mb-6 p-4 bg-base-200 rounded-lg">
+    <input type="text" name="q" placeholder="Search recipes..." value="{{ q|default:'' }}" class="input input-bordered flex-1 min-w-[200px]">
+    <select name="sort" class="select select-bordered">
+        {% for value, label in sort_choices %}
+        <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q or sort != 'newest' %}
+    <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Clear</a>
+    {% endif %}
+</form>
+
 {% if recipes %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {% for recipe in recipes %}
@@ -29,7 +43,35 @@
                     {{ recipe.title }}
                 </a>
             </h2>
+            <!-- Rating stars -->
+            {% with recipe.rating_set.all as recipe_ratings %}
+            {% if recipe_ratings %}
+            {% with recipe_ratings|length as rating_count %}
+            {% with recipe_ratings|dictsortreversed:"score"|first as top_rating %}
+            <div class="flex items-center gap-1 text-sm">
+                <span class="font-medium">{{ top_rating.score }}/5</span>
+                <div class="rating rating-xs">
+                    {% for i in "12345" %}
+                    <input type="radio" class="mask mask-star-2 bg-warning" {% if forloop.counter <= top_rating.score %}checked{% endif %} disabled>
+                    {% endfor %}
+                </div>
+                <span class="text-base-content/50">({{ rating_count }})</span>
+            </div>
+            {% endwith %}
+            {% endwith %}
+            {% endif %}
+            {% endwith %}
             <p class="text-base-content/70 line-clamp-2">{{ recipe.description|truncatechars:100 }}</p>
+            <!-- Tags -->
+            {% with recipe.recipetag_set.all as recipe_tags %}
+            {% if recipe_tags %}
+            <div class="flex flex-wrap gap-1 mt-2">
+                {% for rt in recipe_tags %}
+                <span class="badge badge-outline badge-sm">{{ rt.tag.name }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
             <div class="flex gap-2 mt-2">
                 {% if recipe.on_hand_idea %}
                 <span class="badge badge-info">On Hand</span>
@@ -48,9 +90,16 @@
 {% else %}
 <div class="card bg-base-300">
     <div class="card-body items-center text-center">
-        <h2 class="card-title">No recipes yet</h2>
-        <p class="text-base-content/70">Start by adding your first recipe!</p>
+        <h2 class="card-title">
+            {% if q %}No recipes match "{{ q }}"{% else %}No recipes yet{% endif %}
+        </h2>
+        <p class="text-base-content/70">
+            {% if q %}Try a different search term or clear the search.{% else %}Start by adding your first recipe!{% endif %}
+        </p>
         <div class="card-actions justify-end">
+            {% if q %}
+            <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Clear Search</a>
+            {% endif %}
             <a href="{% url 'recipes:recipe_create' %}" class="btn btn-primary">Add Recipe</a>
         </div>
     </div>
