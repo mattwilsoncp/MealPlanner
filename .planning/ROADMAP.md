@@ -1,7 +1,7 @@
 # Meal Planner App v2 — Roadmap
 
 **Project:** Meal Planner App v2  
-**Phases:** 4  
+**Phases:** 6  
 **Granularity:** Coarse  
 **Last Updated:** 2026-04-19
 
@@ -15,8 +15,10 @@
 | 2 | Meal Planning | Weekly planner, meal types, on-hand ideas, cooking reconciliation | 15 | 6 |
 | 3 | Inventory & Shopping | Inventory management, barcode scanning, shopping list generation | 17 | 6 |
 | 4 | Discovery & Matching | "What Can I Make?" recipe matching with expiration awareness | 6 | 4 |
+| 5 | Phase 1 Gap Remediation | Close orphaned Phase 1 requirements found by milestone audit | 6 | 4 |
+| 6 | Verification Closure | Produce phase verification artifacts and re-run milestone audit | 1 | 4 |
 
-**Total: 4 phases | 63 requirements | 24 success criteria**
+**Total: 6 phases | 63 product requirements + 1 closure gate | 32 success criteria**
 
 ---
 
@@ -129,7 +131,7 @@
 - [x] 03-01-PLAN.md — Inventory schema contracts (metadata + household expiration preference)
 - [x] 03-02-PLAN.md — Inventory CRUD/list/filter/expiration flows + quick-add endpoint
 - [x] 03-03-PLAN.md — Barcode scan page with local-first lookup and UPC fallback
-- [ ] 03-04-PLAN.md — Shopping app foundation with week-based generator + match metrics
+- [x] 03-04-PLAN.md — Shopping app foundation with week-based generator + match metrics
 - [x] 03-05-PLAN.md — Shopping checklist actions, UI, and navigation wiring
 
 ---
@@ -154,6 +156,73 @@
 
 - Requires Phase 1 (recipes)
 - Requires Phase 3 (inventory matching)
+
+### Plans
+
+**Plans:** 2 plans
+
+- [x] 04-01-PLAN.md — Matching service contract for sorting, missing ingredients, and urgency signals
+- [x] 04-02-PLAN.md — Discovery page route/UI with progress bars, missing badges, and urgent highlights
+
+---
+
+## Phase 5: Phase 1 Gap Remediation
+
+**Goal:** Close the six unsatisfied Phase 1 requirements identified by the milestone audit so recipe authoring and review workflows are complete and verifiable.
+
+### Requirements
+
+- REC-12 (Review queue page shows recipes needing review)
+- ING-03 (Link ingredient to inventory item)
+- ING-04 (Link ingredient to USDA food reference)
+- ING-06 (View ingredient nutrition data)
+- INST-02 (Reorder instructions)
+- TAG-02 (Create new tags when editing recipe)
+
+### Success Criteria
+
+1. Review queue reliably shows all `needs_review=True` recipes with household scoping
+2. Recipe edit flow supports instruction reordering and creating tags inline
+3. Ingredient editing/reconciliation supports inventory linking and USDA reference association
+4. Ingredient nutrition details are visible from recipe detail/review flows
+
+### Dependencies
+
+- Requires Phase 1 artifacts (recipes, ingredients, reviews)
+
+### Plans
+
+**Plans:** 2 plans
+
+- [x] 05-01-PLAN.md — Repair recipe/review authoring gaps (REC-12, INST-02, TAG-02)
+- [x] 05-02-PLAN.md — Repair ingredient linking and nutrition gaps (ING-03, ING-04, ING-06)
+
+---
+
+## Phase 6: Verification Closure
+
+**Goal:** Restore milestone closure gates by generating verification artifacts for all phases and re-running milestone audit evidence.
+
+### Requirements
+
+- REQ-VERIFICATION-GAP-ALL (All phase verification artifacts exist and requirements are verification-backed)
+
+### Success Criteria
+
+1. `*-VERIFICATION.md` exists for phases 1-4 and references executable checks
+2. Verification evidence includes remediated Phase 1 requirement closure
+3. Milestone audit can run against verification artifacts without orphaned verification-source gaps
+4. Runtime health check evidence is captured from a configured Django environment
+
+### Dependencies
+
+- Requires Phase 5 gap remediation completion
+
+### Plans
+
+**Plans:** 1 plan
+
+- [x] 06-01-PLAN.md — Generate phase verification artifacts, run audit, and capture runtime evidence
 
 ---
 
