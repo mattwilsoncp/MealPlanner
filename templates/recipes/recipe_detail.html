@@ -19,7 +19,7 @@
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-2">
+            <div class="flex gap-2 mt-2 flex-wrap">
                 {% if recipe.on_hand_idea %}
                 <span class="badge badge-info">On Hand Idea</span>
                 {% endif %}
@@ -29,12 +29,72 @@
                 {% if recipe.needs_review %}
                 <span class="badge badge-warning">Needs Review</span>
                 {% endif %}
+                
+                {# Tags as badges #}
+                {% for recipe_tag in tags %}
+                <span class="badge" style="background-color: {{ recipe_tag.tag.color }}; color: white;">
+                    {{ recipe_tag.tag.name }}
+                </span>
+                {% endfor %}
+            </div>
+
+            {# Rating display #}
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold">Rating</h3>
+                {% if average_rating %}
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-2xl font-bold">{{ average_rating|floatformat:1 }}/5</span>
+                    <span class="text-base-content/60">({{ ratings.count }} rating{{ ratings.count|add:"-1"|yesno:",s" }})</span>
+                </div>
+                {% else %}
+                <p class="text-base-content/60">Not rated yet</p>
+                {% endif %}
+                
+                {# Add rating button - could trigger a modal #}
+                <button class="btn btn-sm btn-outline mt-2" onclick="document.getElementById('rating_modal').showModal()">
+                    {% if average_rating %}Update Rating{% else %}Add Rating{% endif %}
+                </button>
             </div>
 
             {% if recipe.description %}
             <div class="mt-4">
                 <h2 class="text-xl font-semibold">Description</h2>
                 <p class="mt-2 whitespace-pre-wrap">{{ recipe.description }}</p>
+            </div>
+            {% endif %}
+
+            {# Ingredients list #}
+            {% if ingredients %}
+            <div class="mt-6">
+                <h2 class="text-xl font-semibold">Ingredients</h2>
+                <ul class="mt-2 space-y-1">
+                    {% for ing in ingredients %}
+                    <li>
+                        <span class="font-mono">{{ ing.quantity }} {{ ing.get_unit_display }}</span>
+                        - {{ ing.ingredient.name }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {# Instructions list #}
+            {% if instructions %}
+            <div class="mt-6">
+                <h2 class="text-xl font-semibold">Instructions</h2>
+                <ol class="mt-2 space-y-4">
+                    {% for inst in instructions %}
+                    <li class="flex gap-3">
+                        <span class="font-bold text-lg">{{ inst.step_number }}.</span>
+                        <div>
+                            <p>{{ inst.text }}</p>
+                            {% if inst.image %}
+                            <img src="{{ inst.image.url }}" alt="Step {{ inst.step_number }}" class="mt-2 max-w-xs rounded">
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ol>
             </div>
             {% endif %}
 
@@ -55,6 +115,24 @@
             </div>
         </div>
     </div>
+
+    {# Rating modal #}
+    <dialog id="rating_modal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">Rate this Recipe</h3>
+            <form method="post" action="{% url 'recipes:recipe_rate' recipe.pk %}">
+                {% csrf_token %}
+                {{ rating_form.as_p }}
+                <div class="modal-action">
+                    <button type="submit" class="btn btn-primary">Save Rating</button>
+                    <button type="button" class="btn" onclick="document.getElementById('rating_modal').close()">Cancel</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
 
     <div class="mt-4">
         <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Back to Recipes</a>
