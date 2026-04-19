@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Cooking: {{ recipe.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">Cooking: {{ recipe.title }}</h1>
+            <p class="text-sm opacity-70">Mark ingredients as you use them</p>
+        </div>
+        <a href="{% url 'meal_planner:cooking_home' %}" class="btn btn-ghost">
+            ← Back to Cooking Queue
+        </a>
+    </div>
+
+    <form id="cooking-form" method="post" action="{% url 'meal_planner:process_cooking' meal_id %}">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Recipe Ingredients -->
+            <div class="card bg-base-200">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">Recipe Ingredients</h2>
+                    <p class="text-sm opacity-70 mb-4">Check off ingredients as you use them</p>
+                    
+                    <div class="space-y-3" id="recipe-ingredients">
+                        {% for ing in recipe_ingredients %}
+                            <div class="flex items-center gap-3 p-3 bg-base-100 rounded-lg ingredient-item" 
+                                 data-ing-id="{{ ing.id }}"
+                                 data-inv-id="{{ ing.inventory_item_id|default:'' }}">
+                                <input type="checkbox" 
+                                       name="used_ingredient_ids[]" 
+                                       value="{{ ing.id }}"
+                                       class="checkbox checkbox-primary ingredient-checkbox"
+                                       id="ing_{{ ing.id }}">
+                                <label for="ing_{{ ing.id }}" class="flex-1 cursor-pointer">
+                                    <span class="font-medium">{{ ing.name }}</span>
+                                    <span class="text-sm opacity-70">
+                                        {{ ing.quantity }} {{ ing.unit }}
+                                    </span>
+                                    {% if ing.inventory_name %}
+                                        <span class="badge badge-sm ml-2 bg-info text-info-content">
+                                            Linked: {{ ing.inventory_name }} ({{ ing.inventory_quantity }} {{ ing.unit }})
+                                        </span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        {% empty %}
+                            <p class="text-sm opacity-70">No ingredients found for this recipe.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Inventory -->
+            <div class="space-y-6">
+                <!-- Still Have Section -->
+                <div class="card bg-base-200">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg">Inventory - Still Have</h2>
+                        <p class="text-sm opacity-70 mb-4">Items still available in your kitchen</p>
+                        
+                        <div class="space-y-2" id="inventory-still-have">
+                            {% for item in inventory_items %}
+                                <div class="flex items-center gap-3 p-2 bg-base-100 rounded-lg inventory-item"
+                                     data-inv-id="{{ item.id }}">
+                                    <input type="checkbox" 
+                                           name="used_inventory_ids[]" 
+                                           value="{{ item.id }}"
+                                           class="checkbox checkbox-secondary inventory-checkbox"
+                                           id="inv_{{ item.id }}">
+                                    <label for="inv_{{ item.id }}" class="flex-1 cursor-pointer">
+                                        <span class="font-medium">{{ item.name }}</span>
+                                        <span class="text-sm opacity-70">
+                                            {{ item.quantity }} {{ item.unit }}
+                                        </span>
+                                    </label>
+                                    <button type="button" 
+                                            class="btn btn-xs btn-ghost move-to-used"
+                                            data-inv-id="{{ item.id }}">
+                                        Move to Used
+                                    </button>
+                                </div>
+                            {% empty %}
+                                <p class="text-sm opacity-70">No inventory items found.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Used / Ran Out Section -->
+                <div class="card bg-base-300">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg">Used / Ran Out</h2>
+                        <p class="text-sm opacity-70 mb-4">Items that are used up</p>
+                        
+                        <div class="space-y-2" id="inventory-used">
+                            <!-- Items moved here will appear -->
+                        </div>
+                        
+                        <button type="button" id="mark-all-used" class="btn btn-warning btn-sm mt-4">
+                            Mark All Inventory Used
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add Ingredient to Inventory -->
+                <div class="card bg-base-200">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg">Quick Add to Inventory</h2>
+                        <p class="text-sm opacity-70 mb-4">Add recipe ingredients to inventory</p>
+                        
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Ingredient Name</span>
+                            </label>
+                            <input type="text" id="quick-add-name" placeholder="e.g., onions" class="input input-bordered w-full">
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <div class="form-control flex-1">
+                                <input type="number" id="quick-add-qty" placeholder="Qty" class="input input-bordered w-full">
+                            </div>
+                            <div class="form-control flex-1">
+                                <select id="quick-add-unit" class="select select-bordered w-full">
+                                    <option value="piece">piece</option>
+                                    <option value="oz">oz</option>
+                                    <option value="lb">lb</option>
+                                    <option value="cup">cup</option>
+                                    <option value="tbsp">tbsp</option>
+                                    <option value="tsp">tsp</option>
+                                </select>
+                            </div>
+                            <button type="button" id="quick-add-btn" class="btn btn-primary">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Button -->
+        <div class="mt-8 flex justify-end gap-4">
+            <a href="{% url 'meal_planner:cooking_home' %}" class="btn btn-ghost">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-success">
+                Confirm Cooking
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Move inventory items to Used section
+    document.querySelectorAll('.move-to-used').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const invId = this.dataset.invId;
+            const itemEl = document.querySelector(`.inventory-item[data-inv-id="${invId}"]`);
+            const usedContainer = document.getElementById('inventory-used');
+            
+            if (itemEl && usedContainer) {
+                usedContainer.appendChild(itemEl);
+                this.remove();
+                
+                // Check the checkbox to mark as used
+                const checkbox = itemEl.querySelector('.inventory-checkbox');
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            }
+        });
+    });
+
+    // Mark all inventory as used
+    document.getElementById('mark-all-used').addEventListener('click', function() {
+        const stillHaveContainer = document.getElementById('inventory-still-have');
+        const usedContainer = document.getElementById('inventory-used');
+        
+        if (stillHaveContainer && usedContainer) {
+            const items = stillHaveContainer.querySelectorAll('.inventory-item');
+            items.forEach(function(item) {
+                usedContainer.appendChild(item);
+                const checkbox = item.querySelector('.inventory-checkbox');
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+    });
+
+    // Quick add to inventory
+    document.getElementById('quick-add-btn').addEventListener('click', function() {
+        const name = document.getElementById('quick-add-name').value;
+        const qty = document.getElementById('quick-add-qty').value;
+        const unit = document.getElementById('quick-add-unit').value;
+
+        if (!name) {
+            alert('Please enter an ingredient name');
+            return;
+        }
+
+        // Add to inventory (would need server-side endpoint for persistence)
+        // For now, just show an alert
+        const stillHaveContainer = document.getElementById('inventory-still-have');
+        if (stillHaveContainer) {
+            const newItem = document.createElement('div');
+            newItem.className = 'flex items-center gap-3 p-2 bg-base-100 rounded-lg inventory-item';
+            newItem.innerHTML = `
+                <span class="font-medium">${name}</span>
+                <span class="text-sm opacity-70">${qty || '1'} ${unit}</span>
+                <span class="badge badge-sm bg-success text-success-content">New</span>
+            `;
+            stillHaveContainer.appendChild(newItem);
+        }
+
+        // Clear inputs
+        document.getElementById('quick-add-name').value = '';
+        document.getElementById('quick-add-qty').value = '';
+    });
+
+    // Form submission
+    document.getElementById('cooking-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Cooking confirmed! Inventory updated.');
+                window.location.href = "{% url 'meal_planner:cooking_home' %}";
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while processing.');
+        });
+    });
+});
+</script>
+{% endblock %}
