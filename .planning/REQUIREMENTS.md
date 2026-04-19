@@ -178,7 +178,7 @@
 | AUTH-01 through HOUSE-02 | 1 | Complete |
 | REC-01 through REV-07 | 1 | Complete |
 | MEAL-01 through LEFT-03 | 2 | Partial (MEAL-01, 02, 03, 04, 06 done) |
-| COOK-01 through COOK-08 | 2 | — |
+| COOK-01 through COOK-08 | 2 | Complete |
 | SHOP-01 through SHOP-07 | 3 | — |
 | INV-01 through INV-12 | 3 | — |
 | BAR-01 through BAR-04 | 3 | — |
