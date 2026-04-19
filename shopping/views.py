@@ -30,7 +30,7 @@ def _parse_week_start(raw_value):
 
 
 class ShoppingWeekView(LoginRequiredMixin, TemplateView):
-    template_name = "shopping/week.html"
+    template_name = "shopping/shopping_week.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -48,8 +48,15 @@ class ShoppingWeekView(LoginRequiredMixin, TemplateView):
         context["shopping_week"] = shopping_week
         context["shopping_items"] = shopping_week.items.all()
         context["week_start"] = week_start
+        context["week_end"] = week_start + timedelta(days=6)
         context["previous_week"] = week_start - timedelta(days=7)
         context["next_week"] = week_start + timedelta(days=7)
+        context["week_start_iso"] = week_start.isoformat()
+        context["previous_week_iso"] = context["previous_week"].isoformat()
+        context["next_week_iso"] = context["next_week"].isoformat()
+        context["week_url"] = reverse("shopping:week")
+        context["regenerate_week_url"] = reverse("shopping:regenerate_week")
+        context["clear_week_url"] = reverse("shopping:week_clear")
         return context
 
 

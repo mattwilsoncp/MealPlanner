@@ -44,6 +44,10 @@
             </svg>
             On-Hand Ideas
         </a>
+
+        <a href="{% url 'shopping:week' %}?week_start={{ start_date|date:'Y-m-d' }}" class="btn btn-accent btn-sm">
+            Shopping List
+        </a>
     </div>
 
     <!-- Recipe Detail Modal -->

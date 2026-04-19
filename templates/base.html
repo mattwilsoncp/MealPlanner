@@ -19,6 +19,10 @@
             <div class="flex-none hidden lg:flex">
                 <ul class="menu menu-horizontal px-1">
                     <li><a href="{% url 'home' %}">Home</a></li>
+                    {% if user.is_authenticated %}
+                    <li><a href="{% url 'meal_planner:planner' %}">Planner</a></li>
+                    <li><a href="{% url 'shopping:week' %}">Shopping</a></li>
+                    {% endif %}
                     <li>
                         <details>
                             <summary>Recipes</summary>
@@ -59,6 +63,10 @@
         <div class="container mx-auto lg:hidden" x-show="menuOpen" x-collapse>
             <ul class="menu bg-base-300 rounded-box p-2 shadow">
                 <li><a href="{% url 'home' %}" class="btn btn-ghost w-full">Home</a></li>
+                {% if user.is_authenticated %}
+                <li><a href="{% url 'meal_planner:planner' %}" class="btn btn-ghost w-full">Planner</a></li>
+                <li><a href="{% url 'shopping:week' %}" class="btn btn-ghost w-full">Shopping</a></li>
+                {% endif %}
                 <li><a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost w-full">All Recipes</a></li>
                 <li><a href="{% url 'recipes:recipe_create' %}" class="btn btn-ghost w-full">Add Recipe</a></li>
                 <li><a href="{% url 'reviews:review_queue' %}" class="btn btn-ghost w-full">Reviews</a></li>
