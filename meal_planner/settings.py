@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     "instructions",
     "tags",
     "ratings",
+    "inventory",
+    "reviews",
 ]
 
 MIDDLEWARE = [

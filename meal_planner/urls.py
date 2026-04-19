@@ -9,6 +9,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("recipes/", include("recipes.urls", namespace="recipes")),
+    path("reviews/", include("reviews.urls", namespace="reviews")),
+    path("inventory/", include("inventory.urls", namespace="inventory")),
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
     path(
         "accounts/logged-out/",
