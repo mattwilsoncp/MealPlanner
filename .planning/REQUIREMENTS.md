@@ -101,9 +101,9 @@
 - [ ] **SHOP-02**: Opening page auto-loads current week
 - [ ] **SHOP-03**: Auto-generate list from meal plan if none exists
 - [ ] **SHOP-04**: User can regenerate week's shopping list
-- [ ] **SHOP-05**: User can check/uncheck items
-- [ ] **SHOP-06**: User can delete individual items
-- [ ] **SHOP-07**: User can clear entire week list
+- [x] **SHOP-05**: User can check/uncheck items
+- [x] **SHOP-06**: User can delete individual items
+- [x] **SHOP-07**: User can clear entire week list
 
 ### Inventory Management
 

@@ -60,8 +60,9 @@ Phase 2 (Meal Planning) complete:
 
 Phase 3 progress:
 - 03-01: Inventory schema contracts ✅ (Complete)
+- 03-05: Shopping checklist actions, UI, and navigation wiring ✅ (Complete)
 
-**Next:** Phase 3 (Inventory & Shopping) — 03-02
+**Next:** Phase 3 (Inventory & Shopping) — 03-02 / 03-03 / 03-04 remaining
 
 ---
 
@@ -74,6 +75,7 @@ Phase 3 progress:
 | 3 | 2026-04-19 | 2 | Completed all 5 Phase 2 plans (Cooking reconciliation) |
 | 4 | 2026-04-19 | 3 | Session resumed, routing to Phase 3 planning |
 | 5 | 2026-04-19 | 3 | Completed 03-01: inventory schema, forms, and migrations |
+| 6 | 2026-04-19 | 3 | Completed 03-05: shopping interaction workflows and navigation wiring |
 
 ---
 
@@ -85,3 +87,4 @@ Phase 3 progress:
 - 63 requirements mapped across phases
 - Phase 1 complete: auth, household, recipe CRUD, ingredients, instructions, tags, ratings, review workflow, UI foundation
 - Phase 2 started: MealPlan model with weekly view created
+- Shopping checklist interactions now support secure toggle/delete/clear item workflows
