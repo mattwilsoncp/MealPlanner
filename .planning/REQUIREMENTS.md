@@ -86,14 +86,14 @@
 
 ### Cooking Reconciliation
 
-- [ ] **COOK-01**: User can initiate cooking from a meal card
-- [ ] **COOK-02**: Reconciliation page shows recipe ingredients (left) and inventory (right)
-- [ ] **COOK-03**: Inventory separated into "Still Have" and "Used / Ran Out"
-- [ ] **COOK-04**: User can check off recipe ingredients visually
-- [ ] **COOK-05**: User can move inventory items between sections
-- [ ] **COOK-06**: User can mark all inventory as used
-- [ ] **COOK-07**: User can add recipe ingredient to inventory inline
-- [ ] **COOK-08**: Confirm button processes used items and updates inventory
+- [x] **COOK-01**: User can initiate cooking from a meal card
+- [x] **COOK-02**: Reconciliation page shows recipe ingredients (left) and inventory (right)
+- [x] **COOK-03**: Inventory separated into "Still Have" and "Used / Ran Out"
+- [x] **COOK-04**: User can check off recipe ingredients visually
+- [x] **COOK-05**: User can move inventory items between sections
+- [x] **COOK-06**: User can mark all inventory as used
+- [x] **COOK-07**: User can add recipe ingredient to inventory inline
+- [x] **COOK-08**: Confirm button processes used items and updates inventory
 
 ### Shopping List
 
