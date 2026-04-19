@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/dist/daisyui.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="navbar bg-base-100 shadow-lg">
+        <div class="flex-1">
+            <a href="{% url 'home' %}" class="btn btn-ghost text-xl">Meal Planner</a>
+        </div>
+        <div class="flex-none">
+            <ul class="menu menu-horizontal px-1">
+                {% if user.is_authenticated %}
+                <li><a href="#">My Recipes</a></li>
+                <li><a href="#">Meal Plan</a></li>
+                <li><a href="#">Inventory</a></li>
+                <li>
+                    <details class="dropdown dropdown-end">
+                        <summary class="btn btn-ghost">{{ user.username }}</summary>
+                        <ul class="dropdown-content bg-base-100 rounded-box z-10 mt-2 p-2 shadow-lg w-52">
+                            <li><a href="{% url 'logout' %}">Logout</a></li>
+                        </ul>
+                    </details>
+                </li>
+                {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+                <li><a href="{% url 'register' %}">Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    <main class="container mx-auto p-4">
+        {% if messages %}
+        <div class="toast toast-top toast-end">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="hero min-h-screen">
+            <div class="hero-content text-center">
+                <div class="max-w-md">
+                    <h1 class="text-5xl font-bold">Meal Planner</h1>
+                    <p class="py-6">Organize your recipes, plan your meals, and reduce food waste.</p>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'register' %}" class="btn btn-primary">Get Started</a>
+                    {% else %}
+                    <p class="text-lg">Welcome back, {{ user.username }}!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
