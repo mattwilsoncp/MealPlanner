@@ -1,12 +1,14 @@
 from datetime import date, datetime, timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
 from django.views.generic import TemplateView
 
-from .models import ShoppingListWeek
+from .models import ShoppingListItem, ShoppingListWeek
 from .services import generate_week_shopping_list
 
 
@@ -61,4 +63,43 @@ class RegenerateShoppingWeekView(LoginRequiredMixin, View):
         )
         return redirect(
             f"{reverse('shopping:week')}?week_start={week_start.isoformat()}"
+        )
+
+
+class ToggleShoppingItemView(LoginRequiredMixin, View):
+    def post(self, request, item_id):
+        item = get_object_or_404(
+            ShoppingListItem,
+            pk=item_id,
+            shopping_week__household=request.user.household,
+        )
+        item.checked = not item.checked
+        item.save(update_fields=["checked"])
+        return JsonResponse({"success": True, "checked": item.checked})
+
+
+class DeleteShoppingItemView(LoginRequiredMixin, View):
+    def post(self, request, item_id):
+        item = get_object_or_404(
+            ShoppingListItem,
+            pk=item_id,
+            shopping_week__household=request.user.household,
+        )
+        item.delete()
+        return JsonResponse({"success": True, "deleted": True})
+
+
+class ClearShoppingWeekView(LoginRequiredMixin, View):
+    def post(self, request):
+        week_start = _parse_week_start(request.POST.get("week_start"))
+        cleared_count, _ = ShoppingListItem.objects.filter(
+            shopping_week__household=request.user.household,
+            shopping_week__week_start=week_start,
+        ).delete()
+        return JsonResponse(
+            {
+                "success": True,
+                "week_start": week_start.isoformat(),
+                "cleared_count": cleared_count,
+            }
         )
