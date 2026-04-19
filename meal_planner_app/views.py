@@ -2,7 +2,14 @@ import calendar
 from datetime import date, datetime, timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import TemplateView, CreateView, UpdateView, DeleteView
+from django.views.generic import (
+    TemplateView,
+    CreateView,
+    UpdateView,
+    DeleteView,
+    DetailView,
+    View,
+)
 from django.shortcuts import get_object_or_404, redirect
 from django.http import JsonResponse
 from django.urls import reverse, reverse_lazy
@@ -222,3 +229,44 @@ class RateMealView(LoginRequiredMixin, View):
         meal.save()
 
         return JsonResponse({"success": True, "rating": rating})
+
+
+class RecipeSelectView(LoginRequiredMixin, View):
+    """API endpoint for recipe selection dropdown."""
+
+    def get(self, request):
+        recipes = (
+            request.user.household.recipes.filter(needs_review=False)
+            .values("id", "title", "rating")
+            .order_by("title")
+        )
+        return JsonResponse({"recipes": list(recipes)})
+
+
+class RecipeDetailView(LoginRequiredMixin, DetailView):
+    """API endpoint for recipe detail modal."""
+
+    model = Recipe
+    template_name = "meal_planner/recipe_detail_inline.html"
+
+    def get_object(self):
+        return get_object_or_404(
+            Recipe, pk=self.kwargs["pk"], household=self.request.user.household
+        )
+
+    def render_to_response(self, context):
+        recipe = self.get_object()
+        data = {
+            "id": recipe.id,
+            "title": recipe.title,
+            "description": recipe.description,
+            "ingredients": [
+                {"name": ing.name, "quantity": ing.quantity, "unit": ing.unit}
+                for ing in recipe.ingredients.all()
+            ],
+            "instructions": [
+                {"step_number": inst.step_number, "text": inst.text}
+                for inst in recipe.instructions.all()
+            ],
+        }
+        return JsonResponse(data)

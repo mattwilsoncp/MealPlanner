@@ -12,6 +12,17 @@ urlpatterns = [
     ),
     path("planner/navigate/", views.week_navigate, name="planner_navigate"),
     path("api/meals/", views.json_week_meals, name="api_meals"),
+    # Recipe API endpoints
+    path(
+        "api/recipes/select/",
+        views.RecipeSelectView.as_view(),
+        name="api_recipe_select",
+    ),
+    path(
+        "api/recipes/<int:pk>/",
+        views.RecipeDetailView.as_view(),
+        name="api_recipe_detail",
+    ),
     # Meal CRUD URLs
     path("meal/add/", views.AddMealView.as_view(), name="add_meal"),
     path("meal/<int:meal_id>/edit/", views.EditMealView.as_view(), name="edit_meal"),
