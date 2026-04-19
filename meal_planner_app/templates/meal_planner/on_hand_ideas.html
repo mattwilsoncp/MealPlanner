@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}On-Hand Ideas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">On-Hand Ideas</h1>
+        <a href="{% url 'meal_planner:planner' %}" class="btn btn-ghost btn-sm">
+            Close
+        </a>
+    </div>
+
+    {% if on_hand_recipes %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for recipe in on_hand_recipes %}
+            <div class="card bg-base-200 hover:bg-base-300 transition-colors cursor-pointer"
+                 onclick="selectOnHandRecipe({{ recipe.id }})">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-lg">{{ recipe.title }}</h2>
+                    {% if recipe.description %}
+                    <p class="text-sm text-base-content/70 line-clamp-2">{{ recipe.description }}</p>
+                    {% endif %}
+                    <div class="flex items-center gap-2 mt-2">
+                        <!-- Rating stars -->
+                        <div class="rating rating-sm">
+                            {% for i in "12345" %}
+                            <span class="{% if i|add:0 <= recipe.rating %}text-warning{% else %}text-base-content/30{% endif %}">★</span>
+                            {% endfor %}
+                        </div>
+                        <!-- On-hand toggle button -->
+                        <button onclick="event.stopPropagation(); toggleOnHandIdea({{ recipe.id }})" 
+                                class="btn btn-xs btn-ghost text-warning" title="Remove from ideas">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-12">
+            <p class="text-base-content/70 mb-4">No on-hand ideas yet.</p>
+            <p class="text-sm text-base-content/50">Mark recipes as ideas to see them here.</p>
+            <a href="{% url 'recipes:recipe_list' %}" class="btn btn-primary mt-4">
+                Browse Recipes
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add to Meal Modal -->
+<div id="add-to-meal-modal" class="modal hidden">
+    <div class="modal-box bg-base-200">
+        <h3 class="font-bold text-xl mb-4">Add to Meal</h3>
+        
+        <form id="add-to-meal-form" method="POST" action="{% url 'meal_planner:add_on_hand_to_meal' %}">
+            {% csrf_token %}
+            <input type="hidden" name="recipe_id" id="selected-recipe-id" value="">
+            
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Date</span>
+                </label>
+                <input type="date" name="meal_date" class="input input-bordered" required>
+            </div>
+            
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Meal Type</span>
+                </label>
+                <select name="meal_type" class="select select-bordered" required>
+                    <option value="">Select meal type</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                </select>
+            </div>
+            
+            <div class="modal-action">
+                <button type="submit" class="btn btn-primary">Add to Meal</button>
+                <button type="button" onclick="closeAddToMealModal()" class="btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+    <div class="modal-backdrop" onclick="closeAddToMealModal()"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let onHandRecipeId = null;
+
+function selectOnHandRecipe(recipeId) {
+    document.getElementById('selected-recipe-id').value = recipeId;
+    document.getElementById('add-to-meal-modal').classList.remove('hidden');
+}
+
+function closeAddToMealModal() {
+    document.getElementById('add-to-meal-modal').classList.add('hidden');
+}
+
+async function toggleOnHandIdea(recipeId) {
+    try {
+        const formData = new FormData();
+        formData.append('recipe_id', recipeId);
+        
+        const response = await fetch(`/planner/api/recipe/${recipeId}/toggle-on-hand/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.on_hand_idea === false) {
+                // Remove from list - reload page
+                location.reload();
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling on-hand idea:', error);
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
