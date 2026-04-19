@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Barcode{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6" x-data="barcodeScan()">
+    <div class="flex flex-wrap justify-between items-center gap-2">
+        <div>
+            <h1 class="text-2xl font-bold">Barcode Scan</h1>
+            <p class="text-sm opacity-70">Look up a barcode in your household inventory first, then fall back to UPC data.</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'inventory:inventory_expiring' %}" class="btn btn-outline btn-sm">Expiring Items</a>
+            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline btn-sm">Back to Inventory</a>
+        </div>
+    </div>
+
+    <div class="card bg-base-300 shadow">
+        <div class="card-body space-y-4">
+            <form method="post" @submit.prevent="lookupBarcode" class="space-y-3">
+                {% csrf_token %}
+                <label class="form-control">
+                    <span class="label-text">Barcode</span>
+                    <input
+                        type="text"
+                        x-model="barcode"
+                        class="input input-bordered"
+                        inputmode="numeric"
+                        pattern="[0-9]{8,14}"
+                        maxlength="14"
+                        placeholder="Enter 8-14 digit barcode"
+                        required
+                    >
+                </label>
+                <button type="submit" class="btn btn-primary" :disabled="isLoading">
+                    <span x-show="!isLoading">Lookup Barcode</span>
+                    <span x-show="isLoading">Looking up...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <template x-if="resultType === 'local'">
+        <div class="card bg-success/10 border border-success">
+            <div class="card-body">
+                <h2 class="card-title text-success">Already in Your Inventory</h2>
+                <p><strong x-text="result.item.name"></strong> is already tracked for your household.</p>
+                <p class="text-sm opacity-80">Barcode: <span x-text="result.item.barcode"></span></p>
+                <p class="text-sm opacity-80">Quantity: <span x-text="result.item.quantity"></span> <span x-text="result.item.unit"></span></p>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="resultType === 'upc'">
+        <div class="card bg-info/10 border border-info">
+            <div class="card-body space-y-3">
+                <h2 class="card-title text-info">UPC Match Found</h2>
+                <p><strong x-text="result.item.title || 'Scanned Item'"></strong></p>
+                <p class="text-sm opacity-80">Brand: <span x-text="result.item.brand || '—'"></span></p>
+                <p class="text-sm opacity-80">Size: <span x-text="result.item.size || '—'"></span></p>
+                <p class="text-sm opacity-80">Category: <span x-text="result.item.category || 'other'"></span></p>
+
+                <form method="post" action="{% url 'inventory:barcode_create_api' %}" @submit.prevent="createItem" class="pt-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" :disabled="isCreating">
+                        <span x-show="!isCreating">Create Item</span>
+                        <span x-show="isCreating">Creating...</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="resultType === 'error'">
+        <div class="alert alert-error">
+            <span x-text="errorMessage"></span>
+        </div>
+    </template>
+
+    <template x-if="resultType === 'created'">
+        <div class="alert alert-success">
+            <span>Created inventory item: <strong x-text="createdName"></strong>.</span>
+        </div>
+    </template>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function barcodeScan() {
+    return {
+        barcode: "",
+        isLoading: false,
+        isCreating: false,
+        resultType: null,
+        result: {},
+        errorMessage: "",
+        createdName: "",
+
+        get csrfToken() {
+            const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return tokenInput ? tokenInput.value : "";
+        },
+
+        async lookupBarcode() {
+            this.isLoading = true;
+            this.resultType = null;
+            this.errorMessage = "";
+
+            const body = new URLSearchParams({ barcode: this.barcode });
+            const response = await fetch("{% url 'inventory:barcode_lookup_api' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": this.csrfToken,
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                },
+                body: body.toString(),
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                this.resultType = "error";
+                this.errorMessage = payload.message || "Lookup failed.";
+                this.isLoading = false;
+                return;
+            }
+
+            this.result = payload;
+            this.resultType = payload.source;
+            this.isLoading = false;
+        },
+
+        async createItem() {
+            if (!this.result.item) return;
+
+            this.isCreating = true;
+            const payload = new URLSearchParams({
+                title: this.result.item.title || "",
+                brand: this.result.item.brand || "",
+                size: this.result.item.size || "",
+                image_url: this.result.item.image_url || "",
+                category: this.result.item.category || "other",
+                barcode: this.result.item.barcode || this.barcode,
+            });
+
+            const response = await fetch("{% url 'inventory:barcode_create_api' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": this.csrfToken,
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                },
+                body: payload.toString(),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                this.resultType = "error";
+                this.errorMessage = data.message || "Could not create item.";
+                this.isCreating = false;
+                return;
+            }
+
+            this.createdName = data.name;
+            this.resultType = "created";
+            this.isCreating = false;
+        },
+    }
+}
+</script>
+{% endblock %}
