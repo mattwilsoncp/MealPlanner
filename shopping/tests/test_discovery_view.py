@@ -44,7 +44,7 @@ class DiscoveryViewTests(TestCase):
         response = self.client.get(reverse("shopping:discovery"))
 
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("accounts:login"), response.url)
+        self.assertIn("/accounts/login/", response.url)
 
     def test_discovery_view_context_is_sorted_urgent_first_and_includes_template_keys(
         self,

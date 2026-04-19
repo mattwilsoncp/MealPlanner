@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ClearShoppingWeekView,
+    DiscoveryView,
     DeleteShoppingItemView,
     RegenerateShoppingWeekView,
     ShoppingWeekView,
@@ -12,6 +13,7 @@ app_name = "shopping"
 
 urlpatterns = [
     path("", ShoppingWeekView.as_view(), name="week"),
+    path("discovery/", DiscoveryView.as_view(), name="discovery"),
     path("regenerate/", RegenerateShoppingWeekView.as_view(), name="regenerate_week"),
     path(
         "api/item/<int:item_id>/toggle/",

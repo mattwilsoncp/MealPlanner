@@ -9,7 +9,7 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from .models import ShoppingListItem, ShoppingListWeek
-from .services import generate_week_shopping_list
+from .services import build_discovery_matches, generate_week_shopping_list
 
 
 def _current_monday():
@@ -71,6 +71,23 @@ class RegenerateShoppingWeekView(LoginRequiredMixin, View):
         return redirect(
             f"{reverse('shopping:week')}?week_start={week_start.isoformat()}"
         )
+
+
+class DiscoveryView(LoginRequiredMixin, TemplateView):
+    template_name = "shopping/discovery.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        household = self.request.user.household
+        matches = build_discovery_matches(household)
+
+        context["matches"] = matches
+        context["today"] = date.today()
+        context["threshold_days"] = household.expiring_threshold_days
+        context["urgent_count"] = sum(
+            1 for match in matches if match["has_urgent_match"]
+        )
+        return context
 
 
 class ToggleShoppingItemView(LoginRequiredMixin, View):

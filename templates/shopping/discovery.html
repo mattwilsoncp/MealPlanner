@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}What Can I Make?{% endblock %}
+
+{% block content %}
+<section>
+  <h1>What Can I Make?</h1>
+  <ul>
+    {% for match in matches %}
+      <li>{{ match.recipe.title }} ({{ match.match_percentage }}%)</li>
+    {% empty %}
+      <li>No matches yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
