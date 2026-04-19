@@ -45,12 +45,13 @@ class IngredientLink(models.Model):
     quantity = models.DecimalField(max_digits=6, decimal_places=2)
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES)
     order = models.PositiveIntegerField(default=0)
-    # inventory_item = models.ForeignKey(
-    #     "inventory.InventoryItem",
-    #     null=True,
-    #     blank=True,
-    #     on_delete=models.SET_NULL,
-    # )
+    inventory_item = models.ForeignKey(
+        "inventory.InventoryItem",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ingredient_links",
+    )
 
     class Meta:
         ordering = ["order"]
