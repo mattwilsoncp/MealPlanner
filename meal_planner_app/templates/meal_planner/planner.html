@@ -291,6 +291,7 @@ function createMealCard(meal) {
         ${sideDishesHtml}
         ${meal.notes ? `<div class="text-xs text-base-content/60 mt-1 truncate">${meal.notes}</div>` : ''}
         <div class="mt-1 text-xs rating-stars" data-meal-id="${meal.id}">${ratingHtml}</div>
+        ${meal.recipe_id ? `<a href="/planner/cooking/${meal.id}/" class="btn btn-xs btn-primary mt-2 w-full">Cook This</a>` : ''}
     `;
     
     return div;
