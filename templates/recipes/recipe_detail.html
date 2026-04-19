@@ -81,9 +81,29 @@
                 <h2 class="text-xl font-semibold">Ingredients</h2>
                 <ul class="mt-2 space-y-1">
                     {% for ing in ingredients %}
-                    <li>
+                    <li class="border border-base-content/10 rounded-lg p-3">
                         <span class="font-mono">{{ ing.quantity }} {{ ing.get_unit_display }}</span>
                         - {{ ing.ingredient.name }}
+
+                        <div class="mt-2 text-sm opacity-80">
+                            {% if ing.ingredient.usda_food_id %}
+                            <p><span class="font-semibold">USDA Ref:</span> {{ ing.ingredient.usda_food_id }}</p>
+                            {% else %}
+                            <p><span class="font-semibold">USDA Ref:</span> Not linked</p>
+                            {% endif %}
+
+                            {% if ing.ingredient.calories_kcal or ing.ingredient.protein_g or ing.ingredient.carbs_g or ing.ingredient.fat_g %}
+                            <p class="mt-1">
+                                <span class="font-semibold">Nutrition:</span>
+                                {{ ing.ingredient.calories_kcal|default:"0" }} kcal,
+                                Protein {{ ing.ingredient.protein_g|default:"0" }}g,
+                                Carbs {{ ing.ingredient.carbs_g|default:"0" }}g,
+                                Fat {{ ing.ingredient.fat_g|default:"0" }}g
+                            </p>
+                            {% else %}
+                            <p class="mt-1">Nutrition unavailable for this ingredient.</p>
+                            {% endif %}
+                        </div>
                     </li>
                     {% endfor %}
                 </ul>

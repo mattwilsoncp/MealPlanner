@@ -16,7 +16,7 @@
         </div>
     </div>
 
-    <form method="post" action="{% url 'reviews:save_reconciliation object.pk %}">
+    <form method="post" action="{% url 'reviews:save_reconciliation' object.pk %}">
         {% csrf_token %}
         
         <div class="space-y-4 mb-6">
@@ -51,6 +51,10 @@
                             + Quick Add
                         </button>
                     </div>
+
+                    <p class="text-xs opacity-60 basis-full">
+                        Choose an inventory item in your household to persist this ingredient link.
+                    </p>
                 </div>
             </div>
             {% empty %}

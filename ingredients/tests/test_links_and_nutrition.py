@@ -116,3 +116,17 @@ class IngredientLinksAndNutritionTests(TestCase):
         self.assertEqual(nutrition_entry["usda_food_id"], "USDA-1001")
         self.assertEqual(nutrition_entry["protein_g"], Decimal("5.0"))
         self.assertTrue(nutrition_entry["has_nutrition"])
+        self.assertContains(response, "USDA Ref:")
+        self.assertContains(response, "USDA-1001")
+        self.assertContains(response, "Nutrition:")
+        self.assertContains(response, "Protein 5.00g")
+
+    def test_recipe_detail_shows_nutrition_empty_state_when_missing(self):
+        response = self.client.get(
+            reverse("recipes:recipe_detail", args=[self.recipe.id])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "USDA Ref:")
+        self.assertContains(response, "USDA-1001")
+        self.assertContains(response, "Nutrition unavailable for this ingredient.")
