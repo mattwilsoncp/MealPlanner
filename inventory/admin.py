@@ -12,6 +12,6 @@ class InventoryItemAdmin(admin.ModelAdmin):
         "location",
         "expiration_date",
     ]
-    list_filter = ["category", "location"]
-    search_fields = ["name"]
+    list_filter = ["category", "location", "expiration_date"]
+    search_fields = ["name", "barcode"]
     ordering = ["name"]
