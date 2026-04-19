@@ -87,6 +87,14 @@
 
 - Requires Phase 1 (recipes must exist to plan meals)
 
+### Plans
+
+- [x] 02-01-PLAN.md — MealPlan model and weekly planner view
+- [x] 02-02-PLAN.md — Meal CRUD operations (add, edit, delete, rate)
+- [x] 02-03-PLAN.md — Recipe linking and side dishes
+- [x] 02-04-PLAN.md — On-hand ideas and leftover tracking
+- [ ] 02-05-PLAN.md — Cooking reconciliation
+
 ---
 
 ## Phase 3: Inventory & Shopping

@@ -68,21 +68,21 @@
 - [x] **MEAL-04**: User can add multiple meals per type per day
 - [ ] **MEAL-05**: User can link a recipe to a meal slot
 - [x] **MEAL-06**: User can add custom/free-text meals
-- [ ] **MEAL-07**: User can update a meal (change recipe or notes)
-- [ ] **MEAL-08**: User can delete a meal
-- [ ] **MEAL-09**: User can rate a meal plan entry
+- [x] **MEAL-07**: User can update a meal (change recipe or notes)
+- [x] **MEAL-08**: User can delete a meal
+- [x] **MEAL-09**: User can rate a meal plan entry
 - [ ] **MEAL-10**: User can view linked recipe from meal card
 - [ ] **MEAL-11**: User can add side dishes to a meal (linked to recipe or custom text)
 
 ### On-Hand Ideas & Leftovers
 
-- [ ] **ONHAND-01**: User can mark recipes as on_hand_idea
-- [ ] **ONHAND-02**: Modal shows list of on-hand idea recipes
-- [ ] **ONHAND-03**: User can add/remove recipes from on-hand list
-- [ ] **ONHAND-04**: User can swap on-hand idea into meal slot
-- [ ] **LEFT-01**: User can flag recipes as leftover_worthy
-- [ ] **LEFT-02**: Planner loads leftover-worthy meals by date
-- [ ] **LEFT-03**: User can plan leftover meals
+- [x] **ONHAND-01**: User can mark recipes as on_hand_idea
+- [x] **ONHAND-02**: Modal shows list of on-hand idea recipes
+- [x] **ONHAND-03**: User can add/remove recipes from on-hand list
+- [x] **ONHAND-04**: User can swap on-hand idea into meal slot
+- [x] **LEFT-01**: User can flag recipes as leftover_worthy
+- [x] **LEFT-02**: Planner loads leftover-worthy meals by date
+- [x] **LEFT-03**: User can plan leftover meals
 
 ### Cooking Reconciliation
 
