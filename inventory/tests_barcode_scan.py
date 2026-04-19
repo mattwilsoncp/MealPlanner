@@ -98,3 +98,91 @@ class BarcodeLookupTests(TestCase):
         payload = response.json()
         self.assertEqual(payload["error"], "invalid_barcode")
         mock_lookup.assert_not_called()
+
+
+class BarcodeCreateTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Barcode Create Household")
+        self.other_household = Household.objects.create(name="Other Household")
+        self.user = user_model.objects.create_user(
+            username="barcode-create-user",
+            password="pass1234",
+            household=self.household,
+        )
+        self.client.force_login(self.user)
+
+    def test_barcode_routes_exist(self):
+        self.assertEqual(reverse("inventory:barcode_scan"), "/inventory/barcode/")
+        self.assertEqual(
+            reverse("inventory:barcode_lookup_api"),
+            "/inventory/api/barcode/lookup/",
+        )
+        self.assertEqual(
+            reverse("inventory:barcode_create_api"),
+            "/inventory/api/barcode/create/",
+        )
+
+    def test_create_from_lookup_persists_household_inventory_item(self):
+        response = self.client.post(
+            reverse("inventory:barcode_create_api"),
+            data={
+                "title": "Greek Yogurt",
+                "brand": "Acme",
+                "size": "32 oz",
+                "image_url": "https://example.com/yogurt.jpg",
+                "category": "dairy",
+                "barcode": "123456789012",
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        payload = response.json()
+        created = InventoryItem.objects.get(id=payload["id"])
+        self.assertEqual(created.household, self.household)
+        self.assertEqual(created.name, "Greek Yogurt")
+        self.assertEqual(created.barcode, "123456789012")
+        self.assertIn("Acme", created.notes)
+        self.assertIn("32 oz", created.notes)
+
+    def test_create_duplicate_household_barcode_returns_conflict(self):
+        InventoryItem.objects.create(
+            household=self.household,
+            name="Existing Yogurt",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="dairy",
+            location="refrigerator",
+            barcode="123456789012",
+        )
+        InventoryItem.objects.create(
+            household=self.other_household,
+            name="Other Household Yogurt",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="dairy",
+            location="refrigerator",
+            barcode="123456789012",
+        )
+
+        response = self.client.post(
+            reverse("inventory:barcode_create_api"),
+            data={
+                "title": "Greek Yogurt",
+                "brand": "Acme",
+                "size": "32 oz",
+                "category": "dairy",
+                "barcode": "123456789012",
+            },
+        )
+
+        self.assertEqual(response.status_code, 409)
+        payload = response.json()
+        self.assertEqual(payload["error"], "duplicate_barcode")
+        self.assertEqual(
+            InventoryItem.objects.filter(
+                household=self.household,
+                barcode="123456789012",
+            ).count(),
+            1,
+        )
