@@ -1,5 +1,8 @@
 from django import forms
-from .models import MealPlan, MealType
+from django.forms import modelform_factory, modelformset_factory
+
+from .models import MealPlan, MealType, SideDish
+from recipes.models import Recipe
 
 
 class MealPlanForm(forms.ModelForm):
@@ -33,11 +36,13 @@ class MealPlanForm(forms.ModelForm):
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
-        # Filter recipe queryset to user's recipes
+        # Filter recipe queryset to user's recipes not needing review
         if self.request and hasattr(self.request, "user"):
-            self.fields["recipe"].queryset = self.request.user.household.recipes.all()
+            self.fields["recipe"].queryset = self.request.user.household.recipes.filter(
+                needs_review=False
+            ).order_by("title")
         else:
-            self.fields["recipe"].queryset = None
+            self.fields["recipe"].queryset = Recipe.objects.none()
 
     def clean(self):
         """Validate that either recipe or custom_meal is provided."""
@@ -51,3 +56,46 @@ class MealPlanForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class SideDishForm(forms.ModelForm):
+    """Form for adding side dishes to a meal plan entry."""
+
+    class Meta:
+        model = SideDish
+        fields = ["recipe", "custom_side", "order", "notes"]
+        widgets = {
+            "recipe": forms.Select(attrs={"class": "select select-bordered"}),
+            "custom_side": forms.TextInput(
+                attrs={
+                    "class": "input input-bordered",
+                    "placeholder": "Or enter custom side dish",
+                }
+            ),
+            "order": forms.NumberInput(attrs={"class": "input input-bordered w-16"}),
+            "notes": forms.Textarea(
+                attrs={
+                    "class": "textarea textarea-bordered",
+                    "placeholder": "Optional notes...",
+                    "rows": 2,
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+
+        # Filter recipe queryset to user's recipes not needing review
+        if self.request and hasattr(self.request, "user"):
+            self.fields["recipe"].queryset = self.request.user.household.recipes.filter(
+                needs_review=False
+            ).order_by("title")
+        else:
+            self.fields["recipe"].queryset = Recipe.objects.none()
+
+
+# Inline formset for side dishes
+SideDishFormSet = modelformset_factory(
+    SideDish, form=SideDishForm, extra=1, can_delete=True
+)
