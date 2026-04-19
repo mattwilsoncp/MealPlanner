@@ -2,6 +2,8 @@
 
 ## v1 Requirements
 
+> Audit status (2026-04-19): Verification artifacts and runtime evidence are in place; milestone v1 is ready to close pending close-command execution.
+
 ### Authentication & Household
 
 - [ ] **AUTH-01**: User can register a new account with email/password
@@ -24,27 +26,27 @@
 - [ ] **REC-09**: User can edit a recipe
 - [ ] **REC-10**: User can delete a recipe with confirmation
 - [ ] **REC-11**: Recipes with needs_review=True are excluded from normal list
-- [ ] **REC-12**: Review queue page shows recipes needing review
+- [x] **REC-12**: Review queue page shows recipes needing review
 
 ### Recipe Ingredients
 
 - [ ] **ING-01**: User can add structured ingredients to a recipe
 - [ ] **ING-02**: Ingredients have name, quantity, unit, order
-- [ ] **ING-03**: User can link an ingredient to an inventory item
-- [ ] **ING-04**: User can link an ingredient to a USDA food reference
+- [x] **ING-03**: User can link an ingredient to an inventory item
+- [x] **ING-04**: User can link an ingredient to a USDA food reference
 - [ ] **ING-05**: User can delete an ingredient from a recipe
-- [ ] **ING-06**: User can view ingredient nutrition data
+- [x] **ING-06**: User can view ingredient nutrition data
 
 ### Recipe Instructions
 
 - [ ] **INST-01**: User can add ordered instructions to a recipe
-- [ ] **INST-02**: User can reorder instructions
+- [x] **INST-02**: User can reorder instructions
 - [ ] **INST-03**: User can delete an instruction
 
 ### Recipe Tags & Ratings
 
 - [ ] **TAG-01**: User can assign tags to a recipe
-- [ ] **TAG-02**: User can create new tags when editing a recipe
+- [x] **TAG-02**: User can create new tags when editing a recipe
 - [ ] **RATE-01**: User can rate a recipe 1-5
 - [ ] **RATE-02**: User can add notes to a rating
 - [ ] **RATE-03**: Ratings are upserted (one current rating per recipe)
@@ -66,13 +68,13 @@
 - [x] **MEAL-02**: User can navigate between weeks (prev/next)
 - [x] **MEAL-03**: Week has meal types: breakfast, lunch, dinner, snack
 - [x] **MEAL-04**: User can add multiple meals per type per day
-- [ ] **MEAL-05**: User can link a recipe to a meal slot
+- [x] **MEAL-05**: User can link a recipe to a meal slot
 - [x] **MEAL-06**: User can add custom/free-text meals
 - [x] **MEAL-07**: User can update a meal (change recipe or notes)
 - [x] **MEAL-08**: User can delete a meal
 - [x] **MEAL-09**: User can rate a meal plan entry
-- [ ] **MEAL-10**: User can view linked recipe from meal card
-- [ ] **MEAL-11**: User can add side dishes to a meal (linked to recipe or custom text)
+- [x] **MEAL-10**: User can view linked recipe from meal card
+- [x] **MEAL-11**: User can add side dishes to a meal (linked to recipe or custom text)
 
 ### On-Hand Ideas & Leftovers
 
@@ -97,10 +99,10 @@
 
 ### Shopping List
 
-- [ ] **SHOP-01**: Shopping list is week-based
-- [ ] **SHOP-02**: Opening page auto-loads current week
-- [ ] **SHOP-03**: Auto-generate list from meal plan if none exists
-- [ ] **SHOP-04**: User can regenerate week's shopping list
+- [x] **SHOP-01**: Shopping list is week-based
+- [x] **SHOP-02**: Opening page auto-loads current week
+- [x] **SHOP-03**: Auto-generate list from meal plan if none exists
+- [x] **SHOP-04**: User can regenerate week's shopping list
 - [x] **SHOP-05**: User can check/uncheck items
 - [x] **SHOP-06**: User can delete individual items
 - [x] **SHOP-07**: User can clear entire week list
@@ -129,12 +131,12 @@
 
 ### "What Can I Make?"
 
-- [ ] **MATCH-01**: Load recipes and compare ingredients to inventory
-- [ ] **MATCH-02**: Compute available count, total count, match percentage
-- [ ] **MATCH-03**: Sort by match percentage
-- [ ] **MATCH-04**: Show progress bars and missing ingredient badges
-- [ ] **MATCH-05**: Highlight expiring/expired items in results
-- [ ] **MATCH-06**: Surface recipes using urgent (expiring) items
+- [x] **MATCH-01**: Load recipes and compare ingredients to inventory
+- [x] **MATCH-02**: Compute available count, total count, match percentage
+- [x] **MATCH-03**: Sort by match percentage
+- [x] **MATCH-04**: Show progress bars and missing ingredient badges
+- [x] **MATCH-05**: Highlight expiring/expired items in results
+- [x] **MATCH-06**: Surface recipes using urgent (expiring) items
 
 ### UI/UX Requirements
 
@@ -144,6 +146,10 @@
 - [ ] **UI-04**: Responsive design (desktop-first with mobile-aware classes)
 - [ ] **UI-05**: Modal behavior for interactions
 - [ ] **UI-06**: JSON endpoints for in-page updates
+
+### Verification Closure Gate
+
+- [x] **REQ-VERIFICATION-GAP-ALL**: All phase verification artifacts exist and requirement coverage is backed by executable evidence
 
 ---
 
@@ -176,14 +182,16 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | AUTH-01 through HOUSE-02 | 1 | Complete |
-| REC-01 through REV-07 | 1 | Complete |
-| MEAL-01 through LEFT-03 | 2 | Partial (MEAL-01, 02, 03, 04, 06 done) |
+| REC-12, ING-03, ING-04, ING-06, INST-02, TAG-02 | 5 | Complete |
+| REC-01 through REV-07 (except listed gap IDs) | 1 | Complete |
+| MEAL-01 through LEFT-03 | 2 | Complete |
 | COOK-01 through COOK-08 | 2 | Complete |
-| SHOP-01 through SHOP-07 | 3 | — |
-| INV-01 through INV-12 | 3 | — |
+| SHOP-01 through SHOP-07 | 3 | Complete |
+| INV-01 through INV-12 | 3 | Complete |
 | BAR-01 through BAR-04 | 3 | Complete |
-| MATCH-01 through MATCH-06 | 4 | — |
+| MATCH-01 through MATCH-06 | 4 | Complete |
 | UI-01 through UI-06 | All | Complete |
+| REQ-VERIFICATION-GAP-ALL | 6 | Complete |
 
 ---
 

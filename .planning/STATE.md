@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Phase 3 In Progress |
+| Status | Phase 6 Complete |
 | Mode | YOLO |
 | Granularity | Coarse |
-| Phase | 3 (Inventory & Shopping) In Progress |
+| Phase | 6 (Verification Closure) Complete |
 
 ---
 
@@ -58,13 +58,25 @@ Phase 2 (Meal Planning) complete:
 - 02-04: On-hand ideas and leftover tracking ✅ (Complete)
 - 02-05: Cooking reconciliation ✅ (Complete)
 
-Phase 3 progress:
+Phase 3 complete:
 - 03-01: Inventory schema contracts ✅ (Complete)
 - 03-02: Inventory CRUD/list/filter/expiration + quick-add ✅ (Complete)
 - 03-03: Barcode scan page + local-first UPC fallback ✅ (Complete)
+- 03-04: Shopping app foundation + generation and match metrics ✅ (Complete)
 - 03-05: Shopping checklist actions, UI, and navigation wiring ✅ (Complete)
 
-**Next:** Phase 3 (Inventory & Shopping) — 03-04 remaining
+Phase 4 complete:
+- 04-01: Matching service contract (sorting, missing ingredients, urgency signals) ✅ (Complete)
+- 04-02: Discovery page route/UI with progress bars, missing badges, urgent highlights ✅ (Complete)
+
+Phase 5 complete:
+- 05-01: Recipe/review authoring gap repairs (REC-12, INST-02, TAG-02) ✅ (Complete)
+- 05-02: Ingredient linking + USDA/nutrition gap repairs (ING-03, ING-04, ING-06) ✅ (Complete)
+
+Phase 6 complete:
+- 06-01: Phase verification artifacts + milestone audit refresh ✅ (Complete)
+
+**Next:** Run `/gsd-close-milestone v1` to finalize milestone closure.
 
 ---
 
@@ -80,6 +92,10 @@ Phase 3 progress:
 | 6 | 2026-04-19 | 3 | Completed 03-05: shopping interaction workflows and navigation wiring |
 | 7 | 2026-04-19 | 3 | Completed 03-02: inventory UI CRUD/filter/expiration + quick-add API |
 | 8 | 2026-04-19 | 3 | Completed 03-03: barcode scan lookup/create workflow with local-first UPC fallback |
+| 9 | 2026-04-19 | 3 | Completed 03-04 and closed Phase 3; routing to Phase 4 planning |
+| 10 | 2026-04-19 | 4 | Completed 04-01 and 04-02; closed Phase 4 and reached milestone completion |
+| 11 | 2026-04-19 | 5 | Completed 05-01 and 05-02; closed audit gap requirements for Phase 1 |
+| 12 | 2026-04-19 | 6 | Completed 06-01; generated phase verification artifacts and refreshed milestone audit to ready_to_close |
 
 ---
 
@@ -94,3 +110,4 @@ Phase 3 progress:
 - Shopping checklist interactions now support secure toggle/delete/clear item workflows
 - Inventory workflows now include household-scoped filters, grouped rendering, expiration triage, and CSRF-protected quick-add.
 - Barcode workflows now include dedicated scan UI, local household dedupe by barcode, UPC fallback lookup, and create-from-lookup endpoint.
+- Verification closure artifacts now exist for phases 1-4 with executable evidence references, and milestone audit status is ready_to_close.
