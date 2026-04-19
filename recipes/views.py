@@ -10,6 +10,7 @@ from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from django.db.models import Avg, Q
 from .models import Recipe
 from .forms import RecipeForm, RatingForm
 from ingredients.models import IngredientLink, Ingredient
@@ -23,8 +24,52 @@ class RecipeListView(LoginRequiredMixin, ListView):
     template_name = "recipes/recipe_list.html"
     context_object_name = "recipes"
 
+    SORT_CHOICES = [
+        ("newest", "Newest First"),
+        ("oldest", "Oldest First"),
+        ("rating", "Highest Rated"),
+        ("title", "Title A-Z"),
+    ]
+
     def get_queryset(self):
-        return Recipe.objects.filter(household=self.request.user.household)
+        # Base queryset: filter by household, exclude needs_review
+        queryset = Recipe.objects.filter(
+            household=self.request.user.household, needs_review=False
+        )
+
+        # Search filter
+        search_q = self.request.GET.get("q")
+        if search_q:
+            queryset = queryset.filter(
+                Q(title__icontains=search_q) | Q(description__icontains=search_q)
+            )
+
+        # Sorting
+        sort_by = self.request.GET.get("sort", "newest")
+        if sort_by == "newest":
+            queryset = queryset.order_by("-created_at")
+        elif sort_by == "oldest":
+            queryset = queryset.order_by("created_at")
+        elif sort_by == "rating":
+            queryset = queryset.annotate(avg_rating=Avg("rating__score")).order_by(
+                "-avg_rating"
+            )
+        elif sort_by == "title":
+            queryset = queryset.order_by("title")
+        else:
+            queryset = queryset.order_by("-created_at")
+
+        # Optimize with select_related and prefetch_related
+        return queryset.select_related("household").prefetch_related(
+            "tags", "rating_set"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["q"] = self.request.GET.get("q", "")
+        context["sort"] = self.request.GET.get("sort", "newest")
+        context["sort_choices"] = self.SORT_CHOICES
+        return context
 
 
 class RecipeDetailView(LoginRequiredMixin, DetailView):
