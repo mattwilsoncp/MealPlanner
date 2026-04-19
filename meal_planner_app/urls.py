@@ -63,4 +63,26 @@ urlpatterns = [
         views.JsonLeftoverRecipesView.as_view(),
         name="api_leftover_recipes",
     ),
+    # Cooking URLs
+    path("cooking/", views.CookingHomeView.as_view(), name="cooking_home"),
+    path(
+        "cooking/<int:meal_id>/",
+        views.CookingReconciliationView.as_view(),
+        name="cooking_reconcile",
+    ),
+    path(
+        "api/cooking/<int:meal_id>/data/",
+        views.json_reconciliation_data,
+        name="api_cooking_data",
+    ),
+    path(
+        "api/cooking/<int:meal_id>/process/",
+        views.ProcessCookingView.as_view(),
+        name="process_cooking",
+    ),
+    path(
+        "api/cooking/<int:meal_id>/toggle/",
+        views.MarkIngredientUsedView.as_view(),
+        name="toggle_ingredient_used",
+    ),
 ]
