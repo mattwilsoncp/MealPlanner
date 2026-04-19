@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
+from django.views.generic.base import TemplateView
 
 from .forms import InventoryItemForm, InventoryQuickAddForm
 from .models import InventoryItem
@@ -190,8 +191,8 @@ class InventoryQuickAddView(LoginRequiredMixin, View):
 
 
 class BarcodeLookupView(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
-        barcode = (request.POST.get("barcode") or "").strip()
+    def _lookup(self, request, barcode):
+        barcode = (barcode or "").strip()
 
         if not BARCODE_PATTERN.match(barcode):
             return JsonResponse(
@@ -247,4 +248,83 @@ class BarcodeLookupView(LoginRequiredMixin, View):
                     "barcode": upc_result.get("barcode", barcode),
                 },
             }
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self._lookup(request, request.GET.get("barcode"))
+
+    def post(self, request, *args, **kwargs):
+        return self._lookup(request, request.POST.get("barcode"))
+
+
+class BarcodeScanPageView(LoginRequiredMixin, TemplateView):
+    template_name = "inventory/barcode_scan.html"
+
+
+class BarcodeCreateView(LoginRequiredMixin, View):
+    ALLOWED_FIELDS = {"title", "brand", "size", "image_url", "category", "barcode"}
+
+    def _normalize_payload(self, request):
+        payload = request.POST.dict()
+        return {key: (payload.get(key) or "").strip() for key in self.ALLOWED_FIELDS}
+
+    def post(self, request, *args, **kwargs):
+        payload = self._normalize_payload(request)
+        barcode = payload.get("barcode", "")
+
+        if not BARCODE_PATTERN.match(barcode):
+            return JsonResponse(
+                {
+                    "error": "invalid_barcode",
+                    "message": "Barcode must be 8 to 14 numeric digits.",
+                },
+                status=400,
+            )
+
+        existing_item = InventoryItem.objects.filter(
+            household=request.user.household,
+            barcode=barcode,
+        ).first()
+        if existing_item:
+            return JsonResponse(
+                {
+                    "error": "duplicate_barcode",
+                    "message": "An inventory item with this barcode already exists.",
+                    "item_id": existing_item.id,
+                },
+                status=409,
+            )
+
+        category = payload.get("category")
+        category_values = {value for value, _ in InventoryItem.CATEGORY_CHOICES}
+        normalized_category = category if category in category_values else "other"
+
+        notes_parts = []
+        if payload.get("brand"):
+            notes_parts.append(f"Brand: {payload['brand']}")
+        if payload.get("size"):
+            notes_parts.append(f"Size: {payload['size']}")
+        if payload.get("image_url"):
+            notes_parts.append(f"Image URL: {payload['image_url']}")
+
+        item = InventoryItem.objects.create(
+            household=request.user.household,
+            name=payload.get("title") or "Scanned Item",
+            barcode=barcode,
+            category=normalized_category,
+            location="pantry",
+            quantity=1,
+            unit="piece",
+            notes="\n".join(notes_parts),
+        )
+
+        return JsonResponse(
+            {
+                "id": item.id,
+                "name": item.name,
+                "barcode": item.barcode,
+                "category": item.category,
+                "source": "upc",
+            },
+            status=201,
         )

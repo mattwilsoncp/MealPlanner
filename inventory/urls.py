@@ -6,6 +6,7 @@ app_name = "inventory"
 
 urlpatterns = [
     path("", views.InventoryListView.as_view(), name="inventory_list"),
+    path("barcode/", views.BarcodeScanPageView.as_view(), name="barcode_scan"),
     path("add/", views.InventoryCreateView.as_view(), name="inventory_add"),
     path(
         "<int:item_id>/edit/",
@@ -28,6 +29,11 @@ urlpatterns = [
         "api/barcode/lookup/",
         views.BarcodeLookupView.as_view(),
         name="barcode_lookup_api",
+    ),
+    path(
+        "api/barcode/create/",
+        views.BarcodeCreateView.as_view(),
+        name="barcode_create_api",
     ),
     path(
         "create/api/",
