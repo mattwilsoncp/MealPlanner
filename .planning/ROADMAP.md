@@ -127,7 +127,7 @@
 **Plans:** 5 plans
 
 - [x] 03-01-PLAN.md — Inventory schema contracts (metadata + household expiration preference)
-- [ ] 03-02-PLAN.md — Inventory CRUD/list/filter/expiration flows + quick-add endpoint
+- [x] 03-02-PLAN.md — Inventory CRUD/list/filter/expiration flows + quick-add endpoint
 - [ ] 03-03-PLAN.md — Barcode scan page with local-first lookup and UPC fallback
 - [ ] 03-04-PLAN.md — Shopping app foundation with week-based generator + match metrics
 - [x] 03-05-PLAN.md — Shopping checklist actions, UI, and navigation wiring
