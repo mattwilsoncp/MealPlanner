@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from household.models import Household
 
 
@@ -10,6 +11,34 @@ class Ingredient(models.Model):
     usda_food_id = models.CharField(
         max_length=20, blank=True
     )  # USDA FoodData Central ID
+    calories_kcal = models.DecimalField(
+        max_digits=7,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(5000)],
+    )
+    protein_g = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1000)],
+    )
+    carbs_g = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1000)],
+    )
+    fat_g = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1000)],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -40,7 +69,9 @@ class IngredientLink(models.Model):
         ("can", "can"),
     ]
 
-    recipe = models.ForeignKey("recipes.Recipe", on_delete=models.CASCADE)
+    recipe = models.ForeignKey(
+        "recipes.Recipe", on_delete=models.CASCADE, related_name="ingredients"
+    )
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     quantity = models.DecimalField(max_digits=6, decimal_places=2)
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES)

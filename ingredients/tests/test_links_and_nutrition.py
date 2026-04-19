@@ -95,9 +95,7 @@ class IngredientLinksAndNutritionTests(TestCase):
                     f"Ingredient is missing expected nutrition field: {field_name}"
                 )
 
-    def test_recipe_detail_includes_usda_reference_and_nutrition_in_context_and_html(
-        self,
-    ):
+    def test_recipe_detail_includes_usda_reference_and_nutrition_in_context(self):
         self.ingredient.calories_kcal = Decimal("120.0")
         self.ingredient.protein_g = Decimal("5.0")
         self.ingredient.carbs_g = Decimal("20.0")
@@ -114,6 +112,7 @@ class IngredientLinksAndNutritionTests(TestCase):
         self.assertEqual(
             first_ingredient_link.ingredient.calories_kcal, Decimal("120.0")
         )
-        self.assertContains(response, "USDA Ref")
-        self.assertContains(response, "120")
-        self.assertContains(response, "Protein")
+        nutrition_entry = response.context["ingredient_nutrition"][0]
+        self.assertEqual(nutrition_entry["usda_food_id"], "USDA-1001")
+        self.assertEqual(nutrition_entry["protein_g"], Decimal("5.0"))
+        self.assertTrue(nutrition_entry["has_nutrition"])

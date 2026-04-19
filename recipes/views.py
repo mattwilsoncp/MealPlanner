@@ -84,9 +84,36 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
         recipe = self.object
 
         # Get ingredients for this recipe
-        context["ingredients"] = IngredientLink.objects.filter(
-            recipe=recipe
-        ).select_related("ingredient", "inventory_item")
+        context["ingredients"] = (
+            IngredientLink.objects.filter(
+                recipe=recipe,
+                ingredient__household=self.request.user.household,
+            )
+            .select_related("ingredient", "inventory_item")
+            .order_by("order")
+        )
+
+        context["ingredient_nutrition"] = [
+            {
+                "link_id": ingredient_link.id,
+                "name": ingredient_link.ingredient.name,
+                "usda_food_id": ingredient_link.ingredient.usda_food_id,
+                "calories_kcal": ingredient_link.ingredient.calories_kcal,
+                "protein_g": ingredient_link.ingredient.protein_g,
+                "carbs_g": ingredient_link.ingredient.carbs_g,
+                "fat_g": ingredient_link.ingredient.fat_g,
+                "has_nutrition": any(
+                    value is not None
+                    for value in [
+                        ingredient_link.ingredient.calories_kcal,
+                        ingredient_link.ingredient.protein_g,
+                        ingredient_link.ingredient.carbs_g,
+                        ingredient_link.ingredient.fat_g,
+                    ]
+                ),
+            }
+            for ingredient_link in context["ingredients"]
+        ]
 
         # Get instructions for this recipe
         context["instructions"] = Instruction.objects.filter(recipe=recipe).order_by(
