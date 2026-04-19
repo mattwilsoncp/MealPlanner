@@ -71,11 +71,15 @@
                     {% if instructions %}
                     {% for inst in instructions %}
                     <div class="flex gap-2 items-start instruction-row">
-                        <input type="number" name="instruction_step" placeholder="Step #" value="{{ inst.step_number }}" class="input input-bordered w-16">
+                        <label class="form-control w-24">
+                            <span class="label-text text-xs">Order</span>
+                            <input type="number" name="instruction_{{ inst.id }}_order" min="1" value="{{ inst.step_number }}" class="input input-bordered w-24">
+                        </label>
                         <textarea name="instruction_text" placeholder="Instruction text" class="textarea textarea-bordered w-full">{{ inst.text }}</textarea>
                         <button type="button" class="btn btn-error btn-outline btn-sm" onclick="this.parentElement.remove()">X</button>
                     </div>
                     {% endfor %}
+                    <p class="text-xs opacity-70">Set order values and save to persist instruction sequence.</p>
                     {% endif %}
                 </div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="addInstruction()">+ Add Step</button>
@@ -97,8 +101,11 @@
                 <div class="flex gap-2 mt-2">
                     <input type="text" name="new_tag_name" placeholder="New tag name" class="input input-bordered input-sm w-full max-w-xs">
                     <input type="color" name="new_tag_color" value="#6B7280" class="input input-bordered input-sm">
-                    <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('new_tag_modal').showModal()">Create Tag</button>
+                    <span class="text-xs opacity-70 self-center">New tag is created on Save.</span>
                 </div>
+                {% if form.new_tag_name.errors %}
+                <p class="text-error text-sm">{{ form.new_tag_name.errors|join:", " }}</p>
+                {% endif %}
 
                 <div class="card-actions justify-end mt-6">
                     <a href="{% if object %}{% url 'recipes:recipe_detail' object.pk %}{% else %}{% url 'recipes:recipe_list' %}{% endif %}" class="btn btn-ghost">Cancel</a>

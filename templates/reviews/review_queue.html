@@ -9,7 +9,7 @@
         <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Back to Recipes</a>
     </div>
 
-    {% if not recipes %}
+    {% if not needs_review %}
     <div class="card bg-base-300 p-8 text-center">
         <p class="text-lg">No recipes need review.</p>
         <p class="text-sm opacity-70 mt-2">All recipes are ready for use!</p>
@@ -17,7 +17,7 @@
     </div>
     {% else %}
     <div class="space-y-4">
-        {% for recipe in recipes %}
+        {% for recipe in needs_review %}
         <div class="card bg-base-300 shadow">
             <div class="card-body">
                 <h2 class="card-title">{{ recipe.title }}</h2>
