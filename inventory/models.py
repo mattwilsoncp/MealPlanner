@@ -59,6 +59,7 @@ class InventoryItem(models.Model):
     )
     expiration_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    image = models.ImageField(upload_to="inventory/%Y/%m/%d/", blank=True, null=True)
     barcode = models.CharField(max_length=50, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
