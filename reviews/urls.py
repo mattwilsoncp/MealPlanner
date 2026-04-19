@@ -4,7 +4,8 @@ from . import views
 app_name = "reviews"
 
 urlpatterns = [
-    path("", views.ReviewQueueView.as_view(), name="review_queue"),
+    path("queue/", views.ReviewQueueView.as_view(), name="review_queue"),
+    path("", views.ReviewQueueView.as_view(), name="review_queue_legacy"),
     path("<int:pk>/ready/", views.MarkReadyView.as_view(), name="mark_ready"),
     path(
         "<int:pk>/reconcile/",

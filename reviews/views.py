@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from recipes.models import Recipe
 from ingredients.models import IngredientLink
+from ingredients.forms import IngredientLinkReconciliationForm
 from inventory.models import InventoryItem
 
 
@@ -13,16 +14,17 @@ class ReviewQueueView(LoginRequiredMixin, ListView):
 
     model = Recipe
     template_name = "reviews/review_queue.html"
-    context_object_name = "recipes"
+    context_object_name = "needs_review"
 
     def get_queryset(self):
-        return (
-            Recipe.objects.filter(
-                household=self.request.user.household, needs_review=True
-            )
-            .prefetch_related("ingredients__ingredient", "ingredients__inventory_item")
-            .distinct()
-        )
+        return Recipe.objects.filter(
+            household=self.request.user.household, needs_review=True
+        ).distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["recipes"] = context["needs_review"]
+        return context
 
 
 class MarkReadyView(LoginRequiredMixin, UpdateView):
@@ -97,19 +99,16 @@ class SaveReconciliationView(LoginRequiredMixin, UpdateView):
         # Process each ingredient link's inventory assignment
         for ingredient_link in recipe.ingredients.all():
             link_id = ingredient_link.id
-            inventory_item_id = request.POST.get(f"inventory_item_{link_id}")
-            if inventory_item_id:
-                if inventory_item_id == "none":
-                    # User selected "Not in Inventory"
-                    ingredient_link.inventory_item = None
-                else:
-                    try:
-                        inv_item = InventoryItem.objects.get(
-                            id=inventory_item_id, household=request.user.household
-                        )
-                        ingredient_link.inventory_item = inv_item
-                    except InventoryItem.DoesNotExist:
-                        pass
+            form = IngredientLinkReconciliationForm(
+                {
+                    "inventory_item_id": request.POST.get(
+                        f"inventory_item_{link_id}", ""
+                    )
+                },
+                household=request.user.household,
+            )
+            if form.is_valid():
+                ingredient_link.inventory_item = form.cleaned_data["inventory_item_id"]
             ingredient_link.save()
         # Optionally mark as ready if requested
         if request.POST.get("mark_ready"):
