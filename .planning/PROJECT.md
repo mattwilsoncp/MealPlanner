@@ -6,20 +6,24 @@ A Django-based meal planning web application that helps users organize recipes, 
 
 ## Current State
 
-- **Milestone:** v1 shipped (2026-04-19)
-- **Status:** Production-ready MVP with recipe, planning, inventory, shopping, barcode, and discovery flows delivered
-- **Verification:** Phase verification artifacts exist for phases 1-4 and milestone audit is `ready_to_close`
+- **Milestone:** v1.1 (YouTube Recipe Import)
+- **Status:** Defining requirements
+- **Previous:** v1 shipped (2026-04-19)
 
 ## Core Value
 
 **Recipe organization** — the app must excel at helping users store, find, and manage their recipes. Every feature should enhance, not distract from, this primary goal.
 
-## Next Milestone Goals
+## Current Milestone: v1.1 YouTube Recipe Import
 
-- Improve recipe ingestion (URL import and normalization)
-- Expand planning UX (drag/drop and planner filtering)
-- Add collaborative household capabilities
-- Introduce nutrition-goal tracking and suggestion workflows
+**Goal:** Import recipes from YouTube URLs with automatic metadata, ingredient, and instruction extraction.
+
+**Target features:**
+- Fetch video metadata (title, description, thumbnail)
+- Parse ingredients from description using NLP
+- Parse instructions from video/timestamps
+- Photo: use YouTube thumbnail by default, allow user to upload their own
+- Recipe form pre-populated with import data
 
 ## Context
 
@@ -30,12 +34,14 @@ Users struggle with:
 - Decision fatigue at meal time
 - Food waste from unused ingredients
 - Forgetting what they have in inventory
+- Manual recipe entry is time-consuming
 
 ### Who It's For
 
 - Meal preppers who plan and batch-cook meals for the week
 - Home cooks wanting to organize recipes and reduce waste
 - Anyone wanting to streamline their weekly meal planning
+- YouTube recipe viewers who want to save cooking videos as recipes
 
 ### Tech Stack
 
@@ -44,6 +50,8 @@ Users struggle with:
 - Django auth, sessions, messages, media uploads
 - Tailwind CSS + DaisyUI for styling
 - JavaScript for selective enhancement (modals, JSON endpoints)
+- YouTube Data API / oEmbed for metadata fetching
+- NLP library for ingredient parsing
 
 ## Key Decisions
 
@@ -53,13 +61,25 @@ Users struggle with:
 | Server-rendered templates | User preference for selective JS enhancement | ✓ Confirmed in v1 |
 | Tailwind + DaisyUI | User-provided spec - rapid UI development | ✓ Confirmed in v1 |
 | User-scoped via households | Allows future multi-user household sharing | ✓ Confirmed in v1 |
+| YouTube import | User-requested v1.1 feature | New in v1.1 |
 
-## Requirements
+## Evolution
 
-v1 requirements were archived to `.planning/milestones/v1-REQUIREMENTS.md`.
+This document evolves at phase transitions and milestone boundaries.
 
-Use `/gsd-new-milestone` to define fresh active requirements for the next milestone.
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
 
-*Last updated: 2026-04-19 after v1 milestone closure*
+*Last updated: 2026-04-22 — v1.1 milestone started*

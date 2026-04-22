@@ -1,7 +1,7 @@
 # Meal Planner App v2 — State
 
 **Project:** Meal Planner App v2  
-**Last Updated:** 2026-04-19
+**Last Updated:** 2026-04-22
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Milestone v1 Closed |
+| Status | Defining v1.1 Requirements |
 | Mode | YOLO |
 | Granularity | Coarse |
-| Phase | Milestone Complete |
+| Phase | Not Started (defining requirements) |
 
 ---
 
@@ -28,6 +28,7 @@ Django-based meal planning web application with recipe management, weekly meal p
 - PostgreSQL 14+
 - Tailwind CSS 4.x + DaisyUI 5.x
 - Alpine.js for selective enhancement
+- YouTube Data API for video metadata
 
 ### Key Decisions
 
@@ -38,45 +39,26 @@ Django-based meal planning web application with recipe management, weekly meal p
 | Tailwind + DaisyUI | User-provided spec | Confirmed |
 | User-scoped via households | Future multi-user support | Confirmed |
 | Ingredient normalization | Critical for matching/shopping | Confirmed |
+| YouTube import | User-requested v1.1 feature | New |
 
 ---
 
 ## Current Position
 
-Phase 1 (Foundation & Recipes) complete:
-- 01-01: Django foundation with auth + household ✓
-- 01-02: Recipe model + CRUD ✓
-- 01-03: Ingredient, Instruction, Tag, Rating models ✓
-- 01-04: Search, sorting, review filtering ✓
-- 01-05: Recipe review workflow ✓
-- 01-06: UI polish + JSON APIs ✓
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-22 — Milestone v1.1 started
 
-Phase 2 (Meal Planning) complete:
-- 02-01: MealPlan model and weekly planner view ✅ (Complete)
-- 02-02: Meal CRUD operations ✅ (Complete)
-- 02-03: Recipe linking and side dishes ✅ (Complete)
-- 02-04: On-hand ideas and leftover tracking ✅ (Complete)
-- 02-05: Cooking reconciliation ✅ (Complete)
+**Previous v1 milestone completed:**
+- Phase 1: Foundation & Recipes ✓
+- Phase 2: Meal Planning ✓
+- Phase 3: Inventory & Shopping ✓
+- Phase 4: Discovery Matching ✓
+- Phase 5: Gap Remediation ✓
+- Phase 6: Verification & Closure ✓
 
-Phase 3 complete:
-- 03-01: Inventory schema contracts ✅ (Complete)
-- 03-02: Inventory CRUD/list/filter/expiration + quick-add ✅ (Complete)
-- 03-03: Barcode scan page + local-first UPC fallback ✅ (Complete)
-- 03-04: Shopping app foundation + generation and match metrics ✅ (Complete)
-- 03-05: Shopping checklist actions, UI, and navigation wiring ✅ (Complete)
-
-Phase 4 complete:
-- 04-01: Matching service contract (sorting, missing ingredients, urgency signals) ✅ (Complete)
-- 04-02: Discovery page route/UI with progress bars, missing badges, urgent highlights ✅ (Complete)
-
-Phase 5 complete:
-- 05-01: Recipe/review authoring gap repairs (REC-12, INST-02, TAG-02) ✅ (Complete)
-- 05-02: Ingredient linking + USDA/nutrition gap repairs (ING-03, ING-04, ING-06) ✅ (Complete)
-
-Phase 6 complete:
-- 06-01: Phase verification artifacts + milestone audit refresh ✅ (Complete)
-
-**Next:** Start next milestone with `/gsd-new-milestone`.
+**Next:** Start v1.1 YouTube Recipe Import with `/gsd-plan-phase 1`
 
 ---
 
@@ -106,9 +88,6 @@ Phase 6 complete:
 - Key insight: normalize ingredient data from day one
 - 4 phases recommended (coarse granularity)
 - 63 requirements mapped across phases
-- Phase 1 complete: auth, household, recipe CRUD, ingredients, instructions, tags, ratings, review workflow, UI foundation
-- Phase 2 started: MealPlan model with weekly view created
-- Shopping checklist interactions now support secure toggle/delete/clear item workflows
-- Inventory workflows now include household-scoped filters, grouped rendering, expiration triage, and CSRF-protected quick-add.
-- Barcode workflows now include dedicated scan UI, local household dedupe by barcode, UPC fallback lookup, and create-from-lookup endpoint.
-- Verification closure artifacts now exist for phases 1-4 with executable evidence references, and milestone audit status is ready_to_close.
+- v1.1 milestone now starting: YouTube Recipe Import
+- Full ingredient/instruction extraction requested
+- Both YouTube thumbnail and user upload supported
