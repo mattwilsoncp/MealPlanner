@@ -10,11 +10,13 @@ from django.views.generic import (
 )
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
+from django.conf import settings
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db.models import Avg, Q
 from .models import Recipe
 from .forms import RecipeForm, RatingForm, ImportForm
+from .youtube import YouTubeService, InvalidVideoError, APIError
 from ingredients.models import IngredientLink, Ingredient
 from instructions.models import Instruction
 from tags.models import RecipeTag, Tag
@@ -58,12 +60,45 @@ class RecipeImportView(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("recipe_create")
 
     def form_valid(self, form):
-        url = form.cleaned_data.get("youtube_url", "")
-        messages.success(
-            self.request,
-            f"Found: {url}. Import functionality coming in later phases.",
-        )
-        return redirect(self.success_url)
+        youtube_url = form.cleaned_data["youtube_url"]
+
+        api_key = getattr(settings, "YOUTUBE_API_KEY", None)
+        if not api_key:
+            form.add_error(
+                "youtube_url", "YouTube API key not configured. Please contact support."
+            )
+            return self.form_invalid(form)
+
+        try:
+            youtube_service = YouTubeService(api_key)
+            video_id = youtube_service.extract_video_id(youtube_url)
+            metadata = youtube_service.get_video_metadata(video_id)
+
+            self.request.session["youtube_import"] = {
+                "video_id": metadata.video_id,
+                "title": metadata.title,
+                "description": metadata.description,
+                "thumbnail_url": metadata.thumbnail_url,
+            }
+
+            messages.success(
+                self.request,
+                f"Imported: {metadata.title}",
+            )
+            return redirect(self.success_url)
+
+        except InvalidVideoError as e:
+            form.add_error("youtube_url", str(e))
+            return self.form_invalid(form)
+        except APIError as e:
+            form.add_error("youtube_url", str(e))
+            return self.form_invalid(form)
+        except Exception as e:
+            form.add_error(
+                "youtube_url",
+                "Could not fetch video. Please check the URL and try again.",
+            )
+            return self.form_invalid(form)
 
     def form_invalid(self, form):
         for field, errors in form.errors.items():

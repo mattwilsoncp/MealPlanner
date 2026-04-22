@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,6 +34,10 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # Authentication settings
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+AUTHENTICATION_BACKENDS = [
+    "accounts.backends.UsernameOrEmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 
 # Application definition
@@ -137,3 +142,6 @@ STATIC_URL = "static/"
 # Media files (user uploads)
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# YouTube API Configuration
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
