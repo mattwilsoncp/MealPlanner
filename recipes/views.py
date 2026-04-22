@@ -58,7 +58,14 @@ class RecipeListView(LoginRequiredMixin, ListView):
 class RecipeImportView(LoginRequiredMixin, FormView):
     form_class = ImportForm
     template_name = "recipes/import.html"
-    success_url = reverse_lazy("recipe_create")
+    success_url = reverse_lazy("recipes:recipe_create")
+
+    SORT_CHOICES = [
+        ("newest", "Newest First"),
+        ("oldest", "Oldest First"),
+        ("rating", "Highest Rated"),
+        ("title", "Title A-Z"),
+    ]
 
     def form_valid(self, form):
         youtube_url = form.cleaned_data["youtube_url"]
