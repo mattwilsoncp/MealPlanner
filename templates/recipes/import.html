@@ -11,7 +11,7 @@
                 Paste a YouTube recipe video URL to import the recipe details.
             </p>
 
-            <form method="post" action="{% url 'recipe_import' %}" id="import-form">
+            <form method="post" action="{% url 'recipes:recipe_import' %}" id="import-form">
                 {% csrf_token %}
                 
                 <div class="mb-6">
