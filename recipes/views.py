@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import (
     ListView,
@@ -5,6 +6,7 @@ from django.views.generic import (
     CreateView,
     UpdateView,
     DeleteView,
+    FormView,
 )
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
@@ -12,11 +14,29 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db.models import Avg, Q
 from .models import Recipe
-from .forms import RecipeForm, RatingForm
+from .forms import RecipeForm, RatingForm, ImportForm
 from ingredients.models import IngredientLink, Ingredient
 from instructions.models import Instruction
 from tags.models import RecipeTag, Tag
 from ratings.models import Rating
+
+
+UNIT_CHOICES = [
+    ("oz", "ounce"),
+    ("lb", "pound"),
+    ("cup", "cup"),
+    ("tbsp", "tablespoon"),
+    ("tsp", "teaspoon"),
+    ("g", "gram"),
+    ("kg", "kilogram"),
+    ("ml", "milliliter"),
+    ("l", "liter"),
+    ("piece", "piece"),
+    ("clove", "clove"),
+    ("slice", "slice"),
+    ("bunch", "bunch"),
+    ("can", "can"),
+]
 
 
 class RecipeListView(LoginRequiredMixin, ListView):
@@ -31,20 +51,37 @@ class RecipeListView(LoginRequiredMixin, ListView):
         ("title", "Title A-Z"),
     ]
 
+
+class RecipeImportView(LoginRequiredMixin, FormView):
+    form_class = ImportForm
+    template_name = "recipes/import.html"
+    success_url = reverse_lazy("recipe_create")
+
+    def form_valid(self, form):
+        url = form.cleaned_data.get("youtube_url", "")
+        messages.success(
+            self.request,
+            f"Found: {url}. Import functionality coming in later phases.",
+        )
+        return redirect(self.success_url)
+
+    def form_invalid(self, form):
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(self.request, f"{error}")
+        return self.render_to_response(self.get_context_data(form=form))
+
     def get_queryset(self):
-        # Base queryset: filter by household, exclude needs_review
         queryset = Recipe.objects.filter(
             household=self.request.user.household, needs_review=False
         )
 
-        # Search filter
         search_q = self.request.GET.get("q")
         if search_q:
             queryset = queryset.filter(
                 Q(title__icontains=search_q) | Q(description__icontains=search_q)
             )
 
-        # Sorting
         sort_by = self.request.GET.get("sort", "newest")
         if sort_by == "newest":
             queryset = queryset.order_by("-created_at")
@@ -59,7 +96,6 @@ class RecipeListView(LoginRequiredMixin, ListView):
         else:
             queryset = queryset.order_by("-created_at")
 
-        # Optimize with select_related and prefetch_related
         return queryset.select_related("household").prefetch_related(
             "tags", "rating_set"
         )
@@ -83,7 +119,6 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         recipe = self.object
 
-        # Get ingredients for this recipe
         context["ingredients"] = (
             IngredientLink.objects.filter(
                 recipe=recipe,
@@ -93,47 +128,20 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
             .order_by("order")
         )
 
-        context["ingredient_nutrition"] = [
-            {
-                "link_id": ingredient_link.id,
-                "name": ingredient_link.ingredient.name,
-                "usda_food_id": ingredient_link.ingredient.usda_food_id,
-                "calories_kcal": ingredient_link.ingredient.calories_kcal,
-                "protein_g": ingredient_link.ingredient.protein_g,
-                "carbs_g": ingredient_link.ingredient.carbs_g,
-                "fat_g": ingredient_link.ingredient.fat_g,
-                "has_nutrition": any(
-                    value is not None
-                    for value in [
-                        ingredient_link.ingredient.calories_kcal,
-                        ingredient_link.ingredient.protein_g,
-                        ingredient_link.ingredient.carbs_g,
-                        ingredient_link.ingredient.fat_g,
-                    ]
-                ),
-            }
-            for ingredient_link in context["ingredients"]
-        ]
-
-        # Get instructions for this recipe
         context["instructions"] = Instruction.objects.filter(recipe=recipe).order_by(
             "step_number"
         )
 
-        # Get tags for this recipe
         context["tags"] = RecipeTag.objects.filter(recipe=recipe).select_related("tag")
 
-        # Get ratings for this recipe
         context["ratings"] = Rating.objects.filter(recipe=recipe)
 
-        # Compute average rating
         if context["ratings"].exists():
             avg = context["ratings"].values_list("score", flat=True)
             context["average_rating"] = sum(avg) / len(avg)
         else:
             context["average_rating"] = None
 
-        # Add rating form if user hasn't rated yet
         existing_rating = Rating.objects.filter(
             recipe=recipe, user=self.request.user
         ).first()
@@ -150,9 +158,59 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
     form_class = RecipeForm
     template_name = "recipes/recipe_form.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["unit_choices"] = UNIT_CHOICES
+        return context
+
     def form_valid(self, form):
         form.instance.household = self.request.user.household
-        return super().form_valid(form)
+        recipe = form.save(commit=False)
+        recipe.save()
+
+        self._save_ingredients(recipe)
+        self._save_instructions(recipe)
+
+        return redirect("recipes:recipe_detail", pk=recipe.pk)
+
+    def _save_ingredients(self, recipe):
+        names = self.request.POST.getlist("ingredient_name")
+        quantities = self.request.POST.getlist("ingredient_quantity")
+        units = self.request.POST.getlist("ingredient_unit")
+
+        for i, name in enumerate(names):
+            name = name.strip()
+            if name:
+                quantity = (
+                    float(quantities[i]) if i < len(quantities) and quantities[i] else 1
+                )
+                unit = units[i] if i < len(units) and units[i] else "piece"
+
+                ing, _ = Ingredient.objects.get_or_create(
+                    household=recipe.household,
+                    name__iexact=name,
+                    defaults={"household": recipe.household, "name": name},
+                )
+                IngredientLink.objects.create(
+                    recipe=recipe,
+                    ingredient=ing,
+                    quantity=quantity,
+                    unit=unit,
+                )
+
+    def _save_instructions(self, recipe):
+        texts = self.request.POST.getlist("instruction_text")
+        orders = self.request.POST.getlist("instruction_step")
+
+        for i, text in enumerate(texts):
+            text = text.strip()
+            if text:
+                order = int(orders[i]) if i < len(orders) and orders[i] else i + 1
+                Instruction.objects.create(
+                    recipe=recipe,
+                    step_number=order,
+                    text=text,
+                )
 
 
 class RecipeUpdateView(LoginRequiredMixin, UpdateView):
@@ -165,27 +223,72 @@ class RecipeUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["unit_choices"] = UNIT_CHOICES
         recipe = self.object
 
-        # Get existing ingredients
         context["ingredients"] = IngredientLink.objects.filter(
             recipe=recipe
         ).select_related("ingredient")
-
-        # Get existing instructions
         context["instructions"] = Instruction.objects.filter(recipe=recipe).order_by(
             "step_number"
         )
-
-        # Get existing tags
         context["tags"] = RecipeTag.objects.filter(recipe=recipe).select_related("tag")
-
-        # Get available tags for household
         context["available_tags"] = Tag.objects.filter(
             household=self.request.user.household
         )
 
         return context
+
+    def form_valid(self, form):
+        recipe = form.save(commit=False)
+        recipe.save()
+
+        IngredientLink.objects.filter(recipe=recipe).delete()
+        self._save_ingredients(recipe)
+
+        Instruction.objects.filter(recipe=recipe).delete()
+        self._save_instructions(recipe)
+
+        return redirect("recipes:recipe_detail", pk=recipe.pk)
+
+    def _save_ingredients(self, recipe):
+        names = self.request.POST.getlist("ingredient_name")
+        quantities = self.request.POST.getlist("ingredient_quantity")
+        units = self.request.POST.getlist("ingredient_unit")
+
+        for i, name in enumerate(names):
+            name = name.strip()
+            if name:
+                quantity = (
+                    float(quantities[i]) if i < len(quantities) and quantities[i] else 1
+                )
+                unit = units[i] if i < len(units) and units[i] else "piece"
+
+                ing, _ = Ingredient.objects.get_or_create(
+                    household=recipe.household,
+                    name__iexact=name,
+                    defaults={"household": recipe.household, "name": name},
+                )
+                IngredientLink.objects.create(
+                    recipe=recipe,
+                    ingredient=ing,
+                    quantity=quantity,
+                    unit=unit,
+                )
+
+    def _save_instructions(self, recipe):
+        texts = self.request.POST.getlist("instruction_text")
+        orders = self.request.POST.getlist("instruction_step")
+
+        for i, text in enumerate(texts):
+            text = text.strip()
+            if text:
+                order = int(orders[i]) if i < len(orders) and orders[i] else i + 1
+                Instruction.objects.create(
+                    recipe=recipe,
+                    step_number=order,
+                    text=text,
+                )
 
 
 class RecipeDeleteView(LoginRequiredMixin, DeleteView):
@@ -199,10 +302,8 @@ class RecipeDeleteView(LoginRequiredMixin, DeleteView):
 
 @require_POST
 def recipe_rate_view(request, pk):
-    """Handle rating a recipe (upsert behavior)."""
     recipe = get_object_or_404(Recipe, pk=pk, household=request.user.household)
 
-    # Check if user already rated this recipe
     existing_rating = Rating.objects.filter(recipe=recipe, user=request.user).first()
 
     if existing_rating:

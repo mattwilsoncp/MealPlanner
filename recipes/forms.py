@@ -9,6 +9,29 @@ from tags.models import RecipeTag, Tag
 from ratings.models import Rating
 
 
+class ImportForm(forms.Form):
+    youtube_url = forms.URLField(
+        label="YouTube URL",
+        widget=forms.URLInput(
+            attrs={
+                "class": "input-dark",
+                "placeholder": "https://youtube.com/watch?v=... or https://youtu.be/...",
+            }
+        ),
+    )
+
+    def clean_youtube_url(self):
+        url = self.cleaned_data.get("youtube_url", "")
+        if url and not self._is_youtube_url(url):
+            raise forms.ValidationError(
+                "Please enter a valid YouTube URL (youtube.com or youtu.be)"
+            )
+        return url
+
+    def _is_youtube_url(self, url):
+        return "youtube.com" in url or "youtu.be" in url
+
+
 class RecipeForm(forms.ModelForm):
     new_tag_name = forms.CharField(required=False, max_length=50)
     new_tag_color = forms.CharField(required=False, max_length=7, initial="#6B7280")
@@ -25,7 +48,28 @@ class RecipeForm(forms.ModelForm):
             "needs_review",
         ]
         widgets = {
-            "description": forms.Textarea(attrs={"rows": 4}),
+            "title": forms.TextInput(
+                attrs={"class": "input-dark", "placeholder": "Recipe title"}
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "input-dark",
+                    "rows": 4,
+                    "placeholder": "Brief description",
+                }
+            ),
+            "photo": forms.FileInput(
+                attrs={"class": "input-dark", "accept": "image/*"}
+            ),
+            "video_url": forms.URLInput(
+                attrs={
+                    "class": "input-dark",
+                    "placeholder": "https://youtube.com/watch?v=...",
+                }
+            ),
+            "on_hand_idea": forms.CheckboxInput(attrs={"class": "w-5 h-5"}),
+            "leftover_worthy": forms.CheckboxInput(attrs={"class": "w-5 h-5"}),
+            "needs_review": forms.CheckboxInput(attrs={"class": "w-5 h-5"}),
         }
 
     def clean_new_tag_name(self):
