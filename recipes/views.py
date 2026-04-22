@@ -17,6 +17,7 @@ from django.db.models import Avg, Q
 from .models import Recipe
 from .forms import RecipeForm, RatingForm, ImportForm
 from .youtube import YouTubeService, InvalidVideoError, APIError
+from .parsing import RecipeParsingService
 from ingredients.models import IngredientLink, Ingredient
 from instructions.models import Instruction
 from tags.models import RecipeTag, Tag
@@ -74,16 +75,39 @@ class RecipeImportView(LoginRequiredMixin, FormView):
             video_id = youtube_service.extract_video_id(youtube_url)
             metadata = youtube_service.get_video_metadata(video_id)
 
+            parser = RecipeParsingService()
+            ingredients = parser.parse_ingredients(metadata.description)
+            instructions = parser.parse_instructions(metadata.description)
+            unparsed = parser.identify_unparseable(metadata.description.split("\n"))
+
             self.request.session["youtube_import"] = {
                 "video_id": metadata.video_id,
                 "title": metadata.title,
                 "description": metadata.description,
                 "thumbnail_url": metadata.thumbnail_url,
+                "ingredients": [
+                    {
+                        "name": i.name,
+                        "quantity": i.quantity,
+                        "unit": i.unit,
+                        "notes": i.notes,
+                    }
+                    for i in ingredients
+                ],
+                "instructions": [
+                    {
+                        "step_number": i.step_number,
+                        "text": i.text,
+                        "timestamp": i.timestamp,
+                    }
+                    for i in instructions
+                ],
+                "unparsed_lines": unparsed,
             }
 
             messages.success(
                 self.request,
-                f"Imported: {metadata.title}",
+                f"Imported: {metadata.title} ({len(ingredients)} ingredients, {len(instructions)} steps)",
             )
             return redirect(self.success_url)
 
