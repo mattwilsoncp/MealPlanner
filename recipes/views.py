@@ -220,15 +220,71 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["unit_choices"] = UNIT_CHOICES
+
+        youtube_import = self.request.session.get("youtube_import")
+        if youtube_import:
+            context["youtube_import"] = youtube_import
+            context["has_youtube_import"] = True
+            context["youtube_ingredients"] = youtube_import.get("ingredients", [])
+            context["youtube_instructions"] = youtube_import.get("instructions", [])
+            context["youtube_unparsed"] = youtube_import.get("unparsed_lines", [])
+
         return context
 
+    def get_initial(self):
+        initial = super().get_initial()
+        youtube_import = self.request.session.get("youtube_import")
+        if youtube_import:
+            initial["title"] = youtube_import.get("title", "")
+            initial["description"] = youtube_import.get("description", "")
+        return initial
+
     def form_valid(self, form):
+        youtube_import = self.request.session.get("youtube_import")
+
         form.instance.household = self.request.user.household
         recipe = form.save(commit=False)
         recipe.save()
 
-        self._save_ingredients(recipe)
-        self._save_instructions(recipe)
+        if youtube_import:
+            ingredients = youtube_import.get("ingredients", [])
+            for ing in ingredients:
+                name = ing.get("name", "").strip()
+                if name:
+                    quantity = float(ing.get("quantity", 1)) or 1
+                    unit = ing.get("unit", "piece") or "piece"
+
+                    ing_obj, _ = Ingredient.objects.get_or_create(
+                        household=recipe.household,
+                        name__iexact=name,
+                        defaults={"household": recipe.household, "name": name},
+                    )
+                    IngredientLink.objects.create(
+                        recipe=recipe,
+                        ingredient=ing_obj,
+                        quantity=quantity,
+                        unit=unit,
+                    )
+
+            instructions = youtube_import.get("instructions", [])
+            for inst in instructions:
+                text = inst.get("text", "").strip()
+                if text:
+                    step = inst.get("step_number", 1)
+                    Instruction.objects.create(
+                        recipe=recipe,
+                        step_number=step,
+                        text=text,
+                    )
+
+            del self.request.session["youtube_import"]
+            messages.success(
+                self.request, f"Recipe '{recipe.title}' created from YouTube import!"
+            )
+        else:
+            self._save_ingredients(recipe)
+            self._save_instructions(recipe)
+            messages.success(self.request, f"Recipe '{recipe.title}' created!")
 
         return redirect("recipes:recipe_detail", pk=recipe.pk)
 
