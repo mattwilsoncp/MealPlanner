@@ -28,8 +28,8 @@ from recipes.models import Recipe
 from recipes.youtube import InvalidVideoError, YouTubeService
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-#DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
-DEFAULT_MODEL = "qwen/qwen-turbo"
+DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
+#DEFAULT_MODEL = "qwen/qwen-turbo"
 TRANSCRIPT_DIR = PROJECT_ROOT / "logs" / "transcripts"
 VALID_UNITS = {choice[0] for choice in IngredientLink.UNIT_CHOICES}
 UNIT_MAP = {
