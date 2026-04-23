@@ -193,6 +193,18 @@ def fetch_transcript(url):
         return ""
 
 
+def save_transcript(video_id, transcript):
+    """Save transcript text into the transcripts folder."""
+    transcripts_dir = os.path.join(project_path, "transcripts")
+    os.makedirs(transcripts_dir, exist_ok=True)
+
+    transcript_path = os.path.join(transcripts_dir, f"{video_id}.txt")
+    with open(transcript_path, "w", encoding="utf-8") as transcript_file:
+        transcript_file.write(transcript)
+
+    return transcript_path
+
+
 def import_recipe(url, household_id=None):
     """
     Import recipe from YouTube URL.
@@ -216,6 +228,7 @@ def import_recipe(url, household_id=None):
         try:
             transcript = fetch_transcript(url)
             if transcript:
+                save_transcript(metadata["video_id"], transcript)
                 full_text = transcript
         except Exception:
             pass
