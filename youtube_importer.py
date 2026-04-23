@@ -140,36 +140,96 @@ def get_household(household_id: int | None) -> Household:
 
 def fetch_youtube_captions(video_id: str) -> str:
     if YouTubeTranscriptApi is None:
-        return ""
+        raise RuntimeError(
+            "youtube-transcript-api is not installed in the active environment"
+        )
+
+    errors = []
+    transcript_items = None
 
     try:
-        transcript_items = YouTubeTranscriptApi.get_transcript(video_id)
-    except Exception:
-        return ""
+        transcript_items = YouTubeTranscriptApi.get_transcript(
+            video_id, languages=["en", "en-US", "en-GB"]
+        )
+    except Exception as exc:
+        errors.append(f"get_transcript failed: {exc}")
+
+    if transcript_items is None:
+        try:
+            api = YouTubeTranscriptApi()
+            transcript_items = api.fetch(video_id, languages=["en", "en-US", "en-GB"])
+        except TypeError:
+            try:
+                transcript_items = api.fetch(video_id)
+            except Exception as exc:
+                errors.append(f"fetch failed: {exc}")
+        except Exception as exc:
+            errors.append(f"fetch failed: {exc}")
+
+    if transcript_items is None:
+        try:
+            api = YouTubeTranscriptApi()
+            transcript_list = api.list(video_id)
+            preferred_languages = ["en", "en-US", "en-GB"]
+            selected_transcript = None
+            for language_code in preferred_languages:
+                try:
+                    selected_transcript = transcript_list.find_transcript([language_code])
+                    break
+                except Exception:
+                    continue
+            if selected_transcript is None:
+                try:
+                    selected_transcript = transcript_list.find_generated_transcript(
+                        preferred_languages
+                    )
+                except Exception:
+                    selected_transcript = None
+            if selected_transcript is not None:
+                transcript_items = selected_transcript.fetch()
+        except Exception as exc:
+            errors.append(f"list/fetch transcript track failed: {exc}")
 
     lines = []
-    for item in transcript_items:
-        text = str(item.get("text") or "").strip()
-        if text:
-            lines.append(text)
+    if transcript_items is not None:
+        for item in transcript_items:
+            if isinstance(item, dict):
+                text = str(item.get("text") or "").strip()
+            else:
+                text = str(getattr(item, "text", "") or "").strip()
+            if text:
+                lines.append(text)
 
-    return "\n".join(lines).strip()
+    transcript_text = "\n".join(lines).strip()
+    if transcript_text:
+        return transcript_text
+
+    error_message = "; ".join(errors) if errors else "No transcript text returned"
+    raise RuntimeError(f"Could not fetch YouTube captions: {error_message}")
 
 
 def transcribe_youtube(url: str) -> str:
     video_id = extract_video_id(url)
-    captions = fetch_youtube_captions(video_id)
-    if captions:
-        return captions
+    try:
+        captions = fetch_youtube_captions(video_id)
+        if captions:
+            return captions
+    except RuntimeError as exc:
+        caption_error = str(exc)
+    else:
+        caption_error = "No captions returned"
 
     md = MarkItDown()
     result = md.convert(url)
     transcript = (result.text_content or "").strip()
     if transcript:
         raise RuntimeError(
-            "No YouTube captions were available for this video. Fallback content looked like page metadata or the description, so it was not saved as a transcript."
+            "YouTube caption retrieval failed: "
+            f"{caption_error}. Fallback content looked like page metadata or the description, so it was not saved as a transcript."
         )
-    raise RuntimeError("Transcript was empty or unavailable for this video")
+    raise RuntimeError(
+        f"Transcript was empty or unavailable for this video. Caption retrieval failed: {caption_error}"
+    )
 
 
 def extract_video_id(url: str) -> str:
