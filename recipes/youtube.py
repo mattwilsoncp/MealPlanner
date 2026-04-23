@@ -1,7 +1,12 @@
 import re
 from dataclasses import dataclass
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+
+try:
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+except ImportError:
+    build = None
+    HttpError = Exception
 
 
 class InvalidVideoError(Exception):
@@ -18,6 +23,7 @@ class YouTubeMetadata:
     title: str
     description: str
     thumbnail_url: str
+    transcript: str = ""
 
 
 class YouTubeService:
@@ -25,7 +31,10 @@ class YouTubeService:
         if not api_key:
             raise APIError("YouTube API key not configured")
         self.api_key = api_key
-        self.youtube = build("youtube", "v3", developerKey=api_key)
+        if build:
+            self.youtube = build("youtube", "v3", developerKey=api_key)
+        else:
+            self.youtube = None
 
     def extract_video_id(self, url: str) -> str:
         patterns = [
@@ -37,7 +46,23 @@ class YouTubeService:
                 return match.group(1)
         raise InvalidVideoError("Invalid YouTube URL format")
 
+    def get_transcript(self, url: str) -> str:
+        """Fetch transcript using markitdown if available."""
+        try:
+            from markitdown import MarkItDown
+
+            md = MarkItDown()
+            result = md.convert(url)
+            return result.text_content or ""
+        except ImportError:
+            return ""
+        except Exception:
+            return ""
+
     def get_video_metadata(self, video_id: str) -> YouTubeMetadata:
+        if not self.youtube:
+            raise APIError("YouTube API not configured")
+
         try:
             request = self.youtube.videos().list(part="snippet", id=video_id)
             response = request.execute()

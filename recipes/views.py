@@ -83,14 +83,24 @@ class RecipeImportView(LoginRequiredMixin, FormView):
             metadata = youtube_service.get_video_metadata(video_id)
 
             parser = RecipeParsingService()
-            ingredients = parser.parse_ingredients(metadata.description)
-            instructions = parser.parse_instructions(metadata.description)
-            unparsed = parser.identify_unparseable(metadata.description.split("\n"))
+
+            # Try to get transcript for better content extraction
+            full_text = metadata.description
+            try:
+                transcript = youtube_service.get_transcript(youtube_url)
+                if transcript:
+                    full_text = transcript
+            except Exception:
+                pass  # Fall back to description
+
+            ingredients = parser.parse_ingredients(full_text)
+            instructions = parser.parse_instructions(full_text)
+            unparsed = parser.identify_unparseable(full_text.split("\n"))
 
             self.request.session["youtube_import"] = {
                 "video_id": metadata.video_id,
                 "title": metadata.title,
-                "description": metadata.description,
+                "description": full_text,
                 "thumbnail_url": metadata.thumbnail_url,
                 "ingredients": [
                     {
