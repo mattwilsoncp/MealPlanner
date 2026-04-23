@@ -15,8 +15,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "meal_planner.settings")
 
 import django
 
-
 django.setup()
+
+try:
+    from youtube_transcript_api import YouTubeTranscriptApi
+except ImportError:
+    YouTubeTranscriptApi = None
 
 from markitdown import MarkItDown
 from openai import OpenAI
