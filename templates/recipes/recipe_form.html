@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="card bg-base-300 shadow-xl">
-        <div class="card-body">
-            <h1 class="card-title text-2xl mb-4">
+    <div class="card-dark">
+        <div class="p-6">
+            <h1 class="text-2xl font-medium mb-4">
                 {% if object %}Edit Recipe{% else %}New Recipe{% endif %}
             </h1>
 
@@ -14,102 +14,144 @@
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                <div class="alert alert-error">
+                <div class="alert-dark">
                     {% for error in form.non_field_errors %}
                     <span>{{ error }}</span>
                     {% endfor %}
                 </div>
                 {% endif %}
 
-                {# Basic recipe fields #}
                 {% for field in form %}
-                {% if field.name not in ingredients and field.name not in instructions and field.name not in tags %}
-                <div class="form-control">
-                    <label class="label" for="{{ field.id_for_label }}">
-                        <span class="label-text">{{ field.label }}</span>
+                <div>
+                    <label class="label-dark" for="{{ field.id_for_label }}">
+                        <span>{{ field.label }}</span>
                     </label>
                     {{ field }}
                     {% if field.help_text %}
                     <label class="label">
-                        <span class="label-text-alt">{{ field.help_text }}</span>
+                        <span style="font-size: 12px; color: var(--text-mid-gray);">{{ field.help_text }}</span>
                     </label>
                     {% endif %}
                     {% if field.errors %}
                     <label class="label">
                         {% for error in field.errors %}
-                        <span class="label-text-alt text-error">{{ error }}</span>
+                        <span style="font-size: 12px; color: #fc7981;">{{ error }}</span>
                         {% endfor %}
                     </label>
                     {% endif %}
                 </div>
-                {% endif %}
                 {% endfor %}
 
-                {# Ingredients section #}
-                <div class="divider">Ingredients</div>
+                <hr class="divider-dark">
+
+                <h3 class="text-lg font-medium">Ingredients</h3>
+                {% if has_youtube_import %}
+                <p class="text-sm mb-2" style="color: var(--brand-green);">Imported from YouTube:</p>
+                {% endif %}
                 <div id="ingredients-section" class="space-y-2">
-                    {% if ingredients %}
-                    {% for ing in ingredients %}
+                    {% if has_youtube_import and youtube_ingredients %}
+                    {% for ing in youtube_ingredients %}
                     <div class="flex gap-2 items-center ingredient-row">
-                        <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.ingredient.name }}" class="input input-bordered w-full">
-                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity }}" class="input input-bordered w-20" step="0.01">
-                        <select name="ingredient_unit" class="select select-bordered">
+                        <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.name }}" class="input-dark">
+                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity|default:'1' }}" class="input-dark" style="width: 80px;" step="0.01">
+                        <select name="ingredient_unit" class="input-dark" style="width: auto;">
                             {% for code, name in unit_choices %}
                             <option value="{{ code }}" {% if ing.unit == code %}selected{% endif %}>{{ name }}</option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-error btn-outline btn-sm" onclick="this.parentElement.remove()">X</button>
+                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
                     </div>
                     {% endfor %}
+                    {% elif ingredients %}
+                    {% for ing in ingredients %}
+                    <div class="flex gap-2 items-center ingredient-row">
+                        <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.ingredient.name }}" class="input-dark">
+                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity }}" class="input-dark" style="width: 80px;" step="0.01">
+                        <select name="ingredient_unit" class="input-dark" style="width: auto;">
+                            {% for code, name in unit_choices %}
+                            <option value="{{ code }}" {% if ing.unit == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="flex gap-2 items-center ingredient-row">
+                        <input type="text" name="ingredient_name" placeholder="Ingredient name" class="input-dark">
+                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="1" class="input-dark" style="width: 80px;" step="0.01">
+                        <select name="ingredient_unit" class="input-dark" style="width: auto;">
+                            {% for code, name in unit_choices %}
+                            <option value="{{ code }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
+                    </div>
                     {% endif %}
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="addIngredient()">+ Add Ingredient</button>
+                <button type="button" class="btn-ghost" onclick="addIngredient()">+ Add Ingredient</button>
 
-                {# Instructions section #}
-                <div class="divider">Instructions</div>
+                <hr class="divider-dark">
+
+                <h3 class="text-lg font-medium">Instructions</h3>
+                {% if has_youtube_import %}
+                <p class="text-sm mb-2" style="color: var(--brand-green);">Imported from YouTube:</p>
+                {% endif %}
                 <div id="instructions-section" class="space-y-2">
-                    {% if instructions %}
+                    {% if has_youtube_import and youtube_instructions %}
+                    {% for inst in youtube_instructions %}
+                    <div class="flex gap-2 items-start instruction-row">
+                        <div style="width: 80px;">
+                            <span style="font-size: 12px; color: var(--text-mid-gray);">Step</span>
+                            <input type="number" name="instruction_{{ forloop.counter }}_order" min="1" value="{{ inst.step_number }}" class="input-dark" style="width: 80px;">
+                        </div>
+                        <textarea name="instruction_text" placeholder="Instruction text" class="input-dark" style="height: 80px;">{{ inst.text }}</textarea>
+                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
+                    </div>
+                    {% endfor %}
+                    <p class="text-xs" style="color: var(--text-mid-gray);">Edit or add more steps below.</p>
+                    {% elif instructions %}
                     {% for inst in instructions %}
                     <div class="flex gap-2 items-start instruction-row">
-                        <label class="form-control w-24">
-                            <span class="label-text text-xs">Order</span>
-                            <input type="number" name="instruction_{{ inst.id }}_order" min="1" value="{{ inst.step_number }}" class="input input-bordered w-24">
-                        </label>
-                        <textarea name="instruction_text" placeholder="Instruction text" class="textarea textarea-bordered w-full">{{ inst.text }}</textarea>
-                        <button type="button" class="btn btn-error btn-outline btn-sm" onclick="this.parentElement.remove()">X</button>
+                        <div style="width: 80px;">
+                            <span style="font-size: 12px; color: var(--text-mid-gray);">Order</span>
+                            <input type="number" name="instruction_{{ inst.id }}_order" min="1" value="{{ inst.step_number }}" class="input-dark" style="width: 80px;">
+                        </div>
+                        <textarea name="instruction_text" placeholder="Instruction text" class="input-dark" style="height: 80px;">{{ inst.text }}</textarea>
+                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
                     </div>
                     {% endfor %}
-                    <p class="text-xs opacity-70">Set order values and save to persist instruction sequence.</p>
+                    <p class="text-xs" style="color: var(--text-mid-gray);">Set order values and save to persist instruction sequence.</p>
                     {% endif %}
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="addInstruction()">+ Add Step</button>
+                <button type="button" class="btn-ghost" onclick="addInstruction()">+ Add Step</button>
 
-                {# Tags section #}
-                <div class="divider">Tags</div>
+                <hr class="divider-dark">
+
+                <h3 class="text-lg font-medium">Tags</h3>
                 <div class="flex gap-2 flex-wrap">
                     {% if available_tags %}
                     {% for tag in available_tags %}
-                    <label class="cursor-pointer">
+                    <label class="cursor-pointer flex items-center gap-1">
                         <input type="checkbox" name="tags" value="{{ tag.pk }}" 
                             {% for rt in tags %}{% if rt.tag.pk == tag.pk %}checked{% endif %}{% endfor %}
-                            class="checkbox checkbox-sm">
-                        <span class="badge ml-1" style="background-color: {{ tag.color }}; color: white;">{{ tag.name }}</span>
+                            style="width: 18px; height: 18px;">
+                        <span class="badge-dark">{{ tag.name }}</span>
                     </label>
                     {% endfor %}
                     {% endif %}
                 </div>
                 <div class="flex gap-2 mt-2">
-                    <input type="text" name="new_tag_name" placeholder="New tag name" class="input input-bordered input-sm w-full max-w-xs">
-                    <input type="color" name="new_tag_color" value="#6B7280" class="input input-bordered input-sm">
-                    <span class="text-xs opacity-70 self-center">New tag is created on Save.</span>
+                    <input type="text" name="new_tag_name" placeholder="New tag name" class="input-dark" style="max-width: 200px;">
+                    <input type="color" name="new_tag_color" value="#6B7280" class="input-dark" style="width: 50px; padding: 2px;">
+                    <span class="text-xs" style="color: var(--text-mid-gray); align-self: center;">New tag is created on Save.</span>
                 </div>
                 {% if form.new_tag_name.errors %}
-                <p class="text-error text-sm">{{ form.new_tag_name.errors|join:", " }}</p>
+                <p style="color: #fc7981; font-size: 14px;">{{ form.new_tag_name.errors|join:", " }}</p>
                 {% endif %}
 
-                <div class="card-actions justify-end mt-6">
-                    <a href="{% if object %}{% url 'recipes:recipe_detail' object.pk %}{% else %}{% url 'recipes:recipe_list' %}{% endif %}" class="btn btn-ghost">Cancel</a>
-                    <button type="submit" class="btn btn-primary">
+                <div class="flex justify-end gap-2 mt-6">
+                    <a href="{% if object %}{% url 'recipes:recipe_detail' object.pk %}{% else %}{% url 'recipes:recipe_list' %}{% endif %}" class="btn-ghost">Cancel</a>
+                    <button type="submit" class="btn-pill">
                         {% if object %}Save Changes{% else %}Create Recipe{% endif %}
                     </button>
                 </div>
@@ -118,7 +160,6 @@
     </div>
 </div>
 
-{# JavaScript for dynamic form fields #}
 <script>
 const unitChoices = [
     ['oz', 'ounce'], ['lb', 'pound'], ['cup', 'cup'], ['tbsp', 'tablespoon'],
@@ -137,10 +178,10 @@ function addIngredient() {
     ).join('');
     
     row.innerHTML = `
-        <input type="text" name="ingredient_name" placeholder="Ingredient name" class="input input-bordered w-full">
-        <input type="number" name="ingredient_quantity" placeholder="Qty" class="input input-bordered w-20" step="0.01">
-        <select name="ingredient_unit" class="select select-bordered">${options}</select>
-        <button type="button" class="btn btn-error btn-outline btn-sm" onclick="this.parentElement.remove()">X</button>
+        <input type="text" name="ingredient_name" placeholder="Ingredient name" class="input-dark">
+        <input type="number" name="ingredient_quantity" placeholder="Qty" value="1" class="input-dark" style="width: 80px;" step="0.01">
+        <select name="ingredient_unit" class="input-dark" style="width: auto;">${options}</select>
+        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
     `;
     container.appendChild(row);
 }
@@ -151,9 +192,12 @@ function addInstruction() {
     const row = document.createElement('div');
     row.className = 'flex gap-2 items-start instruction-row';
     row.innerHTML = `
-        <input type="number" name="instruction_step" placeholder="Step #" value="${stepNum}" class="input input-bordered w-16">
-        <textarea name="instruction_text" placeholder="Instruction text" class="textarea textarea-bordered w-full"></textarea>
-        <button type="button" class="btn btn-error btn-outline btn-sm" onclick="this.parentElement.remove()">X</button>
+        <div style="width: 80px;">
+            <span style="font-size: 12px; color: var(--text-mid-gray);">Order</span>
+            <input type="number" name="instruction_step" placeholder="Step #" value="${stepNum}" class="input-dark" style="width: 80px;">
+        </div>
+        <textarea name="instruction_text" placeholder="Instruction text" class="input-dark" style="height: 80px;"></textarea>
+        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
     `;
     container.appendChild(row);
 }
