@@ -24,6 +24,7 @@ except ImportError:
 
 from markitdown import MarkItDown
 from openai import OpenAI
+from meal_planner import settings
 
 from household.models import Household
 from ingredients.models import Ingredient, IngredientLink
@@ -241,7 +242,10 @@ def extract_video_id(url: str) -> str:
 
 
 def get_youtube_api_key() -> str:
-    return os.environ.get("YOUTUBE_API_KEY", "").strip()
+    env_key = os.environ.get("YOUTUBE_API_KEY", "").strip()
+    if env_key:
+        return env_key
+    return str(getattr(settings, "YOUTUBE_API_KEY", "") or "").strip()
 
 
 def get_video_metadata(url: str, video_id: str) -> dict[str, str]:
@@ -251,21 +255,28 @@ def get_video_metadata(url: str, video_id: str) -> dict[str, str]:
         "title": "",
         "description": "",
         "thumbnail_url": "",
+        "metadata_status": "not_requested",
+        "metadata_error": "",
     }
 
     api_key = get_youtube_api_key()
     if not api_key:
+        metadata["metadata_status"] = "missing_api_key"
+        metadata["metadata_error"] = "YOUTUBE_API_KEY was not found in the environment or Django settings"
         return metadata
 
     try:
         service = YouTubeService(api_key=api_key)
         video_metadata = service.get_video_metadata(video_id)
-    except Exception:
+    except Exception as exc:
+        metadata["metadata_status"] = "error"
+        metadata["metadata_error"] = str(exc)
         return metadata
 
     metadata["title"] = video_metadata.title or ""
     metadata["description"] = video_metadata.description or ""
     metadata["thumbnail_url"] = video_metadata.thumbnail_url or ""
+    metadata["metadata_status"] = "ok"
     return metadata
 
 
@@ -277,6 +288,8 @@ def write_transcript_log(metadata: dict[str, str], transcript: str) -> Path:
     log_body = (
         f"Source URL: {metadata.get('url', '')}\n"
         f"Video ID: {metadata.get('video_id', '')}\n"
+        f"Metadata Status: {metadata.get('metadata_status', '')}\n"
+        f"Metadata Error: {metadata.get('metadata_error', '')}\n"
         f"Title: {metadata.get('title', '')}\n"
         f"Thumbnail URL: {metadata.get('thumbnail_url', '')}\n"
         "\n"
