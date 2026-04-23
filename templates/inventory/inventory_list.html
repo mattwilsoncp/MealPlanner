@@ -4,36 +4,36 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
-    <div class="flex flex-wrap justify-between gap-3 items-center">
+    <div class="flex flex-wrap justify-between gap-4 items-center">
         <div>
-            <h1 class="text-2xl font-bold">Inventory</h1>
-            <p class="text-sm opacity-70">Browse by category, filter quickly, and maintain household stock.</p>
+            <h1 class="text-2xl font-medium">Inventory</h1>
+            <p style="color: var(--text-light-gray);">Browse by category, filter quickly, and maintain household stock.</p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'inventory:inventory_expiring' %}" class="btn btn-outline btn-sm">Expiring Soon</a>
-            <a href="{% url 'inventory:inventory_expired' %}" class="btn btn-outline btn-sm">Expired</a>
-            <a href="{% url 'inventory:inventory_add' %}" class="btn btn-primary btn-sm">+ Add Item</a>
+            <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Soon</a>
+            <a href="{% url 'inventory:inventory_expired' %}" class="btn-ghost">Expired</a>
+            <a href="{% url 'inventory:inventory_add' %}" class="btn-pill">+ Add Item</a>
         </div>
     </div>
 
-    <form method="get" class="card bg-base-300 p-4">
-        <div class="grid md:grid-cols-4 gap-3">
-            <div class="form-control md:col-span-2">
-                <label class="label" for="q"><span class="label-text">Search</span></label>
-                <input id="q" type="text" name="q" value="{{ filters.q }}" class="input input-bordered" placeholder="Name, notes, barcode">
+    <form method="get" class="card-dark p-6">
+        <div class="grid md:grid-cols-4 gap-4">
+            <div>
+                <label class="label-dark" for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ filters.q }}" class="input-dark" placeholder="Name, notes, barcode">
             </div>
-            <div class="form-control">
-                <label class="label" for="category"><span class="label-text">Category</span></label>
-                <select id="category" name="category" class="select select-bordered">
+            <div>
+                <label class="label-dark" for="category">Category</label>
+                <select id="category" name="category" class="input-dark" style="width: auto;">
                     <option value="">All categories</option>
                     {% for value,label in category_choices %}
                     <option value="{{ value }}" {% if filters.category == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="form-control">
-                <label class="label" for="location"><span class="label-text">Location</span></label>
-                <select id="location" name="location" class="select select-bordered">
+            <div>
+                <label class="label-dark" for="location">Location</label>
+                <select id="location" name="location" class="input-dark" style="width: auto;">
                     <option value="">All locations</option>
                     {% for value,label in location_choices %}
                     <option value="{{ value }}" {% if filters.location == value %}selected{% endif %}>{{ label }}</option>
@@ -41,63 +41,60 @@
                 </select>
             </div>
         </div>
-        <div class="flex gap-2 mt-4">
-            <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
-            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-ghost btn-sm">Clear</a>
+        <div class="flex gap-4 mt-4">
+            <button type="submit" class="btn-pill-muted">Apply Filters</button>
+            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Clear</a>
         </div>
     </form>
 
     {% if not items %}
-    <div class="card bg-base-300 p-8 text-center">
-        <p class="text-lg">No inventory items found.</p>
-        <p class="text-sm opacity-70 mt-2">Try relaxing filters or add an item.</p>
+    <div class="card-dark p-8 text-center">
+        <p class="text-lg font-medium">No inventory items found.</p>
+        <p style="color: var(--text-light-gray); margin-top: 8px;">Try relaxing filters or add an item.</p>
     </div>
     {% else %}
         {% for category, category_items in grouped_items.items %}
-        <div class="card bg-base-300 shadow">
-            <div class="card-body">
-                <h2 class="card-title">
-                    {% if category == "other" or not category %}
-                        Uncategorized/Other
-                    {% else %}
-                        {{ category_items.0.get_category_display }}
-                    {% endif %}
+        <div class="card-dark">
+            <div class="p-4" style="border-bottom: 1px solid var(--border-dark);">
+                <h2 class="text-lg font-medium">
+                    {% if category == "other" or not category %}Uncategorized{% else %}{{ category }}{% endif %}
+                    <span style="color: var(--text-mid-gray); font-weight: 400;">({{ category_items|length }} items)</span>
                 </h2>
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Quantity</th>
-                                <th>Location</th>
-                                <th>Expires</th>
-                                <th class="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in category_items %}
-                            <tr>
-                                <td>
-                                    <div class="font-medium">{{ item.name }}</div>
-                                    {% if item.notes %}<div class="text-xs opacity-70">{{ item.notes }}</div>{% endif %}
-                                </td>
-                                <td>{{ item.quantity }} {{ item.unit }}</td>
-                                <td>{{ item.get_location_display }}</td>
-                                <td>{{ item.expiration_date|default:"-" }}</td>
-                                <td class="text-right">
-                                    <div class="inline-flex gap-1">
-                                        <a href="{% url 'inventory:inventory_edit' item.id %}" class="btn btn-xs btn-outline">Edit</a>
-                                        <form method="post" action="{% url 'inventory:inventory_delete' item.id %}" class="inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-xs btn-error" onclick="return confirm('Delete {{ item.name|escapejs }}?');">Delete</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            </div>
+            <div class="p-4">
+                <table class="table-dark">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Quantity</th>
+                            <th>Location</th>
+                            <th>Expires</th>
+                            <th style="width: 100px; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in category_items %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ item.name }}</div>
+                                {% if item.barcode %}<div style="font-size: 12px; color: var(--text-mid-gray);">Barcode: {{ item.barcode }}</div>{% endif %}
+                            </td>
+                            <td>{{ item.quantity }} {{ item.unit }}</td>
+                            <td>{{ item.location|default:"—" }}</td>
+                            <td>
+                                {% if item.expiration_date %}
+                                    <span style="{% if item.expired %}color: #fc7981;{% elif item.expiring_soon %}color: var(--lemon-500);{% endif %}">
+                                        {{ item.expiration_date|date:"M d, Y" }}
+                                    </span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'inventory:inventory_edit' item.pk %}" class="link-green">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% endfor %}

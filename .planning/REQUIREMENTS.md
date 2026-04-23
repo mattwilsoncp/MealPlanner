@@ -64,13 +64,13 @@ Explicitly excluded from v1.1:
 
 | Requirement | Phase | Status |
 |--------------|-------|--------|
-| IMP-01 | Phase 1 | Pending |
-| IMP-02 | Phase 1 | Pending |
-| IMP-03 | Phase 1 | Pending |
-| IMP-04 | Phase 1 | Pending |
-| IMP-05 | Phase 2 | Pending |
-| IMP-06 | Phase 2 | Pending |
-| IMP-07 | Phase 2 | Pending |
+| IMP-01 | Phase 1 | Complete |
+| IMP-02 | Phase 1 | Complete |
+| IMP-03 | Phase 1 | Complete |
+| IMP-04 | Phase 1 | Complete |
+| IMP-05 | Phase 2 | Ready |
+| IMP-06 | Phase 2 | Ready |
+| IMP-07 | Phase 2 | Ready |
 | IMP-08 | Phase 3 | Pending |
 | IMP-09 | Phase 3 | Pending |
 | IMP-10 | Phase 3 | Pending |

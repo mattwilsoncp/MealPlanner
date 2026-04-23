@@ -189,7 +189,12 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
     template_name = "recipes/recipe_detail.html"
 
     def get_queryset(self):
-        return Recipe.objects.filter(household=self.request.user.household)
+        household = self.request.user.household
+        if household:
+            return Recipe.objects.filter(household=household) | Recipe.objects.filter(
+                needs_review=True
+            )
+        return Recipe.objects.filter(needs_review=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

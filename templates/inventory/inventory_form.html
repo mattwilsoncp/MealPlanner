@@ -4,66 +4,66 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">{% if object %}Edit{% else %}Add{% endif %} Inventory Item</h1>
+    <h1 class="text-2xl font-medium mb-6">{% if object %}Edit{% else %}Add{% endif %} Inventory Item</h1>
 
-    <form method="post" enctype="multipart/form-data" class="card bg-base-300 p-6 space-y-4">
+    <form method="post" enctype="multipart/form-data" class="card-dark p-6 space-y-4">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="alert alert-error">
+        <div class="alert-dark">
             {{ form.non_field_errors }}
         </div>
         {% endif %}
 
         <div class="grid md:grid-cols-2 gap-4">
-            <div class="form-control md:col-span-2">
-                <label class="label" for="{{ form.name.id_for_label }}"><span class="label-text">Name</span></label>
+            <div class="md:col-span-2">
+                <label class="label-dark" for="{{ form.name.id_for_label }}"><span>Name</span></label>
                 {{ form.name }}
-                {% if form.name.errors %}<p class="text-error text-sm mt-1">{{ form.name.errors|join:", " }}</p>{% endif %}
+                {% if form.name.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.name.errors|join:", " }}</p>{% endif %}
             </div>
 
-            <div class="form-control">
-                <label class="label" for="{{ form.quantity.id_for_label }}"><span class="label-text">Quantity</span></label>
+            <div>
+                <label class="label-dark" for="{{ form.quantity.id_for_label }}"><span>Quantity</span></label>
                 {{ form.quantity }}
-                {% if form.quantity.errors %}<p class="text-error text-sm mt-1">{{ form.quantity.errors|join:", " }}</p>{% endif %}
+                {% if form.quantity.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.quantity.errors|join:", " }}</p>{% endif %}
             </div>
-            <div class="form-control">
-                <label class="label" for="{{ form.unit.id_for_label }}"><span class="label-text">Unit</span></label>
+            <div>
+                <label class="label-dark" for="{{ form.unit.id_for_label }}"><span>Unit</span></label>
                 {{ form.unit }}
             </div>
 
-            <div class="form-control">
-                <label class="label" for="{{ form.category.id_for_label }}"><span class="label-text">Category</span></label>
+            <div>
+                <label class="label-dark" for="{{ form.category.id_for_label }}"><span>Category</span></label>
                 {{ form.category }}
             </div>
-            <div class="form-control">
-                <label class="label" for="{{ form.location.id_for_label }}"><span class="label-text">Location</span></label>
+            <div>
+                <label class="label-dark" for="{{ form.location.id_for_label }}"><span>Location</span></label>
                 {{ form.location }}
             </div>
 
-            <div class="form-control">
-                <label class="label" for="{{ form.expiration_date.id_for_label }}"><span class="label-text">Expiration Date</span></label>
+            <div>
+                <label class="label-dark" for="{{ form.expiration_date.id_for_label }}"><span>Expiration Date</span></label>
                 {{ form.expiration_date }}
             </div>
-            <div class="form-control">
-                <label class="label" for="{{ form.barcode.id_for_label }}"><span class="label-text">Barcode</span></label>
+            <div>
+                <label class="label-dark" for="{{ form.barcode.id_for_label }}"><span>Barcode</span></label>
                 {{ form.barcode }}
             </div>
 
-            <div class="form-control md:col-span-2">
-                <label class="label" for="{{ form.notes.id_for_label }}"><span class="label-text">Notes</span></label>
+            <div class="md:col-span-2">
+                <label class="label-dark" for="{{ form.notes.id_for_label }}"><span>Notes</span></label>
                 {{ form.notes }}
             </div>
 
-            <div class="form-control md:col-span-2">
-                <label class="label" for="{{ form.image.id_for_label }}"><span class="label-text">Image Upload</span></label>
+            <div class="md:col-span-2">
+                <label class="label-dark" for="{{ form.image.id_for_label }}"><span>Image Upload</span></label>
                 {{ form.image }}
             </div>
         </div>
 
         <div class="flex justify-between mt-4">
-            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-ghost">Cancel</a>
-            <button type="submit" class="btn btn-primary">{% if object %}Save Changes{% else %}Add Item{% endif %}</button>
+            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-pill">{% if object %}Save Changes{% else %}Add Item{% endif %}</button>
         </div>
     </form>
 </div>

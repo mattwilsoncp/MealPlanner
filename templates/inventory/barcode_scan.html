@@ -6,25 +6,25 @@
 <div class="max-w-4xl mx-auto space-y-6" x-data="barcodeScan()">
     <div class="flex flex-wrap justify-between items-center gap-2">
         <div>
-            <h1 class="text-2xl font-bold">Barcode Scan</h1>
-            <p class="text-sm opacity-70">Look up a barcode in your household inventory first, then fall back to UPC data.</p>
+            <h1 class="text-2xl font-medium">Barcode Scan</h1>
+            <p class="text-sm" style="color: var(--text-light-gray);">Look up a barcode in your household inventory first, then fall back to UPC data.</p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'inventory:inventory_expiring' %}" class="btn btn-outline btn-sm">Expiring Items</a>
-            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline btn-sm">Back to Inventory</a>
+            <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Items</a>
+            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Back to Inventory</a>
         </div>
     </div>
 
-    <div class="card bg-base-300 shadow">
-        <div class="card-body space-y-4">
+    <div class="card-dark">
+        <div class="p-6 space-y-4">
             <form method="post" @submit.prevent="lookupBarcode" class="space-y-3">
                 {% csrf_token %}
-                <label class="form-control">
-                    <span class="label-text">Barcode</span>
+                <label class="block">
+                    <span class="label-dark">Barcode</span>
                     <input
                         type="text"
                         x-model="barcode"
-                        class="input input-bordered"
+                        class="input-dark"
                         inputmode="numeric"
                         pattern="[0-9]{8,14}"
                         maxlength="14"
@@ -32,7 +32,7 @@
                         required
                     >
                 </label>
-                <button type="submit" class="btn btn-primary" :disabled="isLoading">
+                <button type="submit" class="btn-pill" :disabled="isLoading">
                     <span x-show="!isLoading">Lookup Barcode</span>
                     <span x-show="isLoading">Looking up...</span>
                 </button>
@@ -41,28 +41,28 @@
     </div>
 
     <template x-if="resultType === 'local'">
-        <div class="card bg-success/10 border border-success">
-            <div class="card-body">
-                <h2 class="card-title text-success">Already in Your Inventory</h2>
+        <div class="card-dark" style="border: 2px solid var(--brand-green);">
+            <div class="p-6">
+                <h2 class="text-lg font-medium" style="color: var(--brand-green);">Already in Your Inventory</h2>
                 <p><strong x-text="result.item.name"></strong> is already tracked for your household.</p>
-                <p class="text-sm opacity-80">Barcode: <span x-text="result.item.barcode"></span></p>
-                <p class="text-sm opacity-80">Quantity: <span x-text="result.item.quantity"></span> <span x-text="result.item.unit"></span></p>
+                <p class="text-sm" style="color: var(--text-light-gray);">Barcode: <span x-text="result.item.barcode"></span></p>
+                <p class="text-sm" style="color: var(--text-light-gray);">Quantity: <span x-text="result.item.quantity"></span> <span x-text="result.item.unit"></span></p>
             </div>
         </div>
     </template>
 
     <template x-if="resultType === 'upc'">
-        <div class="card bg-info/10 border border-info">
-            <div class="card-body space-y-3">
-                <h2 class="card-title text-info">UPC Match Found</h2>
+        <div class="card-dark" style="border: 2px solid var(--green-link);">
+            <div class="p-6 space-y-3">
+                <h2 class="text-lg font-medium" style="color: var(--green-link);">UPC Match Found</h2>
                 <p><strong x-text="result.item.title || 'Scanned Item'"></strong></p>
-                <p class="text-sm opacity-80">Brand: <span x-text="result.item.brand || '—'"></span></p>
-                <p class="text-sm opacity-80">Size: <span x-text="result.item.size || '—'"></span></p>
-                <p class="text-sm opacity-80">Category: <span x-text="result.item.category || 'other'"></span></p>
+                <p class="text-sm" style="color: var(--text-light-gray);">Brand: <span x-text="result.item.brand || '—'"></span></p>
+                <p class="text-sm" style="color: var(--text-light-gray);">Size: <span x-text="result.item.size || '—'"></span></p>
+                <p class="text-sm" style="color: var(--text-light-gray);">Category: <span x-text="result.item.category || 'other'"></span></p>
 
                 <form method="post" action="{% url 'inventory:barcode_create_api' %}" @submit.prevent="createItem" class="pt-2">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary" :disabled="isCreating">
+                    <button type="submit" class="btn-pill" :disabled="isCreating">
                         <span x-show="!isCreating">Create Item</span>
                         <span x-show="isCreating">Creating...</span>
                     </button>
@@ -72,13 +72,13 @@
     </template>
 
     <template x-if="resultType === 'error'">
-        <div class="alert alert-error">
+        <div class="alert-dark">
             <span x-text="errorMessage"></span>
         </div>
     </template>
 
     <template x-if="resultType === 'created'">
-        <div class="alert alert-success">
+        <div class="alert-success">
             <span>Created inventory item: <strong x-text="createdName"></strong>.</span>
         </div>
     </template>

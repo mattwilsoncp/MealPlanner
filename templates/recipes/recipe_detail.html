@@ -4,34 +4,32 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="card bg-base-300 shadow-xl">
+    <div class="card-dark">
         {% if recipe.photo %}
-        <figure>
+        <div style="border-radius: 16px 16px 0 0; overflow: hidden;">
             <img src="{{ recipe.photo.url }}" alt="{{ recipe.title }}" class="w-full max-h-96 object-cover">
-        </figure>
+        </div>
         {% endif %}
-        <div class="card-body">
+        <div class="p-6">
             <div class="flex justify-between items-start">
-                <h1 class="card-title text-3xl">{{ recipe.title }}</h1>
+                <h1 class="text-3xl font-medium">{{ recipe.title }}</h1>
                 <div class="flex gap-2">
-                    <a href="{% url 'recipes:recipe_update' recipe.pk %}" class="btn btn-sm btn-outline">Edit</a>
-                    <a href="{% url 'recipes:recipe_delete' recipe.pk %}" class="btn btn-sm btn-outline btn-error">Delete</a>
+                    <a href="{% url 'recipes:recipe_update' recipe.pk %}" class="btn-ghost">Edit</a>
+                    <a href="{% url 'recipes:recipe_delete' recipe.pk %}" class="btn-ghost" style="color: #fc7981;">Delete</a>
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-2 flex-wrap">
-                {# On-hand idea toggle #}
+            <div class="flex gap-2 mt-4 flex-wrap">
                 <button onclick="toggleOnHandIdea({{ recipe.pk }})" 
-                        class="btn btn-sm {% if recipe.on_hand_idea %}btn-warning{% else %}btn-ghost{% endif %} gap-1">
+                        class="btn-ghost gap-1" style="{% if recipe.on_hand_idea %}background: rgba(62, 207, 142, 0.15); color: var(--brand-green);{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="{% if recipe.on_hand_idea %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
                     </svg>
                     {% if recipe.on_hand_idea %}On Hand Idea{% endif %}
                 </button>
                 
-                {# Leftover worthy toggle #}
                 <button onclick="toggleLeftoverWorthy({{ recipe.pk }})" 
-                        class="btn btn-sm {% if recipe.leftover_worthy %}btn-success{% else %}btn-ghost{% endif %} gap-1">
+                        class="btn-ghost gap-1" style="{% if recipe.leftover_worthy %}background: rgba(62, 207, 142, 0.15); color: var(--brand-green);{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
                     </svg>
@@ -39,62 +37,56 @@
                 </button>
                 
                 {% if recipe.needs_review %}
-                <span class="badge badge-warning">Needs Review</span>
+                <span class="badge-dark" style="background: rgba(239, 68, 68, 0.15); color: #fc7981; border-color: rgba(239, 68, 68, 0.3);">Needs Review</span>
                 {% endif %}
                 
-                {# Tags as badges #}
                 {% for recipe_tag in tags %}
-                <span class="badge" style="background-color: {{ recipe_tag.tag.color }}; color: white;">
-                    {{ recipe_tag.tag.name }}
-                </span>
+                <span class="badge-dark">{{ recipe_tag.tag.name }}</span>
                 {% endfor %}
             </div>
 
-            {# Rating display #}
             <div class="mt-4">
-                <h3 class="text-lg font-semibold">Rating</h3>
+                <span class="code-label">Rating</span>
                 {% if average_rating %}
                 <div class="flex items-center gap-2 mt-1">
-                    <span class="text-2xl font-bold">{{ average_rating|floatformat:1 }}/5</span>
-                    <span class="text-base-content/60">({{ ratings.count }} rating{{ ratings.count|add:"-1"|yesno:",s" }})</span>
+                    <span class="text-2xl font-medium" style="color: var(--text-off-white);">{{ average_rating|floatformat:1 }}/5</span>
+                    <span style="color: var(--text-mid-gray);">({{ ratings.count }} rating{{ ratings.count|add:"-1"|yesno:",s" }})</span>
                 </div>
                 {% else %}
-                <p class="text-base-content/60">Not rated yet</p>
+                <p style="color: var(--text-mid-gray);">Not rated yet</p>
                 {% endif %}
                 
-                {# Add rating button - could trigger a modal #}
-                <button class="btn btn-sm btn-outline mt-2" onclick="document.getElementById('rating_modal').showModal()">
+                <button class="btn-ghost mt-2" onclick="document.getElementById('rating_modal').showModal()">
                     {% if average_rating %}Update Rating{% else %}Add Rating{% endif %}
                 </button>
             </div>
 
             {% if recipe.description %}
             <div class="mt-4">
-                <h2 class="text-xl font-semibold">Description</h2>
-                <p class="mt-2 whitespace-pre-wrap">{{ recipe.description }}</p>
+                <span class="code-label">Description</span>
+                <p class="mt-2 whitespace-pre-wrap" style="color: var(--text-light-gray);">{{ recipe.description }}</p>
             </div>
             {% endif %}
 
-            {# Ingredients list #}
             {% if ingredients %}
             <div class="mt-6">
-                <h2 class="text-xl font-semibold">Ingredients</h2>
-                <ul class="mt-2 space-y-1">
+                <span class="code-label">Ingredients</span>
+                <ul class="mt-2 space-y-2">
                     {% for ing in ingredients %}
-                    <li class="border border-base-content/10 rounded-lg p-3">
-                        <span class="font-mono">{{ ing.quantity }} {{ ing.get_unit_display }}</span>
+                    <li class="border rounded-lg p-3" style="border-color: var(--border-dark);">
+                        <span style="font-family: var(--font-mono);">{{ ing.quantity }} {{ ing.get_unit_display }}</span>
                         - {{ ing.ingredient.name }}
 
-                        <div class="mt-2 text-sm opacity-80">
+                        <div class="mt-2 text-sm" style="color: var(--text-mid-gray);">
                             {% if ing.ingredient.usda_food_id %}
-                            <p><span class="font-semibold">USDA Ref:</span> {{ ing.ingredient.usda_food_id }}</p>
+                            <p><span class="font-medium">USDA Ref:</span> {{ ing.ingredient.usda_food_id }}</p>
                             {% else %}
-                            <p><span class="font-semibold">USDA Ref:</span> Not linked</p>
+                            <p><span class="font-medium">USDA Ref:</span> Not linked</p>
                             {% endif %}
 
                             {% if ing.ingredient.calories_kcal or ing.ingredient.protein_g or ing.ingredient.carbs_g or ing.ingredient.fat_g %}
                             <p class="mt-1">
-                                <span class="font-semibold">Nutrition:</span>
+                                <span class="font-medium">Nutrition:</span>
                                 {{ ing.ingredient.calories_kcal|default:"0" }} kcal,
                                 Protein {{ ing.ingredient.protein_g|default:"0" }}g,
                                 Carbs {{ ing.ingredient.carbs_g|default:"0" }}g,
@@ -110,18 +102,17 @@
             </div>
             {% endif %}
 
-            {# Instructions list #}
             {% if instructions %}
             <div class="mt-6">
-                <h2 class="text-xl font-semibold">Instructions</h2>
+                <span class="code-label">Instructions</span>
                 <ol class="mt-2 space-y-4">
                     {% for inst in instructions %}
                     <li class="flex gap-3">
-                        <span class="font-bold text-lg">{{ inst.step_number }}.</span>
+                        <span class="font-medium text-lg" style="color: var(--brand-green);">{{ inst.step_number }}.</span>
                         <div>
-                            <p>{{ inst.text }}</p>
+                            <p style="color: var(--text-light-gray);">{{ inst.text }}</p>
                             {% if inst.image %}
-                            <img src="{{ inst.image.url }}" alt="Step {{ inst.step_number }}" class="mt-2 max-w-xs rounded">
+                            <img src="{{ inst.image.url }}" alt="Step {{ inst.step_number }}" class="mt-2 max-w-xs" style="border-radius: 8px;">
                             {% endif %}
                         </div>
                     </li>
@@ -132,42 +123,39 @@
 
             {% if recipe.video_url %}
             <div class="mt-4">
-                <h2 class="text-xl font-semibold">Video</h2>
-                <a href="{{ recipe.video_url }}" target="_blank" class="btn btn-outline btn-sm mt-2">
+                <span class="code-label">Video</span>
+                <a href="{{ recipe.video_url }}" target="_blank" class="btn-ghost mt-2" style="display: inline-block;">
                     Watch Video
                 </a>
             </div>
             {% endif %}
 
-            <div class="text-base-content/50 text-sm mt-4">
-                Created: {{ recipe.created_at|date:"F j, Y" }}
+            <div style="color: var(--text-mid-gray); font-size: 14px; margin-top: 16px;">
+                <span class="code-label">Meta</span>
+                <p>Created: {{ recipe.created_at|date:"F j, Y" }}</p>
                 {% if recipe.updated_at != recipe.created_at %}
-                | Updated: {{ recipe.updated_at|date:"F j, Y" }}
+                <p>Updated: {{ recipe.updated_at|date:"F j, Y" }}</p>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    {# Rating modal #}
-    <dialog id="rating_modal" class="modal">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg">Rate this Recipe</h3>
+    <dialog id="rating_modal" class="modal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 16px; padding: 24px; box-shadow: rgba(0, 0, 0, 0.3) 0px 10px 40px;">
+        <div>
+            <h3 class="font-medium text-lg" style="margin-bottom: 16px;">Rate this Recipe</h3>
             <form method="post" action="{% url 'recipes:recipe_rate' recipe.pk %}">
                 {% csrf_token %}
                 {{ rating_form.as_p }}
-                <div class="modal-action">
-                    <button type="submit" class="btn btn-primary">Save Rating</button>
-                    <button type="button" class="btn" onclick="document.getElementById('rating_modal').close()">Cancel</button>
+                <div class="flex gap-2 mt-4">
+                    <button type="submit" class="btn-pill">Save Rating</button>
+                    <button type="button" class="btn-ghost" onclick="document.getElementById('rating_modal').close()">Cancel</button>
                 </div>
             </form>
         </div>
-        <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-        </form>
     </dialog>
 
     <div class="mt-4">
-        <a href="{% url 'recipes:recipe_list' %}" class="btn btn-ghost">Back to Recipes</a>
+        <a href="{% url 'recipes:recipe_list' %}" class="link-green">← Back to Recipes</a>
     </div>
 </div>
 {% endblock %}
@@ -189,11 +177,7 @@ async function toggleOnHandIdea(recipeId) {
         
         if (response.ok) {
             const data = await response.json();
-            if (data.on_hand_idea) {
-                location.reload();
-            } else {
-                location.reload();
-            }
+            location.reload();
         }
     } catch (error) {
         console.error('Error toggling on-hand idea:', error);

@@ -4,109 +4,78 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8 max-w-lg">
-    <div class="card bg-base-200">
-        <div class="card-body">
-            <h2 class="card-title mb-4">
+    <div class="card-dark">
+        <div class="p-6">
+            <h2 class="text-xl font-medium mb-4">
                 {% if object %}Edit Meal{% else %}Add Meal{% endif %}
             </h2>
             
             <form method="post">
                 {% csrf_token %}
                 
-                <!-- Date -->
-                <div class="form-control mb-4">
-                    <label class="label" for="id_meal_date">
-                        <span class="label-text">Date</span>
-                    </label>
+                <div class="mb-4">
+                    <label class="label-dark" for="id_meal_date">Date</label>
                     {{ form.meal_date }}
                     {% if form.meal_date.errors %}
-                    <label class="label">
-                        <span class="label-text-alt text-error">{{ form.meal_date.errors }}</span>
-                    </label>
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.meal_date.errors }}</p>
                     {% endif %}
                 </div>
                 
-                <!-- Meal Type -->
-                <div class="form-control mb-4">
-                    <label class="label" for="id_meal_type">
-                        <span class="label-text">Meal Type</span>
-                    </label>
+                <div class="mb-4">
+                    <label class="label-dark" for="id_meal_type">Meal Type</label>
                     {{ form.meal_type }}
                     {% if form.meal_type.errors %}
-                    <label class="label">
-                        <span class="label-text-alt text-error">{{ form.meal_type.errors }}</span>
-                    </label>
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.meal_type.errors }}</p>
                     {% endif %}
                 </div>
                 
-                <!-- Recipe -->
-                <div class="form-control mb-4">
-                    <label class="label" for="id_recipe">
-                        <span class="label-text">Recipe (optional)</span>
-                    </label>
+                <div class="mb-4">
+                    <label class="label-dark" for="id_recipe">Recipe (optional)</label>
                     {{ form.recipe }}
                     {% if form.recipe.errors %}
-                    <label class="label">
-                        <span class="label-text-alt text-error">{{ form.recipe.errors }}</span>
-                    </label>
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.recipe.errors }}</p>
                     {% endif %}
                 </div>
                 
-                <!-- Custom Meal - shown when no recipe selected -->
-                <div class="form-control mb-4">
-                    <label class="label" for="id_custom_meal">
-                        <span class="label-text">Or Custom Meal Name</span>
-                    </label>
-                    <div class="text-xs text-base-content/60 mb-2">
-                        Enter a custom meal if not using a recipe
-                    </div>
+                <div class="mb-4">
+                    <label class="label-dark" for="id_custom_meal">Or Custom Meal Name</label>
+                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">Enter a custom meal if not using a recipe</p>
                     {{ form.custom_meal }}
                     {% if form.custom_meal.errors %}
-                    <label class="label">
-                        <span class="label-text-alt text-error">{{ form.custom_meal.errors }}</span>
-                    </label>
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.custom_meal.errors }}</p>
                     {% endif %}
                 </div>
                 
-                <!-- Notes -->
-                <div class="form-control mb-4">
-                    <label class="label" for="id_notes">
-                        <span class="label-text">Notes (optional)</span>
-                    </label>
+                <div class="mb-4">
+                    <label class="label-dark" for="id_notes">Notes (optional)</label>
                     {{ form.notes }}
                     {% if form.notes.errors %}
-                    <label class="label">
-                        <span class="label-text-alt text-error">{{ form.notes.errors }}</span>
-                    </label>
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.notes.errors }}</p>
                     {% endif %}
                 </div>
                 
-                <!-- Side Dishes Section -->
-                <div class="border-t border-base-300 pt-4 mt-4">
-                    <h3 class="font-semibold text-lg mb-3">Side Dishes</h3>
+                <div class="border-t pt-4 mt-4" style="border-color: var(--border-subtle);">
+                    <h3 class="font-medium text-lg mb-3">Side Dishes</h3>
                     
                     <div id="side-dishes-container" class="space-y-3">
-                        <!-- Side dish forms rendered here -->
                     </div>
                     
-                    <button type="button" id="add-side-dish" class="btn btn-ghost btn-sm mt-2">
+                    <button type="button" id="add-side-dish" class="btn-ghost mt-2" style="padding: 6.4px 12.8px; font-size: 14px;">
                         + Add Side Dish
                     </button>
                 </div>
                 
-                <!-- Form errors -->
                 {% if form.non_field_errors %}
-                <div class="alert alert-error mb-4">
+                <div class="alert-dark mt-4">
                     {% for error in form.non_field_errors %}
                     <span>{{ error }}</span>
                     {% endfor %}
                 </div>
                 {% endif %}
                 
-                <!-- Actions -->
-                <div class="card-actions justify-end mt-6">
-                    <a href="{% url 'meal_planner:planner' %}" class="btn btn-ghost">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Save Meal</button>
+                <div class="flex justify-end gap-2 mt-6">
+                    <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">Cancel</a>
+                    <button type="submit" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">Save Meal</button>
                 </div>
             </form>
         </div>
@@ -120,7 +89,6 @@
 let sideDishCount = 0;
 let recipes = [];
 
-// Load recipes for side dish dropdown
 async function loadRecipes() {
     try {
         const response = await fetch('{% url "meal_planner:api_recipe_select" %}');
@@ -131,13 +99,12 @@ async function loadRecipes() {
     }
 }
 
-// Create a side dish form
 function createSideDishForm(index, initialData = {}) {
     const div = document.createElement('div');
-    div.className = 'bg-base-300 p-3 rounded relative';
+    div.className = 'p-3 rounded';
+    div.style.cssText = 'background: var(--bg-near-black); border: 1px solid var(--border-dark);';
     div.dataset.index = index;
     
-    // Recipe dropdown options
     let recipeOptions = '<option value="">-- Select Recipe --</option>';
     recipes.forEach(r => {
         const selected = initialData.recipe_id === r.id ? 'selected' : '';
@@ -147,32 +114,26 @@ function createSideDishForm(index, initialData = {}) {
     div.innerHTML = `
         <div class="flex justify-between items-center mb-2">
             <span class="text-sm font-medium">Side Dish ${index + 1}</span>
-            <button type="button" class="btn btn-xs btn-ghost text-error" onclick="removeSideDish(${index})">✕</button>
+            <button type="button" class="btn-ghost" onclick="removeSideDish(${index})" style="padding: 2px 6px; font-size: 12px; color: #fc7981;">Remove</button>
         </div>
-        <div class="form-control mb-2">
-            <label class="label py-1">
-                <span class="label-text-alt">Recipe</span>
-            </label>
-            <select name="side_dishes-${index}-recipe" class="select select-bordered select-sm">
+        <div class="mb-2">
+            <label class="label-dark" style="font-size: 0.75rem;">Recipe</label>
+            <select name="side_dishes-${index}-recipe" class="input-dark" style="font-size: 0.875rem;">
                 ${recipeOptions}
             </select>
         </div>
-        <div class="form-control mb-2">
-            <label class="label py-1">
-                <span class="label-text-alt">Or Custom Side Dish</span>
-            </label>
+        <div class="mb-2">
+            <label class="label-dark" style="font-size: 0.75rem;">Or Custom Side Dish</label>
             <input type="text" name="side_dishes-${index}-custom_side" 
-                   class="input input-bordered input-sm"
+                   class="input-dark" style="font-size: 0.875rem;"
                    value="${initialData.custom_side || ''}"
                    placeholder="Enter custom side dish">
         </div>
         <div class="flex gap-2">
-            <div class="form-control w-20">
-                <label class="label py-1">
-                    <span class="label-text-alt">Order</span>
-                </label>
+            <div class="w-20">
+                <label class="label-dark" style="font-size: 0.75rem;">Order</label>
                 <input type="number" name="side_dishes-${index}-order" 
-                       class="input input-bordered input-sm"
+                       class="input-dark" style="font-size: 0.875rem;"
                        value="${initialData.order || index}">
             </div>
         </div>
@@ -191,7 +152,6 @@ function removeSideDish(index) {
     const container = document.getElementById('side-dishes-container');
     const form = container.querySelector(`[data-index="${index}"]`);
     if (form) {
-        // Mark for deletion
         const deleteInput = document.createElement('input');
         deleteInput.type = 'hidden';
         deleteInput.name = `side_dishes-${index}-DELETE`;
@@ -201,7 +161,6 @@ function removeSideDish(index) {
     }
 }
 
-// Toggle custom meal field based on recipe selection
 document.addEventListener('DOMContentLoaded', function() {
     const recipeSelect = document.getElementById('id_recipe');
     const customMealInput = document.getElementById('id_custom_meal');
@@ -209,21 +168,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function toggleCustomMeal() {
         if (recipeSelect && customMealInput) {
-            if (recipeSelect.value) {
-                customMealInput.closest('.form-control').style.display = 'none';
-                customMealInput.value = '';
-            } else {
-                customMealInput.closest('.form-control').style.display = 'block';
+            const formControl = customMealInput.closest('.mb-4');
+            if (formControl) {
+                formControl.style.display = recipeSelect.value ? 'none' : 'block';
+                if (recipeSelect.value) {
+                    customMealInput.value = '';
+                }
             }
         }
     }
     
     if (recipeSelect) {
         recipeSelect.addEventListener('change', toggleCustomMeal);
-        toggleCustomMeal(); // Initial state
+        toggleCustomMeal();
     }
     
-    // Side dish functionality
     if (addSideDishBtn) {
         loadRecipes().then(() => {
             addSideDishBtn.addEventListener('click', () => addSideDish());

@@ -6,22 +6,22 @@
 <div class="max-w-5xl mx-auto space-y-6">
     <div class="flex flex-wrap justify-between items-center gap-3">
         <div>
-            <h1 class="text-2xl font-bold">Expiration Triage</h1>
-            <p class="text-sm opacity-70">Track what needs to be used soon and what is already expired.</p>
+            <h1 class="text-2xl font-medium">Expiration Triage</h1>
+            <p class="text-sm" style="color: var(--text-light-gray);">Track what needs to be used soon and what is already expired.</p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-ghost btn-sm">Back to Inventory</a>
-            <a href="{% url 'inventory:inventory_expiring' %}" class="btn btn-outline btn-sm">Expiring Soon</a>
-            <a href="{% url 'inventory:inventory_expired' %}" class="btn btn-outline btn-sm">Expired</a>
+            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Back to Inventory</a>
+            <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Soon</a>
+            <a href="{% url 'inventory:inventory_expired' %}" class="btn-ghost">Expired</a>
         </div>
     </div>
 
-    <div class="card bg-base-300 shadow">
-        <div class="card-body">
-            <h2 class="card-title">Expiring Soon</h2>
+    <div class="card-dark">
+        <div class="p-6">
+            <h2 class="text-lg font-medium">Expiring Soon</h2>
             {% if expiring_items %}
-            <div class="overflow-x-auto">
-                <table class="table table-zebra">
+            <div class="overflow-x-auto mt-4">
+                <table class="table-dark">
                     <thead>
                         <tr>
                             <th>Item</th>
@@ -36,24 +36,24 @@
                             <td>{{ item.name }}</td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
                             <td>{{ item.get_location_display }}</td>
-                            <td><span class="badge badge-warning">{{ item.expiration_date }}</span></td>
+                            <td><span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">{{ item.expiration_date }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <p class="opacity-70">No items currently expiring within your household threshold.</p>
+            <p style="color: var(--text-light-gray);">No items currently expiring within your household threshold.</p>
             {% endif %}
         </div>
     </div>
 
-    <div class="card bg-base-300 shadow">
-        <div class="card-body">
-            <h2 class="card-title">Already Expired</h2>
+    <div class="card-dark">
+        <div class="p-6">
+            <h2 class="text-lg font-medium">Already Expired</h2>
             {% if expired_items %}
-            <div class="overflow-x-auto">
-                <table class="table table-zebra">
+            <div class="overflow-x-auto mt-4">
+                <table class="table-dark">
                     <thead>
                         <tr>
                             <th>Item</th>
@@ -68,14 +68,14 @@
                             <td>{{ item.name }}</td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
                             <td>{{ item.get_location_display }}</td>
-                            <td><span class="badge badge-error">{{ item.expiration_date }}</span></td>
+                            <td><span class="badge-dark" style="background: rgba(239, 68, 68, 0.15); color: #fc7981; border-color: rgba(239, 68, 68, 0.3);">{{ item.expression_date }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <p class="opacity-70">No expired items 🎉</p>
+            <p style="color: var(--text-light-gray);">No expired items</p>
             {% endif %}
         </div>
     </div>

@@ -3,381 +3,147 @@
 {% block title %}Weekly Meal Planner{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Week Navigation Header -->
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-4">
+<div class="mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3">
             <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=-1" 
-               class="btn btn-primary btn-outline btn-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-                Previous
+               class="btn-secondary" style="padding: 8px 16px;">
+                ← Previous
             </a>
-            <h1 class="text-2xl font-bold">
-                Week of {{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}
+            <h1 class="text-xl font-semibold">
+                {{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}
             </h1>
             <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=1" 
-               class="btn btn-primary btn-outline btn-sm">
-                Next
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
+               class="btn-secondary" style="padding: 8px 16px;">
+                Next →
             </a>
         </div>
         
-        <!-- Today button -->
-        <a href="{% url 'meal_planner:planner' %}" class="btn btn-ghost btn-sm">
-            Today
-        </a>
-        
-        <!-- Leftover toggle -->
-        <label class="label cursor-pointer gap-2">
-            <span class="label-text">Leftovers</span>
-            <input type="checkbox" id="leftover-filter" class="toggle toggle-primary toggle-sm" onchange="toggleLeftovers()">
-        </label>
-        
-        <!-- On-Hand Ideas button -->
-        <a href="{% url 'meal_planner:on_hand_ideas' %}" class="btn btn-warning btn-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-            </svg>
-            On-Hand Ideas
-        </a>
+        <div class="flex items-center gap-3 flex-wrap">
+            <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">
+                Today
+            </a>
+            
+            <label class="flex items-center gap-2 cursor-pointer" style="color: var(--text-secondary);">
+                <input type="checkbox" id="leftover-filter" onchange="toggleLeftovers()" 
+                       style="width: 18px; height: 18px; accent-color: var(--brand-primary);">
+                <span style="font-size: 0.875rem;">Leftovers</span>
+            </label>
+            
+            <a href="{% url 'meal_planner:on_hand_ideas' %}" class="btn-primary">
+                On-Hand Ideas
+            </a>
 
-        <a href="{% url 'shopping:week' %}?week_start={{ start_date|date:'Y-m-d' }}" class="btn btn-accent btn-sm">
-            Shopping List
-        </a>
-    </div>
-
-    <!-- Recipe Detail Modal -->
-<div id="recipe-modal" class="modal hidden">
-    <div class="modal-box bg-base-200 max-w-2xl">
-        <h3 id="recipe-modal-title" class="font-bold text-xl mb-2"></h3>
-        <p id="recipe-modal-description" class="text-base-content/80 mb-4"></p>
-        
-        <div class="mb-4">
-            <h4 class="font-semibold">Ingredients</h4>
-            <ul id="recipe-modal-ingredients" class="list-disc list-inside text-sm"></ul>
-        </div>
-        
-        <div class="mb-4">
-            <h4 class="font-semibold">Instructions</h4>
-            <ol id="recipe-modal-instructions" class="list-decimal list-inside text-sm"></ol>
-        </div>
-        
-        <div class="modal-action">
-            <a id="recipe-modal-full-link" href="" class="btn btn-primary">View Full Recipe</a>
-            <button onclick="closeRecipeModal()" class="btn">Close</button>
+            <a href="{% url 'shopping:week' %}?week_start={{ start_date|date:'Y-m-d' }}" class="btn-secondary">
+                Shopping List
+            </a>
         </div>
     </div>
-    <div class="modal-backdrop" onclick="closeRecipeModal()"></div>
 </div>
 
-<!-- Week Grid -->
-    <div class="grid grid-cols-7 gap-2">
-        {% for day in week_days %}
-        <div class="bg-base-200 rounded-lg p-2 min-h-[300px]">
-            <!-- Day Header -->
-            <div class="text-center mb-3 border-b border-base-300 pb-2">
-                <div class="text-sm text-base-content/70">{{ day.day_name }}</div>
-                <div class="text-xl font-bold">{{ day.date|date:"d" }}</div>
-                <div class="text-xs text-base-content/50">{{ day.date|date:"M" }}</div>
-            </div>
+<div id="recipe-modal" class="fixed inset-0 z-50 hidden" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+    <div class="card m-auto p-6" style="max-width: 32rem; max-height: 85vh; overflow-y: auto; margin: auto;">
+        <div class="flex justify-between items-start mb-4">
+            <h3 id="recipe-modal-title" class="text-xl font-semibold"></h3>
+            <button @click="closeModal()" class="btn-ghost" style="padding: 4px;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <p id="recipe-modal-description" class="mb-4" style="color: var(--text-secondary);"></p>
+        
+        <div class="mb-4">
+            <span class="code-label">Ingredients</span>
+            <ul id="recipe-modal-ingredients" class="mt-2 space-y-1" style="color: var(--text-secondary);"></ul>
+        </div>
+        
+        <div class="mb-4">
+            <span class="code-label">Instructions</span>
+            <ol id="recipe-modal-instructions" class="mt-2 space-y-2" style="color: var(--text-secondary);"></ol>
+        </div>
+        
+        <div class="flex gap-3">
+            <a id="recipe-modal-full-link" href="" class="btn-secondary">View Full Recipe</a>
+            <button @click="closeModal()" class="btn-ghost">Close</button>
+        </div>
+    </div>
+</div>
 
-            <!-- Meal Type Sections -->
-            {% for meal_type in meal_types %}
-            <div class="mb-3">
-                <div class="text-xs font-semibold uppercase text-base-content/70 mb-1">
-                    {{ meal_type }}
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+    {% for day in week_days %}
+    <div class="card p-4" style="min-height: 280px;">
+        <div class="text-center mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
+            <div class="font-semibold text-sm" style="color: var(--text-secondary);">{{ day|date:"l" }}</div>
+            <div class="text-lg font-semibold">{{ day|date:"M d" }}</div>
+        </div>
+        
+        {% for meal_type, meals in day.meals.items %}
+        <div class="mb-4">
+            <div class="font-medium text-xs mb-2 uppercase tracking-wide" style="color: var(--text-muted); text-transform: capitalize;">{{ meal_type }}</div>
+            {% for meal in meals %}
+            <div class="p-2 mb-2 rounded-lg" style="background: var(--bg-page); border: 1px solid var(--border-subtle);">
+                {% if meal.recipe %}
+                <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
+                <div class="flex gap-2">
+                    <button @click="openRecipeModal({{ meal.recipe.pk }})" class="link text-xs">View</button>
+                    <a href="{% url 'meal_planner:cooking_home' meal.pk %}" class="link text-xs">Cook</a>
                 </div>
-                <div class="space-y-2">
-                    <!-- Meals for this type/day would be rendered here by JS -->
-                    <div class="meal-slots" data-date="{{ day.date_str }}" data-type="{{ meal_type }}">
-                        <!-- Placeholder for meals -->
-                    </div>
-                    
-                    <!-- Add Meal Button -->
-                    <a href="{% url 'meal_planner:add_meal' %}?date={{ day.date_str }}&type={{ meal_type }}" 
-                       class="btn btn-xs btn-ghost w-full">
-                        + Add
-                    </a>
-                </div>
+                {% else %}
+                <div class="text-sm" style="color: var(--text-muted);">{{ meal.notes|truncatechars:30 }}</div>
+                {% endif %}
             </div>
             {% endfor %}
+            
+            <a href="{% url 'meal_planner:meal_create' %}?date={{ day|date:'Y-m-d' }}&meal_type={{ meal_type }}" 
+               class="link text-xs">+ Add {{ meal_type }}</a>
         </div>
         {% endfor %}
     </div>
+    {% endfor %}
 </div>
-
-{% endblock %}
 
 {% block extra_js %}
 <script>
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
-let showLeftoversOnly = false;
-let cachedMeals = [];
+const modal = document.getElementById('recipe-modal');
 
-// Load meals for the week
-async function loadWeekMeals(startDate, endDate) {
-    try {
-        const response = await fetch(`/api/meals/?start=${startDate}&end=${endDate}`);
-        const data = await response.json();
-        // Also load side dishes for each meal
-        for (let meal of data.meals) {
-            meal.side_dishes = await loadSideDishes(meal.id);
-        }
-        cachedMeals = data.meals;
-        renderMeals(data.meals);
-    } catch (error) {
-        console.error('Error loading meals:', error);
-    }
-}
-
-// Load side dishes for a meal
-async function loadSideDishes(mealId) {
-    try {
-        const response = await fetch(`/api/meals/${mealId}/side_dishes/`);
-        if (response.ok) {
-            const data = await response.json();
-            return data.side_dishes || [];
-        }
-    } catch (error) {
-        console.error('Error loading side dishes:', error);
-    }
-    return [];
-}
-
-// Show recipe detail modal
-async function showRecipeDetail(recipeId) {
-    try {
-        const response = await fetch(`/planner/api/recipes/${recipeId}/`);
-        const recipe = await response.json();
-        
-        document.getElementById('recipe-modal-title').textContent = recipe.title;
-        document.getElementById('recipe-modal-description').textContent = recipe.description || '';
-        
-        // Ingredients list
-        const ingredientsList = document.getElementById('recipe-modal-ingredients');
-        ingredientsList.innerHTML = '';
-        if (recipe.ingredients && recipe.ingredients.length > 0) {
-            recipe.ingredients.forEach(ing => {
-                const li = document.createElement('li');
-                li.textContent = `${ing.quantity} ${ing.unit} ${ing.name}`;
-                ingredientsList.appendChild(li);
-            });
-        } else {
-            ingredientsList.innerHTML = '<li class="text-base-content/50">No ingredients listed</li>';
-        }
-        
-        // Instructions list
-        const instructionsList = document.getElementById('recipe-modal-instructions');
-        instructionsList.innerHTML = '';
-        if (recipe.instructions && recipe.instructions.length > 0) {
-            recipe.instructions.forEach(inst => {
-                const li = document.createElement('li');
-                li.textContent = inst.text;
-                instructionsList.appendChild(li);
-            });
-        } else {
-            instructionsList.innerHTML = '<li class="text-base-content/50">No instructions listed</li>';
-        }
-        
-        // Full recipe link
-        document.getElementById('recipe-modal-full-link').href = `/recipes/${recipeId}/`;
-        
-        // Show modal
-        document.getElementById('recipe-modal').classList.remove('hidden');
-    } catch (error) {
-        console.error('Error loading recipe:', error);
-    }
-}
-
-function closeRecipeModal() {
-    document.getElementById('recipe-modal').classList.add('hidden');
-}
-
-// Toggle leftover filter
-function toggleLeftovers() {
-    showLeftoversOnly = document.getElementById('leftover-filter').checked;
-    renderMeals(cachedMeals);
-}
-
-// Render meals into the grid
-function renderMeals(meals) {
-    // Clear existing meals
-    document.querySelectorAll('.meal-slots').forEach(slot => {
-        slot.innerHTML = '';
-    });
-    
-    // Group meals by date and type
-    const mealsByDateType = {};
-    meals.forEach(meal => {
-        const key = `${meal.meal_date}-${meal.meal_type}`;
-        mealsByDateType[key] = meal;
-    });
-    
-    // Render meals into slots
-    document.querySelectorAll('.meal-slots').forEach(slot => {
-        const date = slot.dataset.date;
-        const type = slot.dataset.type;
-        const key = `${date}-${type}`;
-        const meal = mealsByDateType[key];
-        
-        if (meal) {
-            // If leftover filter is active and recipe is not leftover-worthy, show as "leftover" option
-            if (showLeftoversOnly && meal.recipe_id) {
-                // Check if recipe is leftover-worthy (we'd need to fetch this)
-                // For now, show all recipes with a special indicator
-            }
-            const mealCard = createMealCard(meal);
-            slot.innerHTML = '';
-            slot.appendChild(mealCard);
-        } else if (showLeftoversOnly) {
-            // Show leftover suggestions when no meal is planned
-            slot.innerHTML = '<div class="text-xs text-warning italic">No leftover planned</div>';
-        } else {
-            slot.innerHTML = '<div class="text-xs text-base-content/40 italic">No meals planned</div>';
-        }
-    });
-}
-
-// Create meal card element with edit/delete/rate actions
-function createMealCard(meal) {
-    const div = document.createElement('div');
-    div.className = 'bg-base-300 rounded p-2 text-sm relative group';
-    
-    let mealName = meal.custom_meal || meal.recipe_title || 'No meal';
-    let href = meal.recipe_id ? `/recipes/${meal.recipe_id}/` : null;
-    
-    // Generate rating stars
-    let ratingHtml = '';
-    for (let i = 1; i <= 5; i++) {
-        const filled = meal.meal_rating && i <= meal.meal_rating;
-        ratingHtml += `<span class="cursor-pointer ${filled ? 'text-warning' : 'text-base-content/30'}" 
-                        onclick="rateMeal(${meal.id}, ${i})">★</span>`;
-    }
-    
-    // Recipe link with modal or direct link
-    let mealHtml = '';
-    if (meal.recipe_id) {
-        mealHtml = `<span class="cursor-pointer text-primary hover:underline" 
-                       onclick="showRecipeDetail(${meal.recipe_id})">${mealName}</span>`;
-    } else {
-        mealHtml = `<span class="font-medium">${mealName}</span>`;
-    }
-    
-    // Side dishes display
-    let sideDishesHtml = '';
-    if (meal.side_dishes && meal.side_dishes.length > 0) {
-        const sides = meal.side_dishes.map(s => s.recipe_title || s.custom_side).join(', ');
-        sideDishesHtml = `<div class="text-xs text-base-content/60 mt-1">with ${sides}</div>`;
-    }
-    
-    div.innerHTML = `
-        <div class="flex justify-between items-start">
-            <div class="flex-1">
-                ${mealHtml}
-            </div>
-            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a href="/planner/meal/${meal.id}/edit/" class="btn btn-xs btn-ghost p-0.5" title="Edit">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                </a>
-                <button onclick="confirmDeleteMeal(${meal.id})" class="btn btn-xs btn-ghost p-0.5 text-error" title="Delete">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-        ${sideDishesHtml}
-        ${meal.notes ? `<div class="text-xs text-base-content/60 mt-1 truncate">${meal.notes}</div>` : ''}
-        <div class="mt-1 text-xs rating-stars" data-meal-id="${meal.id}">${ratingHtml}</div>
-        ${meal.recipe_id ? `<a href="/planner/cooking/${meal.id}/" class="btn btn-xs btn-primary mt-2 w-full">Cook This</a>` : ''}
-    `;
-    
-    return div;
-}
-
-// Rate a meal
-async function rateMeal(mealId, rating) {
-    try {
-        const formData = new FormData();
-        formData.append('rating', rating);
-        
-        const response = await fetch(`/planner/meal/${mealId}/rate/`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            }
+function openRecipeModal(recipeId) {
+    fetch(`/recipes/api/${recipeId}/`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('recipe-modal-title').textContent = data.title;
+            document.getElementById('recipe-modal-description').textContent = data.description || '';
+            
+            const ingredientsEl = document.getElementById('recipe-modal-ingredients');
+            ingredientsEl.innerHTML = data.ingredients.map(i => `<li>${i.quantity} ${i.unit} ${i.name}</li>`).join('');
+            
+            const instructionsEl = document.getElementById('recipe-modal-instructions');
+            instructionsEl.innerHTML = data.instructions.map((i, idx) => `<li class="ml-2">${idx + 1}. ${i.step}</li>`).join('');
+            
+            document.getElementById('recipe-modal-full-link').href = `/recipes/${recipeId}/`;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         });
-        
-        if (response.ok) {
-            // Update the stars in UI
-            const starsContainer = document.querySelector(`.rating-stars[data-meal-id="${mealId}"]`);
-            if (starsContainer) {
-                let html = '';
-                for (let i = 1; i <= 5; i++) {
-                    html += `<span class="cursor-pointer ${i <= rating ? 'text-warning' : 'text-base-content/30'}" 
-                            onclick="rateMeal(${mealId}, ${i})">★</span>`;
-                }
-                starsContainer.innerHTML = html;
-            }
-        } else {
-            console.error('Failed to rate meal');
-        }
-    } catch (error) {
-        console.error('Error rating meal:', error);
-    }
 }
 
-// Confirm delete meal
-function confirmDeleteMeal(mealId) {
-    if (confirm('Are you sure you want to delete this meal?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/planner/meal/${mealId}/delete/`;
-        
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = getCookie('csrftoken');
-        
-        form.appendChild(csrfInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
+function closeModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
-// Get CSRF token from cookie
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Get start and end dates from context
-    const startDate = '{{ start_date|date:"Y-m-d" }}';
-    const endDate = '{{ end_date|date:"Y-m-d" }}';
-    
-    // Load meals
-    if (startDate && endDate) {
-        loadWeekMeals(startDate, endDate);
+modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+        closeModal();
     }
 });
+
+function toggleLeftovers() {
+    const show = document.getElementById('leftover-filter').checked;
+    document.querySelectorAll('.leftover-meal').forEach(el => {
+        el.style.display = show ? 'block' : 'none';
+    });
+}
 </script>
+{% endblock %}
 {% endblock %}

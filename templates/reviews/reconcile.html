@@ -5,14 +5,14 @@
 {% block content %}
 <div class="max-w-4xl mx-auto" x-data="reconciliation()">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Reconcile Ingredients</h1>
-        <a href="{% url 'reviews:review_queue' %}" class="btn btn-ghost">Back to Queue</a>
+        <h1 class="text-2xl font-medium">Reconcile Ingredients</h1>
+        <a href="{% url 'reviews:review_queue' %}" class="btn-ghost">Back to Queue</a>
     </div>
 
-    <div class="card bg-base-300 shadow mb-6">
-        <div class="card-body">
-            <h2 class="text-xl font-semibold">{{ object.title }}</h2>
-            <p class="text-sm opacity-70">{{ object.description }}</p>
+    <div class="card-dark mb-6">
+        <div class="p-6">
+            <h2 class="text-xl font-medium">{{ object.title }}</h2>
+            <p class="text-sm" style="color: var(--text-light-gray);">{{ object.description }}</p>
         </div>
     </div>
 
@@ -20,14 +20,14 @@
         {% csrf_token %}
         
         <div class="space-y-4 mb-6">
-            <h3 class="text-lg font-semibold">Ingredients</h3>
+            <h3 class="text-lg font-medium">Ingredients</h3>
             
             {% for link in ingredient_links %}
-            <div class="card bg-base-300 p-4">
+            <div class="card-dark p-4">
                 <div class="flex flex-wrap items-center gap-4">
                     <div class="flex-1 min-w-[200px]">
                         <span class="font-medium">{{ link.ingredient.name }}</span>
-                        <span class="text-sm opacity-70 ml-2">{{ link.quantity }} {{ link.unit }}</span>
+                        <span class="text-sm" style="color: var(--text-light-gray); margin-left: 8px;">{{ link.quantity }} {{ link.unit }}</span>
                     </div>
                     
                     <div class="flex items-center gap-2">
@@ -35,7 +35,8 @@
                         <select 
                             name="inventory_item_{{ link.id }}" 
                             id="inventory_item_{{ link.id }}"
-                            class="select select-bordered select-sm"
+                            class="input-dark"
+                            style="width: auto;"
                         >
                             <option value="none">-- Not in Inventory --</option>
                             {% for inv in inventory_items %}
@@ -46,69 +47,67 @@
                         </select>
                         
                         <button type="button" 
-                                class="btn btn-sm btn-outline" 
+                                class="btn-ghost"
                                 @click="showQuickAdd = true; currentLinkId = {{ link.id }}">
                             + Quick Add
                         </button>
                     </div>
 
-                    <p class="text-xs opacity-60 basis-full">
+                    <p class="text-xs" style="color: var(--text-mid-gray); width: 100%;">
                         Choose an inventory item in your household to persist this ingredient link.
                     </p>
                 </div>
             </div>
             {% empty %}
-            <div class="alert alert-info">
-                No ingredients found for this recipe. Please add ingredients first.
+            <div class="card-dark p-4">
+                <p>No ingredients found for this recipe. Please add ingredients first.</p>
             </div>
             {% endfor %}
         </div>
 
         <div class="flex justify-between items-center">
-            <a href="{% url 'reviews:review_queue' %}" class="btn btn-ghost">Cancel</a>
+            <a href="{% url 'reviews:review_queue' %}" class="btn-ghost">Cancel</a>
             
             <div class="flex gap-2">
-                <button type="submit" name="mark_ready" value="1" class="btn btn-success">
+                <button type="submit" name="mark_ready" value="1" class="btn-pill">
                     Save & Mark Ready
                 </button>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn-pill-muted">
                     Save Links
                 </button>
             </div>
         </div>
     </form>
 
-    <!-- Quick Add Modal -->
-    <dialog id="quick_add_modal" class="modal" :class="{ 'modal-open': showQuickAdd }">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg mb-4">Quick Add Inventory Item</h3>
+    <dialog id="quick_add_modal" class="modal" :class="{ 'modal-open': showQuickAdd }" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 16px; padding: 24px; box-shadow: rgba(0, 0, 0, 0.3) 0px 10px 40px;">
+        <div>
+            <h3 class="font-medium text-lg mb-4">Quick Add Inventory Item</h3>
             
             <form @submit.prevent="submitQuickAdd">
-                <div class="form-control mb-4">
-                    <label class="label">
-                        <span class="label-text">Item Name</span>
+                <div class="mb-4">
+                    <label class="label-dark">
+                        <span>Item Name</span>
                     </label>
-                    <input type="text" name="name" x-model="newItem.name" required class="input input-bordered" placeholder="e.g., Chicken Breast">
+                    <input type="text" name="name" x-model="newItem.name" required class="input-dark" placeholder="e.g., Chicken Breast">
                 </div>
                 
                 <div class="flex gap-4 mb-4">
-                    <div class="form-control flex-1">
-                        <label class="label">
-                            <span class="label-text">Quantity</span>
+                    <div class="flex-1">
+                        <label class="label-dark">
+                            <span>Quantity</span>
                         </label>
-                        <input type="number" name="quantity" x-model="newItem.quantity" required class="input input-bordered" step="0.01" min="0">
+                        <input type="number" name="quantity" x-model="newItem.quantity" required class="input-dark" step="0.01" min="0">
                     </div>
                     
-                    <div class="form-control flex-1">
-                        <label class="label">
-                            <span class="label-text">Unit</span>
+                    <div class="flex-1">
+                        <label class="label-dark">
+                            <span>Unit</span>
                         </label>
-                        <select name="unit" x-model="newItem.unit" class="select select-bordered">
+                        <select name="unit" x-model="newItem.unit" class="input-dark" style="width: auto;">
                             <option value="piece">piece</option>
                             <option value="oz">ounce</option>
                             <option value="lb">pound</option>
                             <option value="cup">cup</option>
-                            <option value="lb">lb</option>
                             <option value="g">gram</option>
                             <option value="kg">kilogram</option>
                             <option value="ml">milliliter</option>
@@ -117,11 +116,11 @@
                     </div>
                 </div>
                 
-                <div class="form-control mb-4">
-                    <label class="label">
-                        <span class="label-text">Category</span>
+                <div class="mb-4">
+                    <label class="label-dark">
+                        <span>Category</span>
                     </label>
-                    <select name="category" x-model="newItem.category" class="select select-bordered">
+                    <select name="category" x-model="newItem.category" class="input-dark" style="width: auto;">
                         <option value="produce">Produce</option>
                         <option value="dairy">Dairy</option>
                         <option value="meat">Meat & Seafood</option>
@@ -131,15 +130,12 @@
                     </select>
                 </div>
                 
-                <div class="modal-action">
-                    <button type="button" class="btn" @click="showQuickAdd = false">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add to Inventory</button>
+                <div class="flex gap-2 mt-4">
+                    <button type="button" class="btn-ghost" @click="showQuickAdd = false">Cancel</button>
+                    <button type="submit" class="btn-pill">Add to Inventory</button>
                 </div>
             </form>
         </div>
-        <form method="dialog" class="modal-backdrop">
-            <button @click="showQuickAdd = false">close</button>
-        </form>
     </dialog>
 </div>
 
@@ -168,7 +164,6 @@ function reconciliation() {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    // Add the new item to the dropdown
                     const select = document.getElementById(`inventory_item_${this.currentLinkId}`);
                     const option = document.createElement('option');
                     option.value = data.id;
@@ -176,7 +171,6 @@ function reconciliation() {
                     option.selected = true;
                     select.appendChild(option);
                     
-                    // Close modal and reset
                     this.showQuickAdd = false;
                     this.newItem = { name: '', quantity: 1, unit: 'piece', category: 'other' };
                 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple YouTube Recipe Importer - Call from Python
+YouTube Recipe Importer using OpenAI via OpenRouter
 
 Usage:
     from youtube_importer import import_recipe
@@ -11,7 +11,7 @@ Usage:
 
 import os
 import sys
-import re
+import json
 
 # Add project to path and setup Django
 project_path = os.path.dirname(os.path.abspath(__file__))
@@ -28,201 +28,155 @@ from instructions.models import Instruction
 from household.models import Household
 
 
-UNIT_MAP = {
-    "cup": "cups",
-    "tbsp": "tablespoons",
-    "tsp": "teaspoons",
-    "oz": "ounces",
-    "lb": "pounds",
-    "tbs": "tablespoons",
-    "ts": "teaspoons",
-}
-
-
-def get_api_key():
-    """Get YouTube API key from settings or env."""
-    key = os.environ.get("YOUTUBE_API_KEY")
+def get_openrouter_key():
+    """Get OpenRouter API key from env or prompt."""
+    key = os.environ.get("OPENROUTER_API_KEY")
     if key:
         return key
+
+    key = os.environ.get("OPENAI_API_KEY")
+    if key:
+        return key
+
+    # Try settings
     try:
         from meal_planner import settings
 
-        return getattr(settings, "YOUTUBE_API_KEY", "")
+        return getattr(settings, "OPENROUTER_API_KEY", "") or getattr(
+            settings, "OPENAI_API_KEY", ""
+        )
     except Exception:
-        return ""
+        pass
+
+    print("OpenRouter API Key not found.")
+    key = input("Enter your OpenRouter API key: ").strip()
+    if key:
+        os.environ["OPENROUTER_API_KEY"] = key
+        return key
+    return ""
 
 
-def get_household(user=None):
-    """Get household for user or first available."""
-    if user and hasattr(user, "household") and user.household:
-        return user.household
-    return Household.objects.first()
+def extract_video_id(url):
+    """Extract video ID from YouTube URL."""
+    import re
+
+    patterns = [
+        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/|youtube\.com/v/)([a-zA-Z0-9_-]{11})",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    return None
 
 
-def parse_ingredients(text):
-    """Parse ingredients from text."""
-    ingredients = []
-    lines = text.split("\n")
-    in_section = False
+def get_transcript_with_llm(video_id: str, api_key: str) -> dict:
+    """
+    Use OpenAI with YouTube transcript to extract recipe data.
+    """
+    import requests
 
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        # Section detection
-        if re.match(
-            r"^(?:ingredients|directions?|you[' ]?ll need)[\s:]*$", line, re.IGNORECASE
-        ):
-            in_section = True
-            continue
-        if re.match(
-            r"^(?:instructions?|directions?|steps?|method)[\s:]*$", line, re.IGNORECASE
-        ):
-            in_section = False
-            continue
-
-        if in_section or line.startswith(("-", "*", "•")):
-            clean = line.lstrip("-*• ").strip()
-            # Parse quantity
-            m = re.match(
-                r"^(\d+(?:[\d\/\.]+)?(?:\s*-\s*\d+)?)\s*([a-zA-Z]+)?\s*(.+)", clean
-            )
-            if m:
-                qty, unit, name = m.group(1) or "", m.group(2) or "", m.group(3)
-                ingredients.append(
-                    {
-                        "name": name,
-                        "quantity": qty,
-                        "unit": UNIT_MAP.get(unit.lower(), unit.lower())
-                        if unit
-                        else "piece",
-                    }
-                )
-            else:
-                ingredients.append({"name": clean, "quantity": "1", "unit": "piece"})
-
-    return ingredients[:30]
-
-
-def parse_instructions(text):
-    """Parse instructions from text."""
-    instructions = []
-    lines = text.split("\n")
-    in_section = False
-    step = 1
-
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        if re.match(
-            r"^(?:instructions?|directions?|steps?|method)[\s:]*$", line, re.IGNORECASE
-        ):
-            in_section = True
-            continue
-        if re.match(r"^(?:ingredients?)[\s:]*$", line, re.IGNORECASE):
-            in_section = False
-            continue
-
-        # Numbered or timestamped
-        ts = re.match(r"(\d{1,2}:\d{2})\s*[-–]\s*(.+)", line)
-        num = re.match(r"^\d+[.)]\s+(.+)", line)
-
-        if ts:
-            instructions.append({"step": step, "text": ts.group(2)})
-            step += 1
-        elif num:
-            instructions.append({"step": step, "text": num.group(1)})
-            step += 1
-        elif in_section and not line.startswith(("-", "*", "•")):
-            instructions.append({"step": step, "text": line})
-            step += 1
-
-    return instructions[:30]
-
-
-def fetch_metadata(url):
-    """Fetch video metadata from YouTube API."""
-    from googleapiclient.discovery import build
-
-    api_key = get_api_key()
-    if not api_key:
-        raise ValueError("YOUTUBE_API_KEY not configured")
-
-    m = re.search(
-        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})",
-        url,
-    )
-    if not m:
-        raise ValueError("Invalid YouTube URL")
-
-    video_id = m.group(1)
-    youtube = build("youtube", "v3", developerKey=api_key)
-    response = youtube.videos().list(part="snippet", id=video_id).execute()
-
-    if not response.get("items"):
-        raise ValueError("Video not found")
-
-    snippet = response["items"][0]["snippet"]
-    thumbs = snippet.get("thumbnails", {})
-    thumb = ""
-    for q in ("maxres", "high", "medium", "default"):
-        if q in thumbs:
-            thumb = thumbs[q]["url"]
-            break
-
-    return {
-        "video_id": video_id,
-        "title": snippet.get("title", ""),
-        "description": snippet.get("description", ""),
-        "thumbnail": thumb,
-    }
-
-
-def fetch_transcript(url):
-    """Fetch transcript via markitdown."""
+    # First get the transcript using youtube-transcript-api
     try:
-        from markitdown import MarkItDown
+        from YouTubeTranscriptApi import YouTubeTranscriptApi
 
-        md = MarkItDown()
-        result = md.convert(url)
-        return result.text_content or ""
-    except Exception:
-        return ""
+        transcript_api = YouTubeTranscriptApi()
+        transcript = transcript_api.get_transcript(video_id)
+        transcript_text = " ".join([t["text"] for t in transcript])
+    except Exception as e:
+        transcript_text = f"Could not fetch transcript: {e}"
+
+    # Use OpenAI to extract structured recipe data
+    prompt = f"""You are a recipe extraction expert. Extract the recipe from this YouTube video transcript.
+
+TRANSCRIPT:
+{transcript_text[:8000]}
+
+Extract and return ONLY a JSON object with this exact structure (no other text):
+{{
+  "title": "Recipe name",
+  "ingredients": [
+    {{"name": "ingredient name", "quantity": "amount", "unit": "unit of measurement"}}
+  ],
+  "instructions": [
+    {{"step": 1, "text": "instruction text"}}
+  ]
+}}
+
+Rules:
+- Only include ingredients and instructions that are actually part of the recipe
+- For quantity, use numbers (1, 2, 0.5, 1/4 etc)
+- For unit, use: cups, tablespoons, teaspoons, ounces, pounds, grams, pieces, cloves, etc
+- Include at least 2 ingredients and 2 instructions if they exist in the transcript
+- If the transcript doesn't contain recipe content, return empty arrays
+- Do NOT make up ingredients that aren't in the transcript
+"""
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "openai/gpt-3.5-turbo",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a recipe extraction expert. Return only valid JSON.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 4000,
+        },
+        timeout=60,
+    )
+
+    if response.status_code != 200:
+        return {"error": f"OpenRouter error: {response.status_code}"}
+
+    content = response.json()["choices"][0]["message"]["content"]
+
+    # Parse JSON from response
+    import re
+
+    json_match = re.search(r"\{[\s\S]*\}", content)
+    if json_match:
+        return json.loads(json_match.group())
+
+    return {"error": "Could not parse JSON from response"}
 
 
 def import_recipe(url, household_id=None):
     """
-    Import recipe from YouTube URL.
+    Import recipe from YouTube URL using OpenAI.
 
-    Args:
-        url: YouTube video URL
-        household_id: Optional household ID
-
-    Returns:
-        dict: {"success": bool, "recipe_id": int, "title": str,
-               "ingredients": int, "instructions": int, "error": str}
+    Returns dict with success, recipe_id, title, ingredients, instructions, error.
     """
-    api_key = get_api_key()
+    api_key = get_openrouter_key()
     if not api_key:
-        return {"success": False, "error": "YOUTUBE_API_KEY not set"}
+        return {"success": False, "error": "OpenRouter API key not set"}
+
+    video_id = extract_video_id(url)
+    if not video_id:
+        return {"success": False, "error": "Invalid YouTube URL"}
 
     try:
-        # Get data
-        metadata = fetch_metadata(url)
-        full_text = metadata["description"]
-        try:
-            transcript = fetch_transcript(url)
-            if transcript:
-                full_text = transcript
-        except Exception:
-            pass
+        # Get recipe data from LLM
+        recipe_data = get_transcript_with_llm(video_id, api_key)
 
-        # Parse
-        ingredients = parse_ingredients(full_text)
-        instructions = parse_instructions(full_text)
+        if "error" in recipe_data:
+            return {"success": False, "error": recipe_data["error"]}
+
+        # Handle empty results
+        if not recipe_data.get("ingredients") and not recipe_data.get("instructions"):
+            # Try to get basic info at least
+            recipe_data = {
+                "title": recipe_data.get("title", "YouTube Recipe"),
+                "ingredients": [],
+                "instructions": [],
+            }
 
         # Get household
         household = None
@@ -236,48 +190,76 @@ def import_recipe(url, household_id=None):
 
         # Create recipe
         recipe = Recipe.objects.create(
-            title=metadata["title"][:200],
-            description=full_text[:5000],
+            title=recipe_data.get("title", "YouTube Recipe")[:200],
+            description=f"Imported from YouTube: {url}",
             video_url=url,
             household=household,
             needs_review=True,
         )
 
         # Add ingredients
-        for ing in ingredients:
-            ing_obj, _ = Ingredient.objects.get_or_create(
-                household=household,
-                name__iexact=ing["name"],
-                defaults={"household": household, "name": ing["name"]},
-            )
+        ing_count = 0
+        for ing in recipe_data.get("ingredients", [])[:30]:
             try:
-                qty = float(ing["quantity"]) if ing["quantity"] else 1
-            except (ValueError, TypeError):
+                name = ing.get("name", "").strip()
+                if not name:
+                    continue
+
                 qty = 1
-            IngredientLink.objects.create(
-                recipe=recipe,
-                ingredient=ing_obj,
-                quantity=qty,
-                unit=ing["unit"],
-            )
+                try:
+                    qty = float(ing.get("quantity", 1)) if ing.get("quantity") else 1
+                except:
+                    pass
+
+                unit = ing.get("unit", "piece") or "piece"
+
+                ing_obj, _ = Ingredient.objects.get_or_create(
+                    household=household,
+                    name__iexact=name,
+                    defaults={"household": household, "name": name},
+                )
+                IngredientLink.objects.create(
+                    recipe=recipe,
+                    ingredient=ing_obj,
+                    quantity=qty,
+                    unit=unit,
+                )
+                ing_count += 1
+            except Exception:
+                pass
 
         # Add instructions
-        for i, inst in enumerate(instructions, 1):
-            Instruction.objects.create(
-                recipe=recipe,
-                step_number=inst["step"],
-                text=inst["text"][:1000],
-            )
+        inst_count = 0
+        for inst in recipe_data.get("instructions", [])[:30]:
+            try:
+                text = (
+                    inst.get("text", "").strip() or inst.get("instruction", "").strip()
+                )
+                if not text:
+                    continue
+
+                step = inst.get("step", inst.get("step_number", inst_count + 1))
+
+                Instruction.objects.create(
+                    recipe=recipe,
+                    step_number=step,
+                    text=text[:1000],
+                )
+                inst_count += 1
+            except Exception:
+                pass
 
         return {
             "success": True,
             "recipe_id": recipe.id,
             "title": recipe.title,
-            "ingredients": len(ingredients),
-            "instructions": len(instructions),
+            "ingredients": ing_count,
+            "instructions": inst_count,
         }
 
     except Exception as e:
+        import traceback
+
         return {"success": False, "error": str(e)}
 
 

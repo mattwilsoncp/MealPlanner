@@ -4,46 +4,48 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
-    <div class="card bg-base-300 shadow-sm">
-        <div class="card-body">
+    <div class="card-dark">
+        <div class="p-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 class="text-2xl font-bold">What Can I Make?</h1>
-                    <p class="opacity-70">Recipes ranked by ingredient match with urgency cues for expiring inventory.</p>
+                    <h1 class="text-2xl font-medium">What Can I Make?</h1>
+                    <p style="color: var(--text-light-gray);">Recipes ranked by ingredient match with urgency cues for expiring inventory.</p>
                 </div>
-                <div class="badge badge-outline">
+                <span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">
                     {{ urgent_count }} urgent match{{ urgent_count|pluralize }} (≤ {{ threshold_days }} day{{ threshold_days|pluralize }})
-                </div>
+                </span>
             </div>
-            <p class="text-sm opacity-70">As of {{ today|date:"M d, Y" }}</p>
+            <p style="color: var(--text-mid-gray); font-size: 14px; margin-top: 8px;">As of {{ today|date:"M d, Y" }}</p>
         </div>
     </div>
 
     {% if matches %}
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {% for match in matches %}
-        <article class="card bg-base-100 border border-base-300 shadow-sm">
-            <div class="card-body gap-4">
+        <article class="card-dark">
+            <div class="p-6 space-y-4">
                 <div class="flex items-start justify-between gap-2">
-                    <h2 class="card-title text-lg">{{ match.recipe.title }}</h2>
-                    <span class="badge badge-primary badge-outline">{{ match.available_count }}/{{ match.total_count }}</span>
+                    <h2 class="text-lg font-medium">{{ match.recipe.title }}</h2>
+                    <span class="badge-dark">{{ match.available_count }}/{{ match.total_count }}</span>
                 </div>
 
                 <div class="space-y-2">
-                    <div class="flex items-center justify-between text-sm opacity-80">
+                    <div class="flex items-center justify-between text-sm" style="color: var(--text-light-gray);">
                         <span>Match score</span>
                         <span>{{ match.match_percentage }}%</span>
                     </div>
-                    <progress class="progress progress-success w-full" value="{{ match.match_percentage }}" max="100"></progress>
+                    <div class="progress-dark">
+                        <div class="progress-dark-fill" style="width: {{ match.match_percentage }}%;"></div>
+                    </div>
                 </div>
 
                 <div class="space-y-2">
-                    <p class="text-xs uppercase tracking-wide opacity-70">Missing ingredients</p>
+                    <p class="code-label">Missing ingredients</p>
                     <div class="flex flex-wrap gap-1">
                         {% for ingredient_name in match.missing_ingredients %}
-                        <span class="badge badge-ghost">{{ ingredient_name }}</span>
+                        <span class="badge-dark">{{ ingredient_name }}</span>
                         {% empty %}
-                        <span class="badge badge-success badge-outline">No missing ingredients</span>
+                        <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green); border-color: var(--green-border);">No missing ingredients</span>
                         {% endfor %}
                     </div>
                 </div>
@@ -52,17 +54,17 @@
                 <div class="space-y-2">
                     <div class="flex flex-wrap gap-2">
                         {% if match.has_expired_match %}
-                        <span class="badge badge-error">Uses expired inventory</span>
+                        <span class="badge-dark" style="background: rgba(239, 68, 68, 0.15); color: #fc7981; border-color: rgba(239, 68, 68, 0.3);">Uses expired inventory</span>
                         {% endif %}
                         {% if match.has_urgent_match %}
-                        <span class="badge badge-warning">Uses expiring inventory</span>
+                        <span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">Uses expiring inventory</span>
                         {% endif %}
                     </div>
 
                     {% if match.urgent_items %}
                     <div class="flex flex-wrap gap-1">
                         {% for urgent_name in match.urgent_items %}
-                        <span class="badge badge-outline badge-warning">{{ urgent_name }}</span>
+                        <span class="badge-dark">{{ urgent_name }}</span>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -73,10 +75,26 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="card bg-base-300 text-center p-8">
-        <h2 class="text-xl font-semibold">No recipes available yet</h2>
-        <p class="opacity-70 mt-2">Add reviewed recipes to your household to see discovery matches.</p>
+    <div class="empty-dark text-center p-8">
+        <h2 class="text-xl font-medium">No recipes available yet</h2>
+        <p style="color: var(--text-light-gray); margin-top: 8px;">Add reviewed recipes to your household to see discovery matches.</p>
     </div>
     {% endif %}
 </div>
+
+<style>
+.progress-dark {
+    height: 8px;
+    background: var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-dark-fill {
+    height: 100%;
+    background: var(--brand-green);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+</style>
 {% endblock %}

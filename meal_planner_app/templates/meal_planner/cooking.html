@@ -6,11 +6,11 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold">Cooking: {{ recipe.title }}</h1>
-            <p class="text-sm opacity-70">Mark ingredients as you use them</p>
+            <h1 class="text-2xl font-medium" style="letter-spacing: -0.64px;">Cooking: {{ recipe.title }}</h1>
+            <p class="text-sm" style="color: var(--text-light-gray);">Mark ingredients as you use them</p>
         </div>
-        <a href="{% url 'meal_planner:cooking_home' %}" class="btn btn-ghost">
-            ← Back to Cooking Queue
+        <a href="{% url 'meal_planner:cooking_home' %}" class="btn-ghost">
+            Back to Cooking Queue
         </a>
     </div>
 
@@ -18,111 +18,108 @@
         {% csrf_token %}
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Column: Recipe Ingredients -->
-            <div class="card bg-base-200">
-                <div class="card-body">
-                    <h2 class="card-title text-lg">Recipe Ingredients</h2>
-                    <p class="text-sm opacity-70 mb-4">Check off ingredients as you use them</p>
+            <div class="card-dark">
+                <div class="p-6">
+                    <h2 class="text-lg font-medium">Recipe Ingredients</h2>
+                    <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Check off ingredients as you use them</p>
                     
                     <div class="space-y-3" id="recipe-ingredients">
                         {% for ing in recipe_ingredients %}
-                            <div class="flex items-center gap-3 p-3 bg-base-100 rounded-lg ingredient-item" 
+                            <div class="flex items-center gap-3 p-3 rounded-lg ingredient-item" 
                                  data-ing-id="{{ ing.id }}"
-                                 data-inv-id="{{ ing.inventory_item_id|default:'' }}">
+                                 data-inv-id="{{ ing.inventory_item_id|default:'' }}"
+                                 style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
                                 <input type="checkbox" 
                                        name="used_ingredient_ids[]" 
                                        value="{{ ing.id }}"
-                                       class="checkbox checkbox-primary ingredient-checkbox"
-                                       id="ing_{{ ing.id }}">
+                                       class="ingredient-checkbox"
+                                       id="ing_{{ ing.id }}"
+                                       style="width: 20px; height: 20px;">
                                 <label for="ing_{{ ing.id }}" class="flex-1 cursor-pointer">
                                     <span class="font-medium">{{ ing.name }}</span>
-                                    <span class="text-sm opacity-70">
+                                    <span class="text-sm" style="color: var(--text-light-gray);">
                                         {{ ing.quantity }} {{ ing.unit }}
                                     </span>
                                     {% if ing.inventory_name %}
-                                        <span class="badge badge-sm ml-2 bg-info text-info-content">
+                                        <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green); margin-left: 8px; font-size: 12px;">
                                             Linked: {{ ing.inventory_name }} ({{ ing.inventory_quantity }} {{ ing.unit }})
                                         </span>
                                     {% endif %}
                                 </label>
                             </div>
                         {% empty %}
-                            <p class="text-sm opacity-70">No ingredients found for this recipe.</p>
+                            <p class="text-sm" style="color: var(--text-light-gray);">No ingredients found for this recipe.</p>
                         {% endfor %}
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Inventory -->
             <div class="space-y-6">
-                <!-- Still Have Section -->
-                <div class="card bg-base-200">
-                    <div class="card-body">
-                        <h2 class="card-title text-lg">Inventory - Still Have</h2>
-                        <p class="text-sm opacity-70 mb-4">Items still available in your kitchen</p>
+                <div class="card-dark">
+                    <div class="p-6">
+                        <h2 class="text-lg font-medium">Inventory - Still Have</h2>
+                        <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Items still available in your kitchen</p>
                         
                         <div class="space-y-2" id="inventory-still-have">
                             {% for item in inventory_items %}
-                                <div class="flex items-center gap-3 p-2 bg-base-100 rounded-lg inventory-item"
-                                     data-inv-id="{{ item.id }}">
+                                <div class="flex items-center gap-3 p-2 rounded-lg inventory-item"
+                                     data-inv-id="{{ item.id }}"
+                                     style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
                                     <input type="checkbox" 
                                            name="used_inventory_ids[]" 
                                            value="{{ item.id }}"
-                                           class="checkbox checkbox-secondary inventory-checkbox"
-                                           id="inv_{{ item.id }}">
+                                           class="inventory-checkbox"
+                                           id="inv_{{ item.id }}"
+                                           style="width: 20px; height: 20px;">
                                     <label for="inv_{{ item.id }}" class="flex-1 cursor-pointer">
                                         <span class="font-medium">{{ item.name }}</span>
-                                        <span class="text-sm opacity-70">
+                                        <span class="text-sm" style="color: var(--text-light-gray);">
                                             {{ item.quantity }} {{ item.unit }}
                                         </span>
                                     </label>
                                     <button type="button" 
-                                            class="btn btn-xs btn-ghost move-to-used"
-                                            data-inv-id="{{ item.id }}">
+                                            class="btn-ghost move-to-used"
+                                            data-inv-id="{{ item.id }}"
+                                            style="padding: 4px 8px; font-size: 12px;">
                                         Move to Used
                                     </button>
                                 </div>
                             {% empty %}
-                                <p class="text-sm opacity-70">No inventory items found.</p>
+                                <p class="text-sm" style="color: var(--text-light-gray);">No inventory items found.</p>
                             {% endfor %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Used / Ran Out Section -->
-                <div class="card bg-base-300">
-                    <div class="card-body">
-                        <h2 class="card-title text-lg">Used / Ran Out</h2>
-                        <p class="text-sm opacity-70 mb-4">Items that are used up</p>
+                <div class="card-dark">
+                    <div class="p-6">
+                        <h2 class="text-lg font-medium">Used / Ran Out</h2>
+                        <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Items that are used up</p>
                         
                         <div class="space-y-2" id="inventory-used">
-                            <!-- Items moved here will appear -->
                         </div>
                         
-                        <button type="button" id="mark-all-used" class="btn btn-warning btn-sm mt-4">
+                        <button type="button" id="mark-all-used" class="btn-pill-muted mt-4" style="padding: 6.4px 12.8px; font-size: 14px;">
                             Mark All Inventory Used
                         </button>
                     </div>
                 </div>
 
-                <!-- Add Ingredient to Inventory -->
-                <div class="card bg-base-200">
-                    <div class="card-body">
-                        <h2 class="card-title text-lg">Quick Add to Inventory</h2>
-                        <p class="text-sm opacity-70 mb-4">Add recipe ingredients to inventory</p>
+                <div class="card-dark">
+                    <div class="p-6">
+                        <h2 class="text-lg font-medium">Quick Add to Inventory</h2>
+                        <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Add recipe ingredients to inventory</p>
                         
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Ingredient Name</span>
-                            </label>
-                            <input type="text" id="quick-add-name" placeholder="e.g., onions" class="input input-bordered w-full">
+                        <div>
+                            <label class="label-dark">Ingredient Name</label>
+                            <input type="text" id="quick-add-name" placeholder="e.g., onions" class="input-dark">
                         </div>
                         <div class="flex gap-2 mt-2">
-                            <div class="form-control flex-1">
-                                <input type="number" id="quick-add-qty" placeholder="Qty" class="input input-bordered w-full">
+                            <div class="flex-1">
+                                <input type="number" id="quick-add-qty" placeholder="Qty" class="input-dark">
                             </div>
-                            <div class="form-control flex-1">
-                                <select id="quick-add-unit" class="select select-bordered w-full">
+                            <div class="flex-1">
+                                <select id="quick-add-unit" class="input-dark" style="width: auto;">
                                     <option value="piece">piece</option>
                                     <option value="oz">oz</option>
                                     <option value="lb">lb</option>
@@ -131,7 +128,7 @@
                                     <option value="tsp">tsp</option>
                                 </select>
                             </div>
-                            <button type="button" id="quick-add-btn" class="btn btn-primary">
+                            <button type="button" id="quick-add-btn" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">
                                 Add
                             </button>
                         </div>
@@ -140,21 +137,20 @@
             </div>
         </div>
 
-        <!-- Confirm Button -->
         <div class="mt-8 flex justify-end gap-4">
-            <a href="{% url 'meal_planner:cooking_home' %}" class="btn btn-ghost">
+            <a href="{% url 'meal_planner:cooking_home' %}" class="btn-ghost">
                 Cancel
             </a>
-            <button type="submit" class="btn btn-success">
+            <button type="submit" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">
                 Confirm Cooking
             </button>
         </div>
     </form>
 </div>
 
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Move inventory items to Used section
     document.querySelectorAll('.move-to-used').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const invId = this.dataset.invId;
@@ -165,7 +161,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 usedContainer.appendChild(itemEl);
                 this.remove();
                 
-                // Check the checkbox to mark as used
                 const checkbox = itemEl.querySelector('.inventory-checkbox');
                 if (checkbox) {
                     checkbox.checked = true;
@@ -174,7 +169,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Mark all inventory as used
     document.getElementById('mark-all-used').addEventListener('click', function() {
         const stillHaveContainer = document.getElementById('inventory-still-have');
         const usedContainer = document.getElementById('inventory-used');
@@ -191,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Quick add to inventory
     document.getElementById('quick-add-btn').addEventListener('click', function() {
         const name = document.getElementById('quick-add-name').value;
         const qty = document.getElementById('quick-add-qty').value;
@@ -202,26 +195,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Add to inventory (would need server-side endpoint for persistence)
-        // For now, just show an alert
         const stillHaveContainer = document.getElementById('inventory-still-have');
         if (stillHaveContainer) {
             const newItem = document.createElement('div');
-            newItem.className = 'flex items-center gap-3 p-2 bg-base-100 rounded-lg inventory-item';
+            newItem.className = 'flex items-center gap-3 p-2 rounded-lg inventory-item';
+            newItem.style.cssText = 'background: var(--bg-near-black); border: 1px solid var(--border-dark);';
             newItem.innerHTML = `
                 <span class="font-medium">${name}</span>
-                <span class="text-sm opacity-70">${qty || '1'} ${unit}</span>
-                <span class="badge badge-sm bg-success text-success-content">New</span>
+                <span class="text-sm" style="opacity: 0.7;">${qty || '1'} ${unit}</span>
+                <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green);">New</span>
             `;
             stillHaveContainer.appendChild(newItem);
         }
 
-        // Clear inputs
         document.getElementById('quick-add-name').value = '';
         document.getElementById('quick-add-qty').value = '';
     });
 
-    // Form submission
     document.getElementById('cooking-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -251,4 +241,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endblock %}
 {% endblock %}

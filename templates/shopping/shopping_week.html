@@ -4,35 +4,38 @@
 
 {% block content %}
 <div class="max-w-5xl mx-auto space-y-6">
-    <div class="card bg-base-300 shadow-sm">
-        <div class="card-body gap-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="card-dark">
+        <div class="p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <div>
-                    <h1 class="text-2xl font-bold">Shopping Checklist</h1>
-                    <p class="opacity-70">
+                    <h1 class="text-2xl font-medium mb-1">Shopping Checklist</h1>
+                    <p style="color: var(--text-light-gray);">
                         Week of {{ week_start|date:"M d, Y" }} to {{ week_end|date:"M d, Y" }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a href="{% url 'shopping:week' %}?week_start={{ previous_week|date:'Y-m-d' }}" class="btn btn-sm btn-outline">
-                        ← Previous Week
+                    <a href="{% url 'shopping:week' %}?week_start={{ previous_week|date:'Y-m-d' }}" class="btn-ghost">
+                        ← Previous
                     </a>
-                    <a href="{% url 'shopping:week' %}?week_start={{ next_week|date:'Y-m-d' }}" class="btn btn-sm btn-outline">
-                        Next Week →
+                    <a href="{% url 'shopping:week' %}?week_start={{ next_week|date:'Y-m-d' }}" class="btn-ghost">
+                        Next →
                     </a>
                 </div>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-4">
                 <form method="post" action="{% url 'shopping:regenerate_week' %}">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
-                    <button type="submit" class="btn btn-warning btn-sm">Regenerate Week</button>
+                    <button type="submit" class="btn-pill">
+                        Regenerate Week
+                    </button>
                 </form>
 
                 <button
                     type="button"
-                    class="btn btn-error btn-sm"
+                    class="btn-ghost"
+                    style="color: #fc7981;"
                     onclick="clearWeekItems('{{ week_start|date:'Y-m-d' }}')"
                 >
                     Clear All Items
@@ -45,139 +48,99 @@
         {% regroup shopping_items by category as category_groups %}
 
         {% for category_group in category_groups %}
-        <div class="card bg-base-100 shadow-sm border border-base-300">
-            <div class="card-body p-0">
-                <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between">
-                    <h2 class="text-lg font-semibold capitalize">{{ category_group.grouper|default:"Other" }}</h2>
-                    <span class="badge badge-ghost">{{ category_group.list|length }} item{{ category_group.list|length|pluralize }}</span>
-                </div>
+        <div class="card-dark">
+            <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid var(--border-dark);">
+                <h2 class="text-lg font-medium capitalize">{{ category_group.grouper|default:"Other" }}</h2>
+                <span class="badge-dark">{{ category_group.list|length }} item{{ category_group.list|length|pluralize }}</span>
+            </div>
 
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra">
-                        <thead>
-                            <tr>
-                                <th>Done</th>
-                                <th>Item</th>
-                                <th>Quantity</th>
-                                <th class="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in category_group.list %}
-                            <tr id="item-row-{{ item.id }}" class="{% if item.checked %}opacity-60{% endif %}">
-                                <td>
-                                    <input
-                                        type="checkbox"
-                                        class="checkbox checkbox-primary"
-                                        {% if item.checked %}checked{% endif %}
-                                        onchange="toggleShoppingItem({{ item.id }}, this)"
-                                    >
-                                </td>
-                                <td class="font-medium {% if item.checked %}line-through{% endif %}">
-                                    {{ item.name }}
-                                </td>
-                                <td>{{ item.quantity }} {{ item.unit }}</td>
-                                <td class="text-right">
-                                    <button
-                                        class="btn btn-ghost btn-xs text-error"
-                                        type="button"
-                                        onclick="deleteShoppingItem({{ item.id }})"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="p-4">
+                <table class="table-dark">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Done</th>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th style="width: 100px; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in category_group.list %}
+                        <tr id="item-row-{{ item.id }}" style="{% if item.checked %}opacity: 0.6;{% endif %}">
+                            <td>
+                                <input
+                                    type="checkbox"
+                                    style="width: 20px; height: 20px;"
+                                    {% if item.checked %}checked{% endif %}
+                                    onchange="toggleShoppingItem({{ item.id }}, this)"
+                                >
+                            </td>
+                            <td style="{% if item.checked %}text-decoration: line-through;{% endif %}">
+                                {{ item.name }}
+                            </td>
+                            <td>{{ item.quantity }} {{ item.unit }}</td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'shopping:delete_item' item.pk %}" class="link-green text-sm">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <div class="card bg-base-300 text-center p-8">
-            <h2 class="text-xl font-semibold">No shopping items for this week</h2>
-            <p class="opacity-70 mt-2">Generate a week list from your meal plan to start checking items off.</p>
+    <div class="empty-dark p-8 text-center">
+        <h2 class="text-xl font-medium mb-4">No shopping items</h2>
+        <p style="color: var(--text-light-gray); margin-bottom: 16px;">
+            Generate a shopping list from your meal plan, or add items manually.
+        </p>
+        <div class="flex gap-4 justify-center">
+            <form method="post" action="{% url 'shopping:regenerate_week' %}">
+                {% csrf_token %}
+                <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
+                <button type="submit" class="btn-pill">
+                    Generate from Meal Plan
+                </button>
+            </form>
         </div>
+    </div>
     {% endif %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+function toggleShoppingItem(itemId, checkbox) {
+    fetch(`/shopping/toggle/${itemId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    }).then(response => {
+        if (response.ok) {
+            const row = document.getElementById(`item-row-${itemId}`);
+            if (checkbox.checked) {
+                row.style.opacity = '0.6';
+            } else {
+                row.style.opacity = '1';
             }
         }
-    }
-    return cookieValue;
+    });
 }
 
-async function toggleShoppingItem(itemId, checkbox) {
-    const response = await fetch(`/shopping/api/item/${itemId}/toggle/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        },
-    });
-
-    if (!response.ok) {
-        checkbox.checked = !checkbox.checked;
-        return;
-    }
-
-    const data = await response.json();
-    const row = document.getElementById(`item-row-${itemId}`);
-    const itemCell = row?.querySelector('td:nth-child(2)');
-    if (data.checked) {
-        row?.classList.add('opacity-60');
-        itemCell?.classList.add('line-through');
-    } else {
-        row?.classList.remove('opacity-60');
-        itemCell?.classList.remove('line-through');
-    }
-}
-
-async function deleteShoppingItem(itemId) {
-    const response = await fetch(`/shopping/api/item/${itemId}/delete/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        },
-    });
-
-    if (!response.ok) {
-        return;
-    }
-
-    const row = document.getElementById(`item-row-${itemId}`);
-    row?.remove();
-}
-
-async function clearWeekItems(weekStart) {
-    const confirmed = confirm('Clear all items for this week?');
-    if (!confirmed) return;
-
-    const formData = new FormData();
-    formData.append('week_start', weekStart);
-
-    const response = await fetch('/shopping/api/week/clear/', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        },
-    });
-
-    if (response.ok) {
-        window.location.reload();
+function clearWeekItems(weekStart) {
+    if (confirm('Clear all items for this week?')) {
+        fetch(`/shopping/clear/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
     }
 }
 </script>

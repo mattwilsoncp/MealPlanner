@@ -23,7 +23,14 @@ class RegisterView(CreateView):
     success_url = reverse_lazy("home")
 
     def form_valid(self, form):
+        from django.contrib.auth import login
+        from django.contrib.auth.backends import ModelBackend
+
         response = super().form_valid(form)
-        login(self.request, self.object)
+        login(
+            self.request,
+            self.object,
+            backend="django.contrib.auth.backends.ModelBackend",
+        )
         messages.success(self.request, "Welcome! Your account has been created.")
         return response

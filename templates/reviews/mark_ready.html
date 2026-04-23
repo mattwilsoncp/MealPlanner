@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="max-w-md mx-auto">
-    <div class="card bg-base-300 shadow">
-        <div class="card-body">
-            <h2 class="card-title text-xl">Mark Recipe as Ready?</h2>
+    <div class="card-dark">
+        <div class="p-6">
+            <h2 class="text-xl font-medium">Mark Recipe as Ready?</h2>
             <p class="my-4">
                 Are you sure you want to mark "<strong>{{ object.title }}</strong>" as ready?
                 This will remove it from the review queue.
@@ -14,9 +14,9 @@
 
             <form method="post">
                 {% csrf_token %}
-                <div class="card-actions justify-end mt-4">
-                    <a href="{% url 'reviews:review_queue' %}" class="btn btn-ghost">No, Go Back</a>
-                    <button type="submit" class="btn btn-success">Yes, Mark Ready</button>
+                <div class="flex justify-end gap-2 mt-4">
+                    <a href="{% url 'reviews:review_queue' %}" class="btn-ghost">No, Go Back</a>
+                    <button type="submit" class="btn-pill">Yes, Mark Ready</button>
                 </div>
             </form>
         </div>
