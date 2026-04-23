@@ -28,8 +28,8 @@ from recipes.models import Recipe
 from recipes.youtube import InvalidVideoError, YouTubeService
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
-#DEFAULT_MODEL = "qwen/qwen-turbo"
+#DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
+DEFAULT_MODEL = "qwen/qwen-turbo"
 TRANSCRIPT_DIR = PROJECT_ROOT / "logs" / "transcripts"
 VALID_UNITS = {choice[0] for choice in IngredientLink.UNIT_CHOICES}
 UNIT_MAP = {
@@ -134,13 +134,38 @@ def get_household(household_id: int | None) -> Household:
     raise RuntimeError("No household found. Create a household before importing recipes.")
 
 
+def fetch_youtube_captions(video_id: str) -> str:
+    if YouTubeTranscriptApi is None:
+        return ""
+
+    try:
+        transcript_items = YouTubeTranscriptApi.get_transcript(video_id)
+    except Exception:
+        return ""
+
+    lines = []
+    for item in transcript_items:
+        text = str(item.get("text") or "").strip()
+        if text:
+            lines.append(text)
+
+    return "\n".join(lines).strip()
+
+
 def transcribe_youtube(url: str) -> str:
+    video_id = extract_video_id(url)
+    captions = fetch_youtube_captions(video_id)
+    if captions:
+        return captions
+
     md = MarkItDown()
     result = md.convert(url)
     transcript = (result.text_content or "").strip()
-    if not transcript:
-        raise RuntimeError("Transcript was empty or unavailable for this video")
-    return transcript
+    if transcript:
+        raise RuntimeError(
+            "No YouTube captions were available for this video. Fallback content looked like page metadata or the description, so it was not saved as a transcript."
+        )
+    raise RuntimeError("Transcript was empty or unavailable for this video")
 
 
 def extract_video_id(url: str) -> str:
