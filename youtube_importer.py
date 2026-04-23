@@ -240,11 +240,53 @@ def extract_video_id(url: str) -> str:
         raise RuntimeError(str(exc)) from exc
 
 
-def write_transcript_log(video_id: str, transcript: str) -> Path:
+def get_youtube_api_key() -> str:
+    return os.environ.get("YOUTUBE_API_KEY", "").strip()
+
+
+def get_video_metadata(url: str, video_id: str) -> dict[str, str]:
+    metadata = {
+        "video_id": video_id,
+        "url": url,
+        "title": "",
+        "description": "",
+        "thumbnail_url": "",
+    }
+
+    api_key = get_youtube_api_key()
+    if not api_key:
+        return metadata
+
+    try:
+        service = YouTubeService(api_key=api_key)
+        video_metadata = service.get_video_metadata(video_id)
+    except Exception:
+        return metadata
+
+    metadata["title"] = video_metadata.title or ""
+    metadata["description"] = video_metadata.description or ""
+    metadata["thumbnail_url"] = video_metadata.thumbnail_url or ""
+    return metadata
+
+
+def write_transcript_log(metadata: dict[str, str], transcript: str) -> Path:
     TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = TRANSCRIPT_DIR / f"{timestamp}_{video_id}.txt"
-    output_path.write_text(transcript, encoding="utf-8")
+    safe_video_id = metadata.get("video_id") or "unknown_video"
+    output_path = TRANSCRIPT_DIR / f"{timestamp}_{safe_video_id}.txt"
+    log_body = (
+        f"Source URL: {metadata.get('url', '')}\n"
+        f"Video ID: {metadata.get('video_id', '')}\n"
+        f"Title: {metadata.get('title', '')}\n"
+        f"Thumbnail URL: {metadata.get('thumbnail_url', '')}\n"
+        "\n"
+        "Description:\n"
+        f"{metadata.get('description', '')}\n"
+        "\n"
+        "Full Transcript:\n"
+        f"{transcript}\n"
+    )
+    output_path.write_text(log_body, encoding="utf-8")
     return output_path
 
 
@@ -419,8 +461,9 @@ def main() -> int:
         household = get_household(args.household_id)
         client = get_openrouter_client()
         video_id = extract_video_id(args.url)
+        metadata = get_video_metadata(args.url, video_id)
         transcript = transcribe_youtube(args.url)
-        transcript_log = write_transcript_log(video_id, transcript)
+        transcript_log = write_transcript_log(metadata, transcript)
         parsed = parse_recipe_with_llm(client, args.model, args.url, transcript)
 
         if args.title.strip():
