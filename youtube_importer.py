@@ -111,11 +111,10 @@ Rules:
 - Instructions should be clean, imperative cooking steps.
 - Instructions must be ordered and start at step_number 1.
 - Do not include markdown, explanation, or code fences.
+- Use all provided source context, including title, description, and transcript, but prioritize explicit recipe details from the transcript when they conflict with metadata.
 
-YouTube URL: {url}
-
-Transcript:
-{transcript}
+Source Context:
+{source_context}
 """
 
 
@@ -323,8 +322,27 @@ def extract_json_payload(raw_text: str) -> dict[str, Any]:
     return payload
 
 
-def parse_recipe_with_llm(client: OpenAI, model: str, url: str, transcript: str) -> dict[str, Any]:
-    prompt = PROMPT_TEMPLATE.format(url=url, transcript=transcript)
+def build_source_context(metadata: dict[str, str], transcript: str) -> str:
+    return (
+        f"Source URL: {metadata.get('url', '')}\n"
+        f"Video ID: {metadata.get('video_id', '')}\n"
+        f"Title: {metadata.get('title', '')}\n"
+        f"Thumbnail URL: {metadata.get('thumbnail_url', '')}\n"
+        "\n"
+        "Description:\n"
+        f"{metadata.get('description', '')}\n"
+        "\n"
+        "Full Transcript:\n"
+        f"{transcript}"
+    )
+
+
+def parse_recipe_with_llm(
+    client: OpenAI, model: str, metadata: dict[str, str], transcript: str
+) -> dict[str, Any]:
+    prompt = PROMPT_TEMPLATE.format(
+        source_context=build_source_context(metadata, transcript)
+    )
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -477,7 +495,7 @@ def main() -> int:
         metadata = get_video_metadata(args.url, video_id)
         transcript = transcribe_youtube(args.url)
         transcript_log = write_transcript_log(metadata, transcript)
-        parsed = parse_recipe_with_llm(client, args.model, args.url, transcript)
+        parsed = parse_recipe_with_llm(client, args.model, metadata, transcript)
 
         if args.title.strip():
             parsed["title"] = args.title.strip()
