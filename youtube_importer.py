@@ -132,9 +132,17 @@ def get_household(household_id: int | None) -> Household:
             return household
         raise RuntimeError(f"Household with id={household_id} was not found")
 
-    household = Household.objects.order_by("id").first()
-    if household:
-        return household
+    households = list(Household.objects.order_by("id"))
+    if len(households) == 1:
+        return households[0]
+    if len(households) > 1:
+        available_households = ", ".join(
+            f"{household.id}:{household.name}" for household in households
+        )
+        raise RuntimeError(
+            "Multiple households found. Re-run with --household-id. "
+            f"Available households: {available_households}"
+        )
     raise RuntimeError("No household found. Create a household before importing recipes.")
 
 
