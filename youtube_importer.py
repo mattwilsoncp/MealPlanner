@@ -498,6 +498,7 @@ def main() -> int:
 
     try:
         household = get_household(args.household_id)
+        print(f"Using household #{household.id}: {household.name}")
         client = get_openrouter_client()
         video_id = extract_video_id(args.url)
         metadata = get_video_metadata(args.url, video_id)
