@@ -82,23 +82,23 @@ UNIT_MAP = {
 
 PROMPT_TEMPLATE = """You are extracting structured recipe data from a YouTube recipe video transcript.
 Return only valid JSON with this exact shape:
-{
+{{
   "title": "string",
   "description": "string",
   "ingredients": [
-    {
+    {{
       "name": "string",
       "quantity": "string",
       "unit": "string"
-    }
+    }}
   ],
   "instructions": [
-    {
+    {{
       "step_number": 1,
       "text": "string"
-    }
+    }}
   ]
-}
+}}
 
 Rules:
 - The recipe title should be concise and human readable.
