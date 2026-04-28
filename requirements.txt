@@ -4,7 +4,7 @@ psycopg[binary]>=3.0
 
 # External APIs
 google-api-python-client>=2.194
-markitdown[youtube-transcription]>=1.0
+markitdown[youtube-transcription]
 youtube-transcript-api>=1.2
 openai>=1.0
 requests>=2.28

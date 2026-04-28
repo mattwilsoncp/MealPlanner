@@ -112,3 +112,42 @@ def recipe_search_api(request):
         )
 
     return JsonResponse({"recipes": data})
+
+
+@login_required
+@require_http_methods(["GET"])
+def recipe_detail_api(request, pk):
+    """Return JSON details for a single recipe."""
+    try:
+        recipe = Recipe.objects.get(pk=pk, household=request.user.household)
+    except Recipe.DoesNotExist:
+        return JsonResponse({"error": "Recipe not found"}, status=404)
+
+    ingredients = []
+    for ing in recipe.ingredients.all():
+        ingredients.append(
+            {
+                "name": ing.ingredient.name,
+                "quantity": str(ing.quantity),
+                "unit": ing.unit,
+            }
+        )
+
+    instructions = []
+    for inst in recipe.instructions.all().order_by("step_number"):
+        instructions.append(
+            {
+                "step": inst.text,
+                "step_number": inst.step_number,
+            }
+        )
+
+    return JsonResponse(
+        {
+            "id": recipe.id,
+            "title": recipe.title,
+            "description": recipe.description,
+            "ingredients": ingredients,
+            "instructions": instructions,
+        }
+    )

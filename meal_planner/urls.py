@@ -11,7 +11,7 @@ urlpatterns = [
     path("recipes/", include("recipes.urls", namespace="recipes")),
     path("reviews/", include("reviews.urls", namespace="reviews")),
     path("inventory/", include("inventory.urls", namespace="inventory")),
-    path("planner/", include("meal_planner_app.urls", namespace="meal_planner")),
+    path("", include("meal_planner_app.urls", namespace="meal_planner")),
     path("shopping/", include("shopping.urls", namespace="shopping")),
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
     path(

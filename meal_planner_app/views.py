@@ -16,6 +16,7 @@ from django.urls import reverse, reverse_lazy
 from django.core.serializers import serialize
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
+from django.contrib import messages
 
 from .models import MealPlan, MealType, SideDish
 from .forms import MealPlanForm, SideDishForm
@@ -61,10 +62,31 @@ class PlannerHomeView(LoginRequiredMixin, TemplateView):
 
         context["start_date"] = start_date
         context["end_date"] = end_date
-        context["week_days"] = week_days
         context["week_year"] = year
         context["week_number"] = week
         context["meal_types"] = ["breakfast", "lunch", "dinner", "snack"]
+
+        # Get meals for this week
+        meals = MealPlan.objects.filter(
+            household=self.request.user.household,
+            meal_date__gte=start_date,
+            meal_date__lte=end_date,
+        ).select_related("recipe")
+
+        # Organize meals by date and meal type
+        meals_by_day = {}
+        for meal in meals:
+            date_str = meal.meal_date.strftime("%Y-%m-%d")
+            if date_str not in meals_by_day:
+                meals_by_day[date_str] = {}
+            meals_by_day[date_str][meal.meal_type] = [meal]
+
+        # Build week_days with meals
+        for day in week_days:
+            date_str = day["date_str"]
+            day["meals"] = meals_by_day.get(date_str, {})
+
+        context["week_days"] = week_days
 
         return context
 
@@ -168,17 +190,27 @@ class AddMealView(LoginRequiredMixin, CreateView):
         initial = super().get_initial()
         date_param = self.request.GET.get("date")
         type_param = self.request.GET.get("type")
+        recipe_param = self.request.GET.get("recipe")
         if date_param:
             initial["meal_date"] = date_param
         if type_param:
             initial["meal_type"] = type_param
+        if recipe_param:
+            try:
+                recipe = Recipe.objects.get(
+                    pk=recipe_param, household=self.request.user.household
+                )
+                initial["recipe"] = recipe
+            except Recipe.DoesNotExist:
+                pass
         return initial
 
     def form_valid(self, form):
         """Set household before saving."""
         form.instance.household = self.request.user.household
-        self.request.user.message_set.create(
-            message=f"Meal added: {form.instance.recipe or form.instance.custom_meal}"
+        messages.success(
+            self.request,
+            f"Meal added: {form.instance.recipe or form.instance.custom_meal}",
         )
         # Save the meal first to get an ID
         response = super().form_valid(form)
@@ -239,8 +271,9 @@ class EditMealView(LoginRequiredMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
-        self.request.user.message_set.create(
-            message=f"Meal updated: {form.instance.recipe or form.instance.custom_meal}"
+        messages.success(
+            self.request,
+            f"Meal updated: {form.instance.recipe or form.instance.custom_meal}",
         )
         response = super().form_valid(form)
 
@@ -298,7 +331,7 @@ class DeleteMealView(LoginRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         meal = self.get_object()
         meal_name = meal.recipe or meal.custom_meal
-        self.request.user.message_set.create(message=f"Meal deleted: {meal_name}")
+        messages.success(self.request, f"Meal deleted: {meal_name}")
         return super().delete(request, *args, **kwargs)
 
 

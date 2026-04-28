@@ -32,6 +32,40 @@ class ImportForm(forms.Form):
         return "youtube.com" in url or "youtu.be" in url
 
 
+class LLMImportForm(forms.Form):
+    youtube_url = forms.URLField(
+        label="YouTube URL",
+        widget=forms.URLInput(
+            attrs={
+                "class": "input-dark",
+                "placeholder": "https://youtube.com/watch?v=... or https://youtu.be/...",
+            }
+        ),
+    )
+    model = forms.ChoiceField(
+        label="AI Model",
+        choices=[
+            ("qwen/qwen-turbo", "Qwen Turbo (Fast, Free)"),
+            ("qwen/qwen-plus", "Qwen Plus"),
+            ("anthropic/claude-sonnet-4-20250514", "Claude Sonnet"),
+        ],
+        initial="qwen/qwen-turbo",
+        required=False,
+        widget=forms.Select(attrs={"class": "input-dark"}),
+    )
+
+    def clean_youtube_url(self):
+        url = self.cleaned_data.get("youtube_url", "")
+        if url and not self._is_youtube_url(url):
+            raise forms.ValidationError(
+                "Please enter a valid YouTube URL (youtube.com or youtu.be)"
+            )
+        return url
+
+    def _is_youtube_url(self, url):
+        return "youtube.com" in url or "youtu.be" in url
+
+
 class RecipeForm(forms.ModelForm):
     new_tag_name = forms.CharField(required=False, max_length=50)
     new_tag_color = forms.CharField(required=False, max_length=7, initial="#6B7280")

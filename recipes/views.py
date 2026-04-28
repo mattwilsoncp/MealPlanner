@@ -1,4 +1,5 @@
 import re
+import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import (
     ListView,
@@ -15,7 +16,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db.models import Avg, Q
 from .models import Recipe
-from .forms import RecipeForm, RatingForm, ImportForm
+from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm
 from .youtube import YouTubeService, InvalidVideoError, APIError
 from .parsing import RecipeParsingService
 from ingredients.models import IngredientLink, Ingredient
@@ -182,6 +183,401 @@ class RecipeImportView(LoginRequiredMixin, FormView):
         context["sort"] = self.request.GET.get("sort", "newest")
         context["sort_choices"] = self.SORT_CHOICES
         return context
+
+
+class LLMRecipeImportView(LoginRequiredMixin, FormView):
+    form_class = LLMImportForm
+    template_name = "recipes/llm_import.html"
+    success_url = reverse_lazy("recipes:recipe_list")
+
+    YouTubeTranscriptApi = None
+
+    def form_valid(self, form):
+        import os
+        import json
+        import re
+        from decimal import Decimal, InvalidOperation
+        from pathlib import Path
+        from datetime import datetime
+
+        from django.conf import settings
+        from openai import OpenAI
+        from markitdown import MarkItDown
+
+        try:
+            from youtube_transcript_api import YouTubeTranscriptApi
+
+            LLMRecipeImportView.YouTubeTranscriptApi = YouTubeTranscriptApi
+        except ImportError:
+            LLMRecipeImportView.YouTubeTranscriptApi = None
+
+        from household.models import Household
+        from ingredients.models import Ingredient, IngredientLink
+        from instructions.models import Instruction
+        from .models import Recipe
+        from .youtube import InvalidVideoError, YouTubeService
+
+        youtube_url = form.cleaned_data["youtube_url"]
+        model = form.cleaned_data.get("model") or "qwen/qwen-turbo"
+
+        OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+        if not OPENROUTER_API_KEY:
+            form.add_error(
+                "youtube_url",
+                "OPENROUTER_API_KEY is not configured. Please set it in your environment.",
+            )
+            return self.form_invalid(form)
+
+        try:
+            household = self.request.user.household
+            if not household:
+                form.add_error(
+                    "youtube_url", "No household associated with your account."
+                )
+                return self.form_invalid(form)
+
+            client = OpenAI(
+                api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1"
+            )
+
+            video_id = self._extract_video_id(youtube_url)
+            metadata = self._get_video_metadata(video_id)
+            transcript = self._fetch_transcript(video_id)
+            parsed = self._parse_with_llm(client, model, metadata, transcript)
+
+            recipe = self._create_recipe(parsed, household, youtube_url, video_id)
+
+            messages.success(
+                self.request,
+                f"Imported recipe: {recipe.title} ({len(parsed.get('ingredients', []))} ingredients, {len(parsed.get('instructions', []))} steps)",
+            )
+            return redirect("recipes:recipe_detail", pk=recipe.pk)
+
+        except Exception as e:
+            form.add_error("youtube_url", f"Import failed: {str(e)}")
+            return self.form_invalid(form)
+
+    def _extract_video_id(self, url: str) -> str:
+        patterns = [
+            r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})",
+            r"youtube\.com/embed/([a-zA-Z0-9_-]{11})",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        raise InvalidVideoError("Invalid YouTube URL")
+
+    def _get_video_metadata(self, video_id: str) -> dict:
+        api_key = getattr(settings, "YOUTUBE_API_KEY", None)
+        metadata = {
+            "video_id": video_id,
+            "title": "",
+            "description": "",
+            "thumbnail_url": "",
+        }
+        if api_key:
+            try:
+                service = YouTubeService(api_key)
+                video_metadata = service.get_video_metadata(video_id)
+                metadata["title"] = video_metadata.title or ""
+                metadata["description"] = video_metadata.description or ""
+                metadata["thumbnail_url"] = video_metadata.thumbnail_url or ""
+            except Exception:
+                pass
+        return metadata
+
+    def _fetch_transcript(self, video_id: str) -> str:
+        if LLMRecipeImportView.YouTubeTranscriptApi is not None:
+            try:
+                transcript_items = (
+                    LLMRecipeImportView.YouTubeTranscriptApi.get_transcript(
+                        video_id, languages=["en", "en-US", "en-GB"]
+                    )
+                )
+                lines = []
+                for item in transcript_items:
+                    text = str(item.get("text") or "").strip()
+                    if text:
+                        lines.append(text)
+                if lines:
+                    return "\n".join(lines)
+            except Exception:
+                pass
+
+        return ""
+
+    def _parse_with_llm(
+        self, client: OpenAI, model: str, metadata: dict, transcript: str
+    ) -> dict:
+        if not transcript:
+            raise RuntimeError("No transcript available for this video")
+
+        source_context = (
+            f"Source URL: {metadata.get('url', '')}\n"
+            f"Video ID: {metadata.get('video_id', '')}\n"
+            f"Title: {metadata.get('title', '')}\n"
+            "\n"
+            "Description:\n"
+            f"{metadata.get('description', '')}\n"
+            "\n"
+            "Full Transcript:\n"
+            f"{transcript}"
+        )
+
+        prompt = (
+            """You are extracting structured recipe data from a YouTube recipe video transcript.
+Return only valid JSON with this exact shape:
+{
+  "title": "string",
+  "description": "string",
+  "ingredients": [
+    {
+      "name": "string",
+      "quantity": "string",
+      "unit": "string"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "text": "string"
+    }
+  ]
+}
+
+Rules:
+- The recipe title should be concise and human readable.
+- The description should summarize the dish in 1-3 sentences.
+- Include only actual ingredients used in the recipe.
+- Preserve ingredient quantities when present.
+- Use singular common cooking units when possible.
+- For ingredients without a clear quantity, leave quantity as an empty string.
+- For ingredients without a clear unit, leave unit as an empty string.
+- Instructions should be clean, imperative cooking steps.
+- Instructions must be ordered and start at step_number 1.
+- Do not include markdown, explanation, or code fences.
+
+Source Context:
+"""
+            + source_context
+        )
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a precise recipe extraction engine that returns strict JSON only.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.1,
+            max_tokens=4000,
+        )
+
+        content = response.choices[0].message.content or ""
+        if not content.strip():
+            raise RuntimeError("OpenRouter returned an empty response")
+
+        text = content.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
+
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            text = match.group(0)
+
+        return json.loads(text)
+
+    def _normalize_quantity(self, raw_quantity: any) -> Decimal:
+        if raw_quantity is None:
+            return Decimal("1")
+
+        quantity_text = str(raw_quantity).strip()
+        if not quantity_text:
+            return Decimal("1")
+
+        fraction_match = re.fullmatch(r"(\d+)\s*/\s*(\d+)", quantity_text)
+        mixed_match = re.fullmatch(r"(\d+)\s+(\d+)\s*/\s*(\d+)", quantity_text)
+        range_match = re.fullmatch(
+            r"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)", quantity_text
+        )
+
+        try:
+            if mixed_match:
+                whole = Decimal(mixed_match.group(1))
+                numerator = Decimal(mixed_match.group(2))
+                denominator = Decimal(mixed_match.group(3))
+                return whole + (numerator / denominator)
+            if fraction_match:
+                numerator = Decimal(fraction_match.group(1))
+                denominator = Decimal(fraction_match.group(2))
+                return numerator / denominator
+            if range_match:
+                low = Decimal(range_match.group(1))
+                high = Decimal(range_match.group(2))
+                return (low + high) / 2
+            return Decimal(quantity_text)
+        except (InvalidOperation, ZeroDivisionError):
+            return Decimal("1")
+
+    def _normalize_unit(self, raw_unit: any) -> str:
+        UNIT_MAP = {
+            "cups": "cup",
+            "cup": "cup",
+            "tablespoon": "tbsp",
+            "tablespoons": "tbsp",
+            "tbsp": "tbsp",
+            "tbs": "tbsp",
+            "teaspoon": "tsp",
+            "teaspoons": "tsp",
+            "tsp": "tsp",
+            "ts": "tsp",
+            "ounce": "oz",
+            "ounces": "oz",
+            "oz": "oz",
+            "pound": "lb",
+            "pounds": "lb",
+            "lb": "lb",
+            "gram": "g",
+            "grams": "g",
+            "g": "g",
+            "kilogram": "kg",
+            "kilograms": "kg",
+            "kg": "kg",
+            "milliliter": "ml",
+            "milliliters": "ml",
+            "ml": "ml",
+            "liter": "l",
+            "liters": "l",
+            "l": "l",
+            "cloves": "clove",
+            "clove": "clove",
+            "slice": "slice",
+            "slices": "slice",
+            "bunch": "bunch",
+            "bunches": "bunch",
+            "can": "can",
+            "cans": "can",
+            "piece": "piece",
+            "pieces": "piece",
+            "": "piece",
+        }
+        VALID_UNITS = {
+            "oz",
+            "lb",
+            "cup",
+            "tbsp",
+            "tsp",
+            "g",
+            "kg",
+            "ml",
+            "l",
+            "piece",
+            "clove",
+            "slice",
+            "bunch",
+            "can",
+        }
+
+        unit = str(raw_unit or "").strip().lower()
+        normalized = UNIT_MAP.get(unit, unit)
+        if normalized in VALID_UNITS:
+            return normalized
+        return "piece"
+
+    def _create_recipe(
+        self, data: dict, household, youtube_url: str, video_id: str = None
+    ) -> Recipe:
+        import urllib.request
+        from django.core.files import File
+        from django.conf import settings
+
+        title = str(data.get("title") or "").strip() or "Imported YouTube Recipe"
+        description = str(data.get("description") or "").strip()
+        ingredients = data.get("ingredients") or []
+        instructions = data.get("instructions") or []
+
+        recipe, created = Recipe.objects.get_or_create(
+            household=household,
+            title=title,
+            defaults={
+                "description": description,
+                "video_url": youtube_url,
+                "needs_review": True,
+            },
+        )
+
+        recipe.description = description or recipe.description
+        recipe.video_url = youtube_url
+        recipe.needs_review = True
+
+        if video_id and not recipe.photo:
+            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+            media_root = settings.MEDIA_ROOT
+            recipe_photos_dir = media_root / "recipe_photos"
+            recipe_photos_dir.mkdir(parents=True, exist_ok=True)
+
+            from datetime import datetime
+
+            filename = f"{household.id}_{video_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+            output_path = recipe_photos_dir / filename
+
+            try:
+                urllib.request.urlretrieve(thumbnail_url, output_path)
+                with open(output_path, "rb") as f:
+                    recipe.photo.save(filename, File(f), save=True)
+            except Exception:
+                fallback_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                try:
+                    urllib.request.urlretrieve(fallback_url, output_path)
+                    with open(output_path, "rb") as f:
+                        recipe.photo.save(filename, File(f), save=True)
+                except Exception:
+                    pass
+
+        recipe.save()
+
+        recipe.ingredients.all().delete()
+        Instruction.objects.filter(recipe=recipe).delete()
+
+        for index, item in enumerate(ingredients, start=1):
+            name = str(item.get("name") or "").strip()
+            if not name:
+                continue
+
+            ingredient, _ = Ingredient.objects.get_or_create(
+                household=household,
+                name=name,
+            )
+            IngredientLink.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                quantity=self._normalize_quantity(item.get("quantity")),
+                unit=self._normalize_unit(item.get("unit")),
+                order=index,
+            )
+
+        for index, item in enumerate(instructions, start=1):
+            text = str(item.get("text") or "").strip()
+            if not text:
+                continue
+            step_number = item.get("step_number")
+            if not isinstance(step_number, int) or step_number < 1:
+                step_number = index
+            Instruction.objects.create(
+                recipe=recipe,
+                step_number=step_number,
+                text=text,
+            )
+
+        return recipe
 
 
 class RecipeDetailView(LoginRequiredMixin, DetailView):

@@ -80,7 +80,7 @@
                             </td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
                             <td style="text-align: right;">
-                                <a href="{% url 'shopping:delete_item' item.pk %}" class="link-green text-sm">Delete</a>
+                                <a href="{% url 'shopping:item_delete' item.pk %}" class="link-green text-sm">Delete</a>
                             </td>
                         </tr>
                         {% endfor %}

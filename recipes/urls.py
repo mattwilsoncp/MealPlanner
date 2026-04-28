@@ -9,6 +9,7 @@ urlpatterns = [
     # Template views
     path("", views.RecipeListView.as_view(), name="recipe_list"),
     path("import/", views.RecipeImportView.as_view(), name="recipe_import"),
+    path("import/llm/", views.LLMRecipeImportView.as_view(), name="llm_recipe_import"),
     path("<int:pk>/", views.RecipeDetailView.as_view(), name="recipe_detail"),
     path("new/", views.RecipeCreateView.as_view(), name="recipe_create"),
     path("<int:pk>/edit/", views.RecipeUpdateView.as_view(), name="recipe_update"),
@@ -22,4 +23,5 @@ urlpatterns = [
         name="recipe_toggle_review",
     ),
     path("api/search/", api.recipe_search_api, name="recipe_search_api"),
+    path("api/<int:pk>/", api.recipe_detail_api, name="recipe_detail_api"),
 ]

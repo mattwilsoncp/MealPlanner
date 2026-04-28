@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Import Recipe from YouTube{% endblock %}
+{% block title %}AI Recipe Import from YouTube{% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto">
     <div class="card-dark">
         <div class="p-8">
-            <h1 class="text-2xl font-medium mb-2">Import from YouTube</h1>
+            <h1 class="text-2xl font-medium mb-2">AI Recipe Import</h1>
             <p class="text-sm mb-6" style="color: var(--text-light-gray);">
-                Paste a YouTube recipe video URL to import the recipe details.
+                Import a recipe from YouTube using AI-powered extraction. This uses the video transcript for more accurate ingredient and instruction parsing.
             </p>
 
-            <form method="post" action="{% url 'recipes:recipe_import' %}" id="import-form">
+            <form method="post" action="{% url 'recipes:llm_recipe_import' %}" id="import-form">
                 {% csrf_token %}
                 
                 <div class="mb-6">
@@ -28,20 +28,30 @@
                     {% endif %}
                 </div>
 
+                <div class="mb-6">
+                    <label class="label-dark" for="id_model">AI Model</label>
+                    <select name="model" id="id_model" class="input-dark">
+                        <option value="qwen/qwen-turbo" {% if form.model.value == "qwen/qwen-turbo" %}selected{% endif %}>Qwen Turbo (Fast, Free)</option>
+                        <option value="qwen/qwen-plus" {% if form.model.value == "qwen/qwen-plus" %}selected{% endif %}>Qwen Plus</option>
+                        <option value="anthropic/claude-sonnet-4-20250514" {% if form.model.value == "anthropic/claude-sonnet-4-20250514" %}selected{% endif %}>Claude Sonnet</option>
+                    </select>
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
+                        Qwen Turbo is fastest and free. Claude Sonnet offers higher quality but uses more credits.
+                    </p>
+                </div>
+
                 <button type="submit" 
                         class="btn-pill w-full" 
                         id="import-btn"
                         style="background: var(--brand-green); border-color: var(--brand-green);">
-                    <span id="btn-text">Import Recipe</span>
+                    <span id="btn-text">Import with AI</span>
                 </button>
             </form>
         </div>
     </div>
 
-    <div class="mt-4 text-center space-y-2">
-        <a href="{% url 'recipes:llm_recipe_import' %}" class="link-green">Import with AI (better results)</a>
-        <br>
-        <a href="{% url 'recipes:recipe_create' %}" class="link-green">Or create a new recipe manually</a>
+    <div class="mt-4 text-center">
+        <a href="{% url 'recipes:recipe_import' %}" class="link-green">Use basic import instead</a>
     </div>
 </div>
 
@@ -51,7 +61,7 @@ document.getElementById('import-form').addEventListener('submit', function() {
     const btn = document.getElementById('import-btn');
     const btnText = document.getElementById('btn-text');
     btn.disabled = true;
-    btnText.textContent = 'Importing...';
+    btnText.textContent = 'Processing...';
     btn.style.opacity = '0.7';
 });
 </script>

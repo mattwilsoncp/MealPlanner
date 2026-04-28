@@ -4,6 +4,7 @@ import json
 import os
 import re
 import sys
+import urllib.request
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -33,7 +34,7 @@ from recipes.models import Recipe
 from recipes.youtube import InvalidVideoError, YouTubeService
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-#DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
+# DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
 DEFAULT_MODEL = "qwen/qwen-turbo"
 TRANSCRIPT_DIR = PROJECT_ROOT / "logs" / "transcripts"
 VALID_UNITS = {choice[0] for choice in IngredientLink.UNIT_CHOICES}
@@ -143,7 +144,9 @@ def get_household(household_id: int | None) -> Household:
             "Multiple households found. Re-run with --household-id. "
             f"Available households: {available_households}"
         )
-    raise RuntimeError("No household found. Create a household before importing recipes.")
+    raise RuntimeError(
+        "No household found. Create a household before importing recipes."
+    )
 
 
 def fetch_youtube_captions(video_id: str) -> str:
@@ -182,7 +185,9 @@ def fetch_youtube_captions(video_id: str) -> str:
             selected_transcript = None
             for language_code in preferred_languages:
                 try:
-                    selected_transcript = transcript_list.find_transcript([language_code])
+                    selected_transcript = transcript_list.find_transcript(
+                        [language_code]
+                    )
                     break
                 except Exception:
                     continue
@@ -255,6 +260,31 @@ def get_youtube_api_key() -> str:
     return str(getattr(settings, "YOUTUBE_API_KEY", "") or "").strip()
 
 
+def download_thumbnail(video_id: str, household_id: int) -> Path | None:
+    """Download YouTube thumbnail and save to media directory."""
+    thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+
+    media_root = settings.MEDIA_ROOT
+    recipe_photos_dir = media_root / "recipe_photos"
+    recipe_photos_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = (
+        f"{household_id}_{video_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+    )
+    output_path = recipe_photos_dir / filename
+
+    try:
+        urllib.request.urlretrieve(thumbnail_url, output_path)
+        return output_path
+    except Exception as exc:
+        fallback_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+        try:
+            urllib.request.urlretrieve(fallback_url, output_path)
+            return output_path
+        except Exception:
+            return None
+
+
 def get_video_metadata(url: str, video_id: str) -> dict[str, str]:
     metadata = {
         "video_id": video_id,
@@ -269,7 +299,9 @@ def get_video_metadata(url: str, video_id: str) -> dict[str, str]:
     api_key = get_youtube_api_key()
     if not api_key:
         metadata["metadata_status"] = "missing_api_key"
-        metadata["metadata_error"] = "YOUTUBE_API_KEY was not found in the environment or Django settings"
+        metadata["metadata_error"] = (
+            "YOUTUBE_API_KEY was not found in the environment or Django settings"
+        )
         return metadata
 
     try:
@@ -409,7 +441,15 @@ def normalize_unit(raw_unit: Any) -> str:
     return "piece"
 
 
-def upsert_recipe(data: dict[str, Any], household: Household, youtube_url: str, transcript_log: Path) -> Recipe:
+def upsert_recipe(
+    data: dict[str, Any],
+    household: Household,
+    youtube_url: str,
+    transcript_log: Path,
+    video_id: str | None = None,
+) -> Recipe:
+    from django.core.files import File
+
     title = str(data.get("title") or "").strip() or "Imported YouTube Recipe"
     description = str(data.get("description") or "").strip()
     ingredients = data.get("ingredients") or []
@@ -428,6 +468,13 @@ def upsert_recipe(data: dict[str, Any], household: Household, youtube_url: str, 
     recipe.description = description or recipe.description
     recipe.video_url = youtube_url
     recipe.needs_review = True
+
+    if video_id and not recipe.photo:
+        thumbnail_path = download_thumbnail(video_id, household.id)
+        if thumbnail_path and thumbnail_path.exists():
+            with open(thumbnail_path, "rb") as f:
+                recipe.photo.save(thumbnail_path.name, File(f), save=True)
+
     recipe.save()
 
     recipe.ingredients.all().delete()
@@ -475,7 +522,9 @@ def upsert_recipe(data: dict[str, Any], household: Household, youtube_url: str, 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Import a YouTube recipe via OpenRouter")
+    parser = argparse.ArgumentParser(
+        description="Import a YouTube recipe via OpenRouter"
+    )
     parser.add_argument("url", help="YouTube video URL")
     parser.add_argument(
         "--model",
@@ -509,7 +558,7 @@ def main() -> int:
         if args.title.strip():
             parsed["title"] = args.title.strip()
 
-        recipe = upsert_recipe(parsed, household, args.url, transcript_log)
+        recipe = upsert_recipe(parsed, household, args.url, transcript_log, video_id)
         print(f"Transcript saved to {transcript_log}")
         print(f"Recipe marked for review: {recipe.needs_review}")
         return 0

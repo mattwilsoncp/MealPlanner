@@ -87,7 +87,7 @@
                 <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
                 <div class="flex gap-2">
                     <button @click="openRecipeModal({{ meal.recipe.pk }})" class="link text-xs">View</button>
-                    <a href="{% url 'meal_planner:cooking_home' meal.pk %}" class="link text-xs">Cook</a>
+                    <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link text-xs">Cook</a>
                 </div>
                 {% else %}
                 <div class="text-sm" style="color: var(--text-muted);">{{ meal.notes|truncatechars:30 }}</div>
@@ -95,7 +95,7 @@
             </div>
             {% endfor %}
             
-            <a href="{% url 'meal_planner:meal_create' %}?date={{ day|date:'Y-m-d' }}&meal_type={{ meal_type }}" 
+            <a href="{% url 'meal_planner:add_meal' %}?date={{ day|date:'Y-m-d' }}&type={{ meal_type }}" 
                class="link text-xs">+ Add {{ meal_type }}</a>
         </div>
         {% endfor %}
