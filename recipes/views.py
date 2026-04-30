@@ -589,6 +589,11 @@ Source Context:
     ) -> Recipe:
         from django.core.files import File
         from pathlib import Path
+        import urllib.request
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        logger.info(f"Creating recipe: {data.get('title', 'Untitled')}")
 
         PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -616,8 +621,6 @@ Source Context:
             media_root = settings.MEDIA_ROOT
             recipe_photos_dir = media_root / "recipe_photos"
             
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f"Media root: {media_root}")
             logger.info(f"Recipe photos dir: {recipe_photos_dir}")
             
@@ -632,8 +635,6 @@ Source Context:
             output_path = recipe_photos_dir / filename
 
             try:
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.info(f"Downloading thumbnail: {thumbnail_url}")
                 urllib.request.urlretrieve(thumbnail_url, output_path)
                 if output_path.exists():
