@@ -1,6 +1,7 @@
 import re
 import json
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import (
     ListView,
@@ -278,7 +279,6 @@ Source Context:
         import os
         import json
         import re
-        from decimal import Decimal, InvalidOperation
         from pathlib import Path
         import urllib.request
 
