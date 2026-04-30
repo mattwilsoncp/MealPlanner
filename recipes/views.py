@@ -1,5 +1,6 @@
 import re
 import json
+from datetime import datetime
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import (
     ListView,
@@ -279,7 +280,6 @@ Source Context:
         import re
         from decimal import Decimal, InvalidOperation
         from pathlib import Path
-        from datetime import datetime
         import urllib.request
 
         from django.conf import settings
