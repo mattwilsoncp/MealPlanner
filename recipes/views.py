@@ -615,23 +615,48 @@ Source Context:
             thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
             media_root = settings.MEDIA_ROOT
             recipe_photos_dir = media_root / "recipe_photos"
-            recipe_photos_dir.mkdir(parents=True, exist_ok=True)
+            
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Media root: {media_root}")
+            logger.info(f"Recipe photos dir: {recipe_photos_dir}")
+            
+            try:
+                recipe_photos_dir.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Photo directory exists: {recipe_photos_dir.exists()}")
+            except Exception as e:
+                logger.error(f"Failed to create photo directory: {e}")
+                return recipe
 
             filename = f"{household.id}_{video_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
             output_path = recipe_photos_dir / filename
 
             try:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Downloading thumbnail: {thumbnail_url}")
                 urllib.request.urlretrieve(thumbnail_url, output_path)
-                with open(output_path, "rb") as f:
-                    recipe.photo.save(filename, File(f), save=True)
-            except Exception:
-                fallback_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-                try:
-                    urllib.request.urlretrieve(fallback_url, output_path)
+                if output_path.exists():
+                    logger.info(f"Thumbnail saved to: {output_path}")
                     with open(output_path, "rb") as f:
                         recipe.photo.save(filename, File(f), save=True)
-                except Exception:
-                    pass
+                    logger.info(f"Photo saved to recipe: {recipe.photo}")
+                else:
+                    logger.error(f"File not created at: {output_path}")
+            except Exception as e:
+                logger.warning(f"Failed to download maxresdefault thumbnail: {e}")
+                fallback_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                try:
+                    logger.info(f"Trying fallback: {fallback_url}")
+                    urllib.request.urlretrieve(fallback_url, output_path)
+                    if output_path.exists():
+                        with open(output_path, "rb") as f:
+                            recipe.photo.save(filename, File(f), save=True)
+                        logger.info(f"Fallback photo saved to recipe: {recipe.photo}")
+                    else:
+                        logger.error(f"Fallback file not created at: {output_path}")
+                except Exception as e2:
+                    logger.error(f"Failed to download hqdefault thumbnail: {e2}")
 
         recipe.save()
 
