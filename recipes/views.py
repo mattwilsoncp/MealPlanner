@@ -192,6 +192,87 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
 
     YouTubeTranscriptApi = None
 
+    UNIT_MAP = {
+        "cups": "cup",
+        "cup": "cup",
+        "tablespoon": "tbsp",
+        "tablespoons": "tbsp",
+        "tbsp": "tbsp",
+        "tbs": "tbsp",
+        "teaspoon": "tsp",
+        "teaspoons": "tsp",
+        "tsp": "tsp",
+        "ts": "tsp",
+        "ounce": "oz",
+        "ounces": "oz",
+        "oz": "oz",
+        "pound": "lb",
+        "pounds": "lb",
+        "lb": "lb",
+        "gram": "g",
+        "grams": "g",
+        "g": "g",
+        "kilogram": "kg",
+        "kilograms": "kg",
+        "kg": "kg",
+        "milliliter": "ml",
+        "milliliters": "ml",
+        "ml": "ml",
+        "liter": "l",
+        "liters": "l",
+        "l": "l",
+        "cloves": "clove",
+        "clove": "clove",
+        "slice": "slice",
+        "slices": "slice",
+        "bunch": "bunch",
+        "bunches": "bunch",
+        "can": "can",
+        "cans": "can",
+        "piece": "piece",
+        "pieces": "piece",
+        "": "piece",
+    }
+
+    VALID_UNITS = {"oz", "lb", "cup", "tbsp", "tsp", "g", "kg", "ml", "l", "piece", "clove", "slice", "bunch", "can"}
+
+    PROMPT_TEMPLATE = """You are extracting structured recipe data from a YouTube recipe video transcript.
+Return only valid JSON with this exact shape:
+{{
+  "title": "string",
+  "description": "string",
+  "ingredients": [
+    {{
+      "name": "string",
+      "quantity": "string",
+      "unit": "string"
+    }}
+  ],
+  "instructions": [
+    {{
+      "step_number": 1,
+      "text": "string"
+    }}
+  ]
+}}
+
+Rules:
+- The recipe title should be concise and human readable.
+- The description should summarize the dish in 1-3 sentences.
+- Include only actual ingredients used in the recipe.
+- Preserve ingredient quantities when present.
+- Use singular common cooking units when possible.
+- For ingredients without a clear quantity, leave quantity as an empty string.
+- For ingredients without a clear unit, leave unit as an empty string.
+- Instructions should be clean, imperative cooking steps.
+- Instructions must be ordered and start at step_number 1.
+- Do not include markdown, explanation, or code fences.
+- Use all provided source context, including title, description, and transcript, but prioritize explicit recipe details from the transcript when they conflict with metadata.
+
+Source Context:
+{source_context}
+"""
+
     def form_valid(self, form):
         import os
         import json
@@ -199,10 +280,10 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
         from decimal import Decimal, InvalidOperation
         from pathlib import Path
         from datetime import datetime
+        import urllib.request
 
         from django.conf import settings
         from openai import OpenAI
-        from markitdown import MarkItDown
 
         try:
             from youtube_transcript_api import YouTubeTranscriptApi
@@ -215,8 +296,9 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
         from ingredients.models import Ingredient, IngredientLink
         from instructions.models import Instruction
         from .models import Recipe
-        from .youtube import InvalidVideoError, YouTubeService
+        from .youtube import YouTubeService, InvalidVideoError
 
+        PROJECT_ROOT = Path(__file__).resolve().parent.parent
         youtube_url = form.cleaned_data["youtube_url"]
         model = form.cleaned_data.get("model") or "qwen/qwen-turbo"
 
@@ -241,11 +323,15 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
             )
 
             video_id = self._extract_video_id(youtube_url)
-            metadata = self._get_video_metadata(video_id)
+            metadata = self._get_video_metadata(video_id, youtube_url)
             transcript = self._fetch_transcript(video_id)
+            transcript_log = self._write_transcript_log(metadata, transcript)
             parsed = self._parse_with_llm(client, model, metadata, transcript)
 
-            recipe = self._create_recipe(parsed, household, youtube_url, video_id)
+            if form.cleaned_data.get("title"):
+                parsed["title"] = form.cleaned_data["title"]
+
+            recipe = self._create_recipe(parsed, household, youtube_url, transcript_log, video_id)
 
             messages.success(
                 self.request,
@@ -253,6 +339,9 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
             )
             return redirect("recipes:recipe_detail", pk=recipe.pk)
 
+        except InvalidVideoError as e:
+            form.add_error("youtube_url", str(e))
+            return self.form_invalid(form)
         except Exception as e:
             form.add_error("youtube_url", f"Import failed: {str(e)}")
             return self.form_invalid(form)
@@ -268,44 +357,131 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
                 return match.group(1)
         raise InvalidVideoError("Invalid YouTube URL")
 
-    def _get_video_metadata(self, video_id: str) -> dict:
+    def _get_video_metadata(self, video_id: str, youtube_url: str) -> dict:
         api_key = getattr(settings, "YOUTUBE_API_KEY", None)
         metadata = {
             "video_id": video_id,
+            "url": youtube_url,
             "title": "",
             "description": "",
             "thumbnail_url": "",
+            "metadata_status": "not_requested",
+            "metadata_error": "",
         }
-        if api_key:
-            try:
-                service = YouTubeService(api_key)
-                video_metadata = service.get_video_metadata(video_id)
-                metadata["title"] = video_metadata.title or ""
-                metadata["description"] = video_metadata.description or ""
-                metadata["thumbnail_url"] = video_metadata.thumbnail_url or ""
-            except Exception:
-                pass
+
+        if not api_key:
+            metadata["metadata_status"] = "missing_api_key"
+            metadata["metadata_error"] = (
+                "YOUTUBE_API_KEY was not found in the environment or Django settings"
+            )
+            return metadata
+
+        try:
+            service = YouTubeService(api_key=api_key)
+            video_metadata = service.get_video_metadata(video_id)
+        except Exception as exc:
+            metadata["metadata_status"] = "error"
+            metadata["metadata_error"] = str(exc)
+            return metadata
+
+        metadata["title"] = video_metadata.title or ""
+        metadata["description"] = video_metadata.description or ""
+        metadata["thumbnail_url"] = video_metadata.thumbnail_url or ""
+        metadata["metadata_status"] = "ok"
         return metadata
 
     def _fetch_transcript(self, video_id: str) -> str:
         if LLMRecipeImportView.YouTubeTranscriptApi is not None:
+            errors = []
+            transcript_items = None
+
             try:
-                transcript_items = (
-                    LLMRecipeImportView.YouTubeTranscriptApi.get_transcript(
-                        video_id, languages=["en", "en-US", "en-GB"]
-                    )
+                transcript_items = LLMRecipeImportView.YouTubeTranscriptApi.get_transcript(
+                    video_id, languages=["en", "en-US", "en-GB"]
                 )
-                lines = []
+            except Exception as exc:
+                errors.append(f"get_transcript failed: {exc}")
+
+            if transcript_items is None:
+                try:
+                    api = LLMRecipeImportView.YouTubeTranscriptApi()
+                    transcript_items = api.fetch(video_id, languages=["en", "en-US", "en-GB"])
+                except TypeError:
+                    try:
+                        transcript_items = api.fetch(video_id)
+                    except Exception as exc:
+                        errors.append(f"fetch failed: {exc}")
+                except Exception as exc:
+                    errors.append(f"fetch failed: {exc}")
+
+            if transcript_items is None:
+                try:
+                    api = LLMRecipeImportView.YouTubeTranscriptApi()
+                    transcript_list = api.list(video_id)
+                    preferred_languages = ["en", "en-US", "en-GB"]
+                    selected_transcript = None
+                    for language_code in preferred_languages:
+                        try:
+                            selected_transcript = transcript_list.find_transcript(
+                                [language_code]
+                            )
+                            break
+                        except Exception:
+                            continue
+                    if selected_transcript is None:
+                        try:
+                            selected_transcript = transcript_list.find_generated_transcript(
+                                preferred_languages
+                            )
+                        except Exception:
+                            selected_transcript = None
+                    if selected_transcript is not None:
+                        transcript_items = selected_transcript.fetch()
+                except Exception as exc:
+                    errors.append(f"list/fetch transcript track failed: {exc}")
+
+            lines = []
+            if transcript_items is not None:
                 for item in transcript_items:
-                    text = str(item.get("text") or "").strip()
+                    if isinstance(item, dict):
+                        text = str(item.get("text") or "").strip()
+                    else:
+                        text = str(getattr(item, "text", "") or "").strip()
                     if text:
                         lines.append(text)
-                if lines:
-                    return "\n".join(lines)
-            except Exception:
-                pass
 
-        return ""
+            transcript_text = "\n".join(lines).strip()
+            if transcript_text:
+                return transcript_text
+
+            error_message = "; ".join(errors) if errors else "No transcript text returned"
+            raise RuntimeError(f"Could not fetch YouTube captions: {error_message}")
+
+        raise RuntimeError("youtube-transcript-api is not installed")
+
+    def _write_transcript_log(self, metadata: dict, transcript: str) -> Path:
+        from pathlib import Path
+        TRANSCRIPT_DIR = Path(__file__).resolve().parent.parent / "logs" / "transcripts"
+        TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_video_id = metadata.get("video_id") or "unknown_video"
+        output_path = TRANSCRIPT_DIR / f"{timestamp}_{safe_video_id}.txt"
+        log_body = (
+            f"Source URL: {metadata.get('url', '')}\n"
+            f"Video ID: {metadata.get('video_id', '')}\n"
+            f"Metadata Status: {metadata.get('metadata_status', '')}\n"
+            f"Metadata Error: {metadata.get('metadata_error', '')}\n"
+            f"Title: {metadata.get('title', '')}\n"
+            f"Thumbnail URL: {metadata.get('thumbnail_url', '')}\n"
+            "\n"
+            "Description:\n"
+            f"{metadata.get('description', '')}\n"
+            "\n"
+            "Full Transcript:\n"
+            f"{transcript}\n"
+        )
+        output_path.write_text(log_body, encoding="utf-8")
+        return output_path
 
     def _parse_with_llm(
         self, client: OpenAI, model: str, metadata: dict, transcript: str
@@ -313,54 +489,8 @@ class LLMRecipeImportView(LoginRequiredMixin, FormView):
         if not transcript:
             raise RuntimeError("No transcript available for this video")
 
-        source_context = (
-            f"Source URL: {metadata.get('url', '')}\n"
-            f"Video ID: {metadata.get('video_id', '')}\n"
-            f"Title: {metadata.get('title', '')}\n"
-            "\n"
-            "Description:\n"
-            f"{metadata.get('description', '')}\n"
-            "\n"
-            "Full Transcript:\n"
-            f"{transcript}"
-        )
-
-        prompt = (
-            """You are extracting structured recipe data from a YouTube recipe video transcript.
-Return only valid JSON with this exact shape:
-{
-  "title": "string",
-  "description": "string",
-  "ingredients": [
-    {
-      "name": "string",
-      "quantity": "string",
-      "unit": "string"
-    }
-  ],
-  "instructions": [
-    {
-      "step_number": 1,
-      "text": "string"
-    }
-  ]
-}
-
-Rules:
-- The recipe title should be concise and human readable.
-- The description should summarize the dish in 1-3 sentences.
-- Include only actual ingredients used in the recipe.
-- Preserve ingredient quantities when present.
-- Use singular common cooking units when possible.
-- For ingredients without a clear quantity, leave quantity as an empty string.
-- For ingredients without a clear unit, leave unit as an empty string.
-- Instructions should be clean, imperative cooking steps.
-- Instructions must be ordered and start at step_number 1.
-- Do not include markdown, explanation, or code fences.
-
-Source Context:
-"""
-            + source_context
+        prompt = self.PROMPT_TEMPLATE.format(
+            source_context=self._build_source_context(metadata, transcript)
         )
 
         response = client.chat.completions.create(
@@ -380,7 +510,24 @@ Source Context:
         if not content.strip():
             raise RuntimeError("OpenRouter returned an empty response")
 
-        text = content.strip()
+        return self._extract_json_payload(content)
+
+    def _build_source_context(self, metadata: dict, transcript: str) -> str:
+        return (
+            f"Source URL: {metadata.get('url', '')}\n"
+            f"Video ID: {metadata.get('video_id', '')}\n"
+            f"Title: {metadata.get('title', '')}\n"
+            f"Thumbnail URL: {metadata.get('thumbnail_url', '')}\n"
+            "\n"
+            "Description:\n"
+            f"{metadata.get('description', '')}\n"
+            "\n"
+            "Full Transcript:\n"
+            f"{transcript}"
+        )
+
+    def _extract_json_payload(self, raw_text: str) -> dict:
+        text = raw_text.strip()
         if text.startswith("```"):
             lines = text.splitlines()
             if lines and lines[0].startswith("```"):
@@ -393,7 +540,10 @@ Source Context:
         if match:
             text = match.group(0)
 
-        return json.loads(text)
+        payload = json.loads(text)
+        if not isinstance(payload, dict):
+            raise RuntimeError("Model response was not a JSON object")
+        return payload
 
     def _normalize_quantity(self, raw_quantity: any) -> Decimal:
         if raw_quantity is None:
@@ -428,76 +578,19 @@ Source Context:
             return Decimal("1")
 
     def _normalize_unit(self, raw_unit: any) -> str:
-        UNIT_MAP = {
-            "cups": "cup",
-            "cup": "cup",
-            "tablespoon": "tbsp",
-            "tablespoons": "tbsp",
-            "tbsp": "tbsp",
-            "tbs": "tbsp",
-            "teaspoon": "tsp",
-            "teaspoons": "tsp",
-            "tsp": "tsp",
-            "ts": "tsp",
-            "ounce": "oz",
-            "ounces": "oz",
-            "oz": "oz",
-            "pound": "lb",
-            "pounds": "lb",
-            "lb": "lb",
-            "gram": "g",
-            "grams": "g",
-            "g": "g",
-            "kilogram": "kg",
-            "kilograms": "kg",
-            "kg": "kg",
-            "milliliter": "ml",
-            "milliliters": "ml",
-            "ml": "ml",
-            "liter": "l",
-            "liters": "l",
-            "l": "l",
-            "cloves": "clove",
-            "clove": "clove",
-            "slice": "slice",
-            "slices": "slice",
-            "bunch": "bunch",
-            "bunches": "bunch",
-            "can": "can",
-            "cans": "can",
-            "piece": "piece",
-            "pieces": "piece",
-            "": "piece",
-        }
-        VALID_UNITS = {
-            "oz",
-            "lb",
-            "cup",
-            "tbsp",
-            "tsp",
-            "g",
-            "kg",
-            "ml",
-            "l",
-            "piece",
-            "clove",
-            "slice",
-            "bunch",
-            "can",
-        }
-
         unit = str(raw_unit or "").strip().lower()
-        normalized = UNIT_MAP.get(unit, unit)
-        if normalized in VALID_UNITS:
+        normalized = self.UNIT_MAP.get(unit, unit)
+        if normalized in self.VALID_UNITS:
             return normalized
         return "piece"
 
     def _create_recipe(
-        self, data: dict, household, youtube_url: str, video_id: str = None
+        self, data: dict, household, youtube_url: str, transcript_log: Path, video_id: str = None
     ) -> Recipe:
-        import urllib.request
         from django.core.files import File
-        from django.conf import settings
+        from pathlib import Path
+
+        PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
         title = str(data.get("title") or "").strip() or "Imported YouTube Recipe"
         description = str(data.get("description") or "").strip()
@@ -523,8 +616,6 @@ Source Context:
             media_root = settings.MEDIA_ROOT
             recipe_photos_dir = media_root / "recipe_photos"
             recipe_photos_dir.mkdir(parents=True, exist_ok=True)
-
-            from datetime import datetime
 
             filename = f"{household.id}_{video_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
             output_path = recipe_photos_dir / filename
@@ -576,6 +667,12 @@ Source Context:
                 step_number=step_number,
                 text=text,
             )
+
+        recipe.description = (recipe.description or "").strip()
+        if str(transcript_log) not in recipe.description:
+            suffix = f"\n\nTranscript log: {transcript_log.relative_to(PROJECT_ROOT)}"
+            recipe.description = f"{recipe.description}{suffix}".strip()
+            recipe.save(update_fields=["description", "updated_at"])
 
         return recipe
 

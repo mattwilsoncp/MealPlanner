@@ -8,7 +8,7 @@
         <div class="p-8">
             <h1 class="text-2xl font-medium mb-2">AI Recipe Import</h1>
             <p class="text-sm mb-6" style="color: var(--text-light-gray);">
-                Import a recipe from YouTube using AI-powered extraction. This uses the video transcript for more accurate ingredient and instruction parsing.
+                Import a recipe from YouTube using AI-powered extraction. This uses the video transcript to accurately parse ingredients, quantities, and cooking instructions.
             </p>
 
             <form method="post" action="{% url 'recipes:llm_recipe_import' %}" id="import-form">
@@ -26,6 +26,19 @@
                     {% if form.youtube_url.errors %}
                     <p class="text-sm mt-1" style="color: #fc7981;">{{ form.youtube_url.errors }}</p>
                     {% endif %}
+                </div>
+
+                <div class="mb-6">
+                    <label class="label-dark" for="id_title">Recipe Title (optional)</label>
+                    <input type="text" 
+                           name="title" 
+                           id="id_title" 
+                           class="input-dark"
+                           placeholder="Override AI-generated title"
+                           {% if form.title.value %}value="{{ form.title.value }}"{% endif %}>
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
+                        Leave blank to use the AI-generated title
+                    </p>
                 </div>
 
                 <div class="mb-6">

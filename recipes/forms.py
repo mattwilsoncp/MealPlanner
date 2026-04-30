@@ -42,6 +42,12 @@ class LLMImportForm(forms.Form):
             }
         ),
     )
+    title = forms.CharField(
+        label="Recipe Title (optional)",
+        required=False,
+        max_length=255,
+        widget=forms.TextInput(attrs={"class": "input-dark", "placeholder": "Override AI-generated title"}),
+    )
     model = forms.ChoiceField(
         label="AI Model",
         choices=[
