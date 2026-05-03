@@ -34,12 +34,8 @@ class PlannerHomeView(LoginRequiredMixin, TemplateView):
         week = self.kwargs.get("week")
 
         if year and week:
-            # Calculate the Monday of the given week
-            jan_1 = date(year, 1, 1)
-            # Find the first Monday
-            first_monday = jan_1 + timedelta(days=(7 - jan_1.weekday()) % 7)
-            # Add weeks
-            start_date = first_monday + timedelta(weeks=week - 1)
+            # Calculate the Monday of the given ISO week
+            start_date = date.fromisocalendar(year, week, 1)
         else:
             # Default to current week (Monday)
             today = date.today()
@@ -108,8 +104,7 @@ def week_navigate(request):
     new_date = new_date - timedelta(days=new_date.weekday())
 
     # Get ISO week number
-    iso_cal = calendar.IsoCalendar()
-    year, week_num, _ = iso_cal.isocalendar(new_date)
+    year, week_num, _ = new_date.isocalendar()
 
     return redirect(reverse("meal_planner:planner_week", args=[year, week_num]))
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=Meal Planner App v2
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/source/meal_planner_app_v2
+ExecStart=%h/source/meal_planner_app_v2/.venv/bin/python manage.py runserver 192.168.4.28:8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
