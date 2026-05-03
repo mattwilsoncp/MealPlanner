@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1** — Shipped 2026-04-19 (6 phases, 21 plans) — see `.planning/milestones/v1-ROADMAP.md`
-- [ ] **v1.1** — YouTube Recipe Import (4 phases) — see `.planning/v1.1-ROADMAP.md`
+- [x] **v1.1** — YouTube Recipe Import (4 phases) — see `.planning/v1.1-ROADMAP.md`
 
 ## Backlog (For Next Milestone Planning)
 
