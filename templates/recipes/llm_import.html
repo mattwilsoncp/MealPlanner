@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}AI Recipe Import from YouTube{% endblock %}
+{% block title %}Import Recipe from YouTube{% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto">
     <div class="card-dark">
         <div class="p-8">
-            <h1 class="text-2xl font-medium mb-2">AI Recipe Import</h1>
+            <h1 class="text-2xl font-medium mb-2">Import from YouTube</h1>
             <p class="text-sm mb-6" style="color: var(--text-light-gray);">
-                Import a recipe from YouTube using AI-powered extraction. This uses the video transcript to accurately parse ingredients, quantities, and cooking instructions.
+                Import a recipe from YouTube using AI-powered extraction. Paste a YouTube recipe video URL to accurately parse ingredients, quantities, and cooking instructions.
             </p>
 
             <form method="post" action="{% url 'recipes:llm_recipe_import' %}" id="import-form">
@@ -64,7 +64,7 @@
     </div>
 
     <div class="mt-4 text-center">
-        <a href="{% url 'recipes:recipe_import' %}" class="link-green">Use basic import instead</a>
+        <a href="{% url 'recipes:recipe_create' %}" class="link-green">Or create a new recipe manually</a>
     </div>
 </div>
 
