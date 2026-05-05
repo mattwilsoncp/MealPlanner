@@ -209,10 +209,10 @@ class RegisterViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "username")
 
-    def test_register_duplicate_email_does_not_fail_at_form_level(self):
-        # Note: CustomUser does not enforce email uniqueness at the model level,
-        # so the RegistrationForm does not catch duplicate emails. This test
-        # documents the current (gap) behaviour — the form succeeds.
+    def test_register_duplicate_email_fails(self):
+        # Email uniqueness is enforced at both the model level (unique=True)
+        # and form level (clean_email). Registration with a duplicate email
+        # should be rejected with a validation error.
         Household.objects.create(name="Dup Email Home 2")
         user_model = get_user_model()
         user_model.objects.create_user(
@@ -230,12 +230,11 @@ class RegisterViewTests(TestCase):
                 "password2": "ComplexPass123!",
             },
         )
-        # Currently the form does not reject duplicate email — this may be
-        # intentional (no unique constraint) or a gap to fill.
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(
-            user_model.objects.filter(username="seconduser").exists()
-        )
+        self.assertEqual(response.status_code, 200)
+        form = response.context["form"]
+        self.assertIn("email", form.errors)
+        self.assertEqual(form.errors["email"], ["A user with that email already exists."])
+        self.assertFalse(user_model.objects.filter(username="seconduser").exists())
 
 
 class RegistrationFormTests(TestCase):

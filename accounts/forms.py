@@ -14,6 +14,12 @@ class RegistrationForm(UserCreationForm):
         model = CustomUser
         fields = ("email", "username", "password1", "password2", "household_name")
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("A user with that email already exists.")
+        return email
+
     def save(self, commit=True):
         from household.models import Household
 

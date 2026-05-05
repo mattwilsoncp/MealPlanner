@@ -3,6 +3,7 @@ from django.db import models
 
 
 class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True)
     household = models.ForeignKey(
         "household.Household",
         on_delete=models.SET_NULL,
