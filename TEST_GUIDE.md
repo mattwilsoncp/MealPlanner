@@ -27,12 +27,50 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 `LoginFlowTests`
 - `test_login_with_username_redirects` — POSTing a valid username+password redirects to `/`
 - `test_login_with_email_redirects` — same for email address as username
+- `test_login_with_username_case_insensitive` — case-insensitive username match
+- `test_login_with_email_case_insensitive` — case-insensitive email match
 - `test_invalid_login_shows_error` — bad credentials return 200 with an error message
+- `test_login_missing_password_fails` — missing password is rejected
+- `test_login_missing_username_fails` — missing username/email is rejected
+- `test_login_inactive_user_fails` — inactive user cannot log in
 
-**Gaps:**
-- Logout view
-- Session persistence across requests
-- Login required decorator on protected views
+`LogoutViewTests`
+- `test_logout_redirects_to_login` — GET logout redirects to `/accounts/login/`
+- `test_session_is_cleared_after_logout` — session is cleared after logout
+
+`RegisterViewTests`
+- `test_register_creates_user_and_household` — valid POST creates user + household, redirects to `/`
+- `test_register_creates_default_household_when_no_name_given`
+- `test_register_password_mismatch_fails` — mismatched passwords return 200
+- `test_register_duplicate_username_fails` — taken username is rejected
+- `test_register_success_logs_user_in` — registration automatically logs user in
+- `test_register_missing_email_fails` — missing email field is rejected
+- `test_register_duplicate_email_fails` — email uniqueness enforced at model+form level
+
+`RegistrationFormTests`
+- `test_form_valid_with_all_fields` — form is valid with all fields present
+- `test_form_valid_without_household_name` — household name is optional
+- `test_form_save_creates_household`
+- `test_registration_form_exports` — form is listed in exported forms
+- `test_registration_form_requires_email` — email field is required
+
+`UsernameOrEmailBackendTests`
+- `test_authenticate_with_username` — plain username works
+- `test_authenticate_with_email` — email address works as username
+- `test_authenticate_with_username_case_insensitive` — case-insensitive username
+- `test_authenticate_with_email_case_insensitive` — case-insensitive email
+- `test_authenticate_with_wrong_password_returns_none`
+- `test_authenticate_with_nonexistent_user_returns_none`
+- `test_authenticate_with_empty_username_and_password_returns_none`
+- `test_authenticate_with_empty_email_and_password_returns_none`
+- `test_authenticate_with_mixed_case_email_matches` — `User@Example.com` matches `user@example.com`
+
+`CustomUserModelTests`
+- `test_str_returns_email` — `str(user)` returns email address
+- `test_str_returns_username_when_email_is_empty` — falls back to username
+- `test_user_has_nullable_household` — household field can be null
+
+**No major gaps remaining.**
 
 ---
 
