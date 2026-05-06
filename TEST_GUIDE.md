@@ -186,21 +186,21 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 
 ### inventory
 
-**File:** `inventory/tests.py`
+**File:** `inventory/tests/test_main.py`
 
 `InventoryItemModelTests`
 - `test_inventory_item_has_image_field` — field type and `upload_to` path
 - `test_inventory_item_keeps_household_indexes` — compound indexes on `(household, name)` and `(household, expiration_date)`
 
 `InventoryFormsTests`
-- `test_negative_quantity_is_rejected` — form with `quantity=-1` is invalid
-- `test_zero_quantity_is_valid`
 - `test_inventory_forms_are_exported`
+- `test_negative_quantity_is_rejected`
+- `test_zero_quantity_is_valid`
 
 `InventoryViewTests`
 - `test_inventory_urls_exist_for_crud_expiration_and_quick_add`
 - `test_inventory_list_applies_household_scope_and_combined_filters`
-- `test_edit_and_delete_are_household_scoped` — 404 for cross-household edit/delete
+- `test_edit_and_delete_are_household_scoped`
 - `test_expiring_and_expired_views_use_household_threshold_rules`
 
 `InventoryQuickAddApiTests`
@@ -208,11 +208,47 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 - `test_quick_add_invalid_payload_returns_field_errors`
 - `test_quick_add_requires_csrf_token`
 
+**File:** `inventory/tests/test_forms_and_views.py`
+
+`InventoryItemModelTests`
+- `test_str_includes_name_and_quantity_and_unit`
+- `test_str_with_integer_quantity`
+- `test_household_cascade_deletes_items`
+- `test_cross_household_access_is_denied`
+
+`InventoryItemFormTests`
+- `test_form_valid_with_minimal_required_fields`
+- `test_form_rejects_invalid_category`
+- `test_form_rejects_invalid_location`
+- `test_form_accepts_all_valid_categories`
+- `test_form_accepts_all_valid_locations`
+- `test_form_expiration_date_past_is_not_rejected` — past dates currently accepted
+- `test_form_expiration_date_future_is_valid`
+- `test_form_barcode_is_optional`
+- `test_form_notes_are_optional`
+- `test_form_saves_all_fields`
+
+`InventoryQuickAddFormTests`
+- `test_quick_add_form_rejects_negative_quantity`
+- `test_quick_add_form_accepts_zero_quantity`
+- `test_quick_add_form_requires_name`
+- `test_quick_add_form_requires_category`
+- `test_quick_add_form_requires_location`
+
+`InventoryViewAccessTests`
+- `test_create_view_requires_login`
+- `test_list_view_requires_login`
+- `test_create_view_assigns_household_from_user`
+- `test_update_view_assigns_household_from_user`
+- `test_update_other_household_returns_404`
+- `test_delete_other_household_returns_404`
+- `test_delete_own_item_succeeds`
+- `test_list_view_only_shows_own_household_items`
+
 **Gaps:**
-- `InventoryItemForm` full validation (category choices, location choices)
-- `InventoryQuickAddForm` isolation
+- Expiration date in the past validation (not currently enforced at form level — `test_form_expiration_date_past_is_not_rejected` documents the current behavior)
 - Image upload handling in views
-- Expiration date in the past validation
+- Barcode form validation (barcode format, length)
 
 ---
 
