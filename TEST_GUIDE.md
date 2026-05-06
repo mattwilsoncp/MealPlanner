@@ -264,13 +264,84 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 
 ### meal_planner_app
 
-**File:** `meal_planner_app/tests.py` — **empty**
+**File:** `meal_planner_app/tests.py`
 
-**Gaps:**
-- `MealPlan` model: create, cascade delete when recipe/household removed
-- `MealType` choices
-- `MealPlanCalendarView` — authenticated access, meal type filtering
-- Meal assignment via form
+`MealPlanModelTests`
+- `test_create_mealplan_with_recipe` — basic creation with recipe assigned
+- `test_create_mealplan_with_custom_meal` — creation with custom_meal (no recipe)
+- `test_create_mealplan_with_notes_and_rating` — notes and meal_rating fields stored correctly
+- `test_delete_household_cascades_to_mealplans` — deleting household cascades to MealPlan
+- `test_delete_recipe_sets_null_on_mealplan` — deleting recipe sets FK to NULL (SET_NULL)
+- `test_unique_constraint_prevents_duplicate` — unique together prevents duplicate entries
+- `test_same_type_different_date_is_valid` — same type on different dates is allowed
+- `test_str_with_recipe` — `__str__` returns recipe title
+- `test_str_with_custom_meal` — `__str__` falls back to custom_meal
+- `test_str_with_no_meal_returns_placeholder` — `__str__` with neither recipe nor custom_meal returns "No meal"
+- `test_is_custom_true_when_no_recipe` — `is_custom` is True when meal has no recipe
+- `test_is_custom_false_when_recipe` — `is_custom` is False when meal has a recipe
+- `test_ordering_by_date_and_type` — default Meta ordering is date ASC, type ASC
+
+`MealTypeTests`
+- `test_meal_type_choices_exist` — all four meal types (breakfast/lunch/dinner/snack) exist
+- `test_meal_type_display_values` — display labels are human-readable
+- `test_meal_type_choices_length` — exactly 4 meal type choices
+
+`SideDishModelTests`
+- `test_create_side_dish_with_recipe` — SideDish creates with recipe FK
+- `test_create_side_dish_with_custom_side` — SideDish creates with custom_side string
+- `test_delete_meal_plan_cascades_to_side_dishes` — deleting MealPlan cascades to SideDish
+- `test_side_dish_ordering` — SideDishes ordered by order field
+- `test_str_with_recipe` — `__str__` returns recipe title
+- `test_str_with_custom_side` — `__str__` returns custom_side string
+
+`PlannerHomeViewTests`
+- `test_unauthenticated_redirects_to_login` — unauthenticated GET redirects to login
+- `test_authenticated_returns_200` — authenticated GET returns 200
+- `test_view_shows_only_own_household_meals` — planner only shows meals from user's household
+- `test_week_navigation_redirects_to_correct_week` — week navigation redirects to correct year/week URL
+- `test_week_navigation_prev_week` — navigating backward redirects correctly
+- `test_planner_week_url_with_year_week_loads_correct_week` — /planner/<year>/<week>/ loads correct date range
+- `test_json_week_meals_returns_only_own_meals` — json_week_meals API is household-scoped
+- `test_planner_context_includes_meal_types` — context includes all four meal types
+
+`MealPlanFormTests`
+- `test_form_valid_with_recipe` — form is valid when recipe is provided
+- `test_form_valid_with_custom_meal` — form is valid when custom_meal is provided
+- `test_form_invalid_when_neither_recipe_nor_custom_meal` — form rejects when both are empty
+- `test_form_filters_recipes_to_household` — recipe queryset is filtered to user's household
+- `test_form_excludes_needs_review_recipes` — recipes with needs_review=True are excluded
+
+`AddMealViewTests`
+- `test_add_meal_requires_login` — unauthenticated GET redirects to login
+- `test_add_meal_get_returns_form` — authenticated GET returns 200 with form
+- `test_add_meal_post_creates_mealplan` — valid POST creates MealPlan for user's household
+- `test_add_meal_with_custom_meal` — POST with custom_meal creates custom meal entry
+- `test_add_meal_prefills_from_query_params` — date/type/recipe pre-filled from query string
+
+`AddMealViewSideDishesTests`
+- `test_add_meal_with_side_dish_custom` — custom side dish is created alongside meal
+- `test_add_meal_with_side_dish_recipe` — side dish linked to recipe is created
+
+`EditMealViewTests`
+- `test_edit_meal_get_returns_form` — authenticated GET returns 200 with populated form
+- `test_edit_meal_post_updates_mealplan` — valid POST updates MealPlan fields
+- `test_edit_other_household_meal_returns_404` — editing another household's meal returns 404
+
+`DeleteMealViewTests`
+- `test_delete_meal_removes_mealplan` — POST deletes the MealPlan
+- `test_delete_other_household_returns_404` — deleting another household's meal returns 404
+
+`RateMealViewTests`
+- `test_rate_meal_with_valid_rating` — POST with rating 1-5 updates meal_rating
+- `test_rate_meal_invalid_rating_returns_400` — rating > 5 returns 400
+- `test_rate_meal_zero_returns_400` — rating < 1 returns 400
+- `test_rate_other_household_returns_404` — rating another household's meal returns 404
+
+`RecipeSelectViewTests`
+- `test_recipe_select_excludes_needs_review` — API excludes recipes needing review
+- `test_recipe_select_requires_auth` — unauthenticated request returns 302
+
+**Gaps:** None remaining. All originally listed gaps are covered.
 
 ---
 

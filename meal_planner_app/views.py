@@ -217,8 +217,9 @@ class AddMealView(LoginRequiredMixin, CreateView):
 
     def _save_side_dishes(self, meal):
         """Save side dishes from form data."""
-        # Process each side dish from POST data
+        # Process each side dish from POST data — one SideDish per index
         prefix = "side_dishes-"
+        seen_indexes = set()
         for key in self.request.POST:
             if key.startswith(prefix):
                 # Extract index from key like "side_dishes-0-recipe"
@@ -228,6 +229,10 @@ class AddMealView(LoginRequiredMixin, CreateView):
                         index = int(parts[1])
                     except ValueError:
                         continue
+
+                    if index in seen_indexes:
+                        continue
+                    seen_indexes.add(index)
 
                     # Skip if marked for deletion
                     delete_key = f"{prefix}{index}-DELETE"
@@ -265,6 +270,12 @@ class EditMealView(LoginRequiredMixin, UpdateView):
         kwargs["request"] = self.request
         return kwargs
 
+    def get_object(self):
+        """Limit editing to current user's household only."""
+        return get_object_or_404(
+            MealPlan, pk=self.kwargs["meal_id"], household=self.request.user.household
+        )
+
     def form_valid(self, form):
         messages.success(
             self.request,
@@ -282,8 +293,9 @@ class EditMealView(LoginRequiredMixin, UpdateView):
         # Delete existing side dishes for this meal
         meal.side_dishes.all().delete()
 
-        # Process each side dish from POST data
+        # Process each side dish from POST data — one SideDish per index
         prefix = "side_dishes-"
+        seen_indexes = set()
         for key in self.request.POST:
             if key.startswith(prefix):
                 parts = key.split("-")
@@ -292,6 +304,10 @@ class EditMealView(LoginRequiredMixin, UpdateView):
                         index = int(parts[1])
                     except ValueError:
                         continue
+
+                    if index in seen_indexes:
+                        continue
+                    seen_indexes.add(index)
 
                     # Skip if marked for deletion
                     delete_key = f"{prefix}{index}-DELETE"
@@ -322,6 +338,12 @@ class DeleteMealView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse("meal_planner:planner")
+
+    def get_object(self):
+        """Limit deletion to current user's household only."""
+        return get_object_or_404(
+            MealPlan, pk=self.kwargs["meal_id"], household=self.request.user.household
+        )
 
     def delete(self, request, *args, **kwargs):
         meal = self.get_object()
