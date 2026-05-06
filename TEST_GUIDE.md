@@ -174,13 +174,23 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 
 ### instructions
 
-**File:** `instructions/tests.py` — **empty**
+**File:** `instructions/tests/test_models.py`
 
-**Gaps:**
-- `Instruction` model create/read/update/delete
-- `InstructionForm` validation
-- Step-number ordering constraints
-- Signal: deleting a recipe cascades to its instructions
+`InstructionModelTests`
+- `test_create_instruction` — basic creation with recipe, step_number, text
+- `test_str_returns_step_number` — `str(step)` returns `"Step N"`
+- `test_str_with_high_step_number` — handles step 99+
+- `test_ordering_by_step_number` — default Meta ordering is step_number ASC
+- `test_recipe_cascade_deletes_instructions` — deleting recipe removes all its steps
+- `test_same_recipe_can_have_many_steps` — up to 5 steps
+- `test_different_recipes_have_independent_instructions` — instructions scoped to recipe
+- `test_step_number_allows_zero` — 0 is a valid step number
+- `test_text_field_accepts_long_content` — TextField handles 1000+ chars
+- `test_text_cannot_be_blank` — ValidationError on empty text
+- `test_step_number_required` — ValidationError when missing
+- `test_image_field_is_blankable` — image is optional
+
+**No remaining gaps.** (Note: `InstructionForm` lives in `recipes.forms`, not `instructions/forms.py`.)
 
 ---
 
