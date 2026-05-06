@@ -17,11 +17,13 @@ class ShoppingActionEndpointTests(TestCase):
 
         self.user = get_user_model().objects.create_user(
             username="shopper",
+            email="shopper@example.com",
             password="pass1234",
             household=self.household,
         )
         self.other_user = get_user_model().objects.create_user(
             username="intruder",
+            email="intruder@example.com",
             password="pass1234",
             household=self.other_household,
         )

@@ -16,6 +16,7 @@ class DiscoveryViewTests(TestCase):
         self.household = Household.objects.create(name="Discovery Home")
         self.user = get_user_model().objects.create_user(
             username="discoverer",
+            email="discoverer@example.com",
             password="pass1234",
             household=self.household,
         )

@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from ingredients.models import IngredientLink
+from ingredients.utils import normalize_unit_key, convert_to_grams
 from inventory.models import InventoryItem
 from meal_planner_app.models import MealPlan
 from recipes.models import Recipe
@@ -182,16 +183,18 @@ def generate_week_shopping_list(household, week_start, regenerate=False):
     remaining_inventory = defaultdict(Decimal)
     inventory_category = {}
     for item in inventory_items:
-        key = (_normalized_key(item.name), item.unit)
-        remaining_inventory[key] += _normalize_quantity(item.quantity)
+        name_key, canonical_unit = normalize_unit_key(item.name, item.unit)
+        key = (name_key, canonical_unit)
+        remaining_inventory[key] += convert_to_grams(_normalize_quantity(item.quantity), item.unit)
         inventory_category[key] = item.category
 
     aggregated = {}
 
     for meal in meal_plans:
         for link in links_by_recipe.get(meal.recipe_id, []):
-            ingredient_key = (_normalized_key(link.ingredient.name), link.unit)
-            needed = _normalize_quantity(link.quantity)
+            name_key, canonical_unit = normalize_unit_key(link.ingredient.name, link.unit)
+            ingredient_key = (name_key, canonical_unit)
+            needed = convert_to_grams(_normalize_quantity(link.quantity), link.unit)
             if needed <= 0:
                 continue
 
@@ -206,14 +209,14 @@ def generate_week_shopping_list(household, week_start, regenerate=False):
 
             aggregate_key = (
                 ingredient_key[0],
-                link.unit,
+                canonical_unit,
                 (inventory_category.get(ingredient_key) or "other"),
             )
             if aggregate_key not in aggregated:
                 aggregated[aggregate_key] = {
                     "name": link.ingredient.name,
                     "quantity": Decimal("0.00"),
-                    "unit": link.unit,
+                    "unit": canonical_unit,
                     "category": inventory_category.get(ingredient_key) or "other",
                     "source_recipe": link.recipe,
                 }

@@ -107,13 +107,38 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 - `test_ingredient_model_exposes_usda_nutrition_snapshot_fields` — fields `calories_kcal`, `protein_g`, `carbs_g`, `fat_g` exist
 - `test_recipe_detail_includes_usda_reference_and_nutrition_in_context`
 - `test_recipe_detail_shows_nutrition_empty_state_when_missing`
+- `test_ingredient_create` — basic creation
+- `test_ingredient_name_unique_within_household` — duplicate name raises `ValidationError`
+- `test_ingredient_name_allowed_across_households` — same name different household is valid
+- `test_ingredient_fk_requires_household` — household FK required on create
+- `test_ingredient_cascade_deletes_with_household`
+- `test_ingredient_link_create`
+- `test_ingredient_link_str_includes_ingredient_name`
+- `test_ingredient_link_cascade_from_recipe`
+- `test_ingredient_link_cascade_from_ingredient`
+- `test_ingredient_link_optional_inventory_item`
+- `test_ingredient_link_order_preserved`
+- `test_nutrition_form_valid_with_all_fields`
+- `test_nutrition_form_optional_fields`
+- `test_nutrition_form_usda_food_id_max_length`
+- `test_nutrition_form_calorie_upper_bound`
+- `test_nutrition_form_calorie_negative_rejected`
+- `test_reconciliation_form_valid_item`
+- `test_reconciliation_form_empty_string_treated_as_none`
+- `test_reconciliation_form_none_string_treated_as_none`
+- `test_reconciliation_form_rejects_cross_household_item`
+- `test_reconciliation_form_invalid_item_id_rejected`
 
-**File:** `ingredients/tests/test_models_and_forms.py`
+`UnitConversionTests` (`ingredients/utils.py`)
+- `test_oz_to_grams`, `test_lb_to_grams`, `test_kg_to_grams`, `test_g_passthrough`
+- `test_multiple_oz_to_grams`, `test_cup_to_ml`, `test_tbsp_to_ml`, `test_tsp_to_ml`, `test_ml_passthrough`, `test_l_to_ml`
+- `test_piece_count_not_converted`, `test_clove_count_not_converted`, `test_unknown_unit_returns_value_unchanged`
+- `test_decimal_input`, `test_string_input`, `test_whitespace_normalized`, `test_case_insensitive`
+- `test_grams_to_oz`, `test_grams_to_lb`, `test_grams_to_kg`, `test_grams_to_g`, `test_grams_to_ml`, `test_grams_to_count_passthrough`
+- `test_normalize_unit_key_*` — canonical keys for weight/volume/count units
+- `test_flour_oz_matches_flour_g` — integration: 3oz = 85.05g matches 100g flour
 
-`IngredientModelTests`
-- `test_create_ingredient`
-- `test_ingredient_name_unique_within_household` — `unique_together` enforced
-- `test_same_ingredient_name_allowed_in_different_household`
+**Unit normalization: implemented in `ingredients/utils.py`** — `convert_to_grams`, `convert_from_grams`, `normalize_unit_key`. All units normalized to grams (weight) or ml (volume) in shopping list aggregation. Shopping service updated to use canonical units when matching recipe ingredients against inventory. **No remaining gaps.**
 - `test_ingredient_requires_household`
 - `test_ingredient_delete_cascades_from_household`
 

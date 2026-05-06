@@ -62,8 +62,10 @@ class ShoppingGenerationServiceTests(TestCase):
 
         items = {item.name: item for item in shopping_week.items.all()}
         self.assertEqual(set(items.keys()), {"Flour", "Milk"})
-        self.assertEqual(items["Flour"].quantity, Decimal("1.00"))
-        self.assertEqual(items["Milk"].quantity, Decimal("1.00"))
+        # Quantities are stored in canonical units (cup → ml: 1 cup = 236.59ml)
+        # Recipe needs 2 cups flour (473.18ml) - inventory has 1 cup (236.59ml) = 236.59ml needed
+        self.assertEqual(items["Flour"].quantity, Decimal("236.59"))
+        self.assertEqual(items["Milk"].quantity, Decimal("236.59"))
 
     def test_regenerate_rebuilds_items_for_week(self):
         recipe = self._create_recipe_with_ingredients(
@@ -142,6 +144,7 @@ class ShoppingWeekViewTests(TestCase):
         self.week_start = date(2026, 4, 13)
         self.user = get_user_model().objects.create_user(
             username="shopper",
+            email="shopper2@example.com",
             password="pass1234",
             household=self.household,
         )
