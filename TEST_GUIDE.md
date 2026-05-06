@@ -81,11 +81,19 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 `HouseholdModelTests`
 - `test_expiring_threshold_defaults_to_seven` — `expiring_threshold_days` defaults to `7`
 - `test_expiring_threshold_requires_positive_value` — setting `0` raises `ValidationError`
+- `test_name_max_length_is_enforced` — name > 100 chars raises `ValidationError`
+- `test_name_at_max_length_is_valid` — name exactly 100 chars is accepted
+- `test_str_returns_name`
+- `test_delete_cascades_to_recipes` — deleting household cascades to `Recipe`
+- `test_delete_cascades_to_ingredients` — deleting household cascades to `Ingredient`
+- `test_delete_cascades_to_inventory_items` — deleting household cascades to `InventoryItem`
+- `test_delete_cascades_to_tags` — deleting household cascades to `Tag`
+- `test_delete_sets_null_on_custom_user_household` — `CustomUser.household` is `SET_NULL`
 
 **Gaps:**
-- `name` max-length enforcement
-- Unique-together constraint on household name (if any)
-- Signal-based teardown when a household is deleted
+- `name` uniqueness across households (no unique constraint currently)
+
+**No major gaps remaining.**
 
 ---
 
