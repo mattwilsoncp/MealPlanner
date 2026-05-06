@@ -108,12 +108,42 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 - `test_recipe_detail_includes_usda_reference_and_nutrition_in_context`
 - `test_recipe_detail_shows_nutrition_empty_state_when_missing`
 
+**File:** `ingredients/tests/test_models_and_forms.py`
+
+`IngredientModelTests`
+- `test_create_ingredient`
+- `test_ingredient_name_unique_within_household` — `unique_together` enforced
+- `test_same_ingredient_name_allowed_in_different_household`
+- `test_ingredient_requires_household`
+- `test_ingredient_delete_cascades_from_household`
+
+`IngredientLinkModelTests`
+- `test_create_ingredient_link`
+- `test_ingredient_link_str`
+- `test_ingredient_link_delete_cascades_from_recipe`
+- `test_ingredient_link_delete_cascades_from_ingredient`
+- `test_ingredient_link_optional_inventory_item`
+- `test_ingredient_link_ordering`
+
+`IngredientNutritionFormTests`
+- `test_valid_nutrition_data`
+- `test_nutrition_fields_all_optional`
+- `test_usda_food_id_too_long_rejected`
+- `test_usda_food_id_at_max_length_accepted`
+- `test_calories_upper_bound_enforced`
+- `test_negative_calories_rejected`
+
+`IngredientLinkReconciliationFormTests`
+- `test_valid_inventory_item`
+- `test_empty_inventory_item_returns_none`
+- `test_none_string_returns_none`
+- `test_cross_household_item_rejected`
+- `test_invalid_id_rejected`
+
 **Gaps:**
-- `IngredientLink` quantity/unit CRUD
-- `Ingredient` create/read/update/delete
-- Duplicate ingredient name within a household
-- `IngredientLinkForm` validation
-- Unit normalization
+- Unit normalization (converting between `oz`/`g`/`ml` equivalents)
+
+**No major gaps remaining.**
 
 ---
 
