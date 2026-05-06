@@ -15,21 +15,18 @@ def recipe_list_api(request):
     recipes = (
         Recipe.objects.filter(household=request.user.household, needs_review=False)
         .select_related("household")
-        .prefetch_related("tags", "tag_set")
+        .prefetch_related("recipetag_set__tag", "rating_set")
     )
 
     data = []
     for recipe in recipes:
-        # Get average rating
         ratings = recipe.rating_set.all()
-        avg_rating = None
-        if ratings.exists():
-            avg_rating = (
-                sum(r.values_list("score", flat=True) for r in [ratings])
-                / ratings.count()
-            )
+        avg_rating = (
+            round(sum(r.values_list("score", flat=True)) / ratings.count(), 1)
+            if ratings.exists()
+            else None
+        )
 
-        # Get tags
         tag_list = list(
             RecipeTag.objects.filter(recipe=recipe)
             .select_related("tag")
@@ -134,7 +131,7 @@ def recipe_detail_api(request, pk):
         )
 
     instructions = []
-    for inst in recipe.instructions.all().order_by("step_number"):
+    for inst in recipe.instruction_set.all().order_by("step_number"):
         instructions.append(
             {
                 "step": inst.text,

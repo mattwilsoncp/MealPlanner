@@ -367,33 +367,116 @@ coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingre
 - `test_recipe_edit_can_create_and_attach_new_tag_inline`
 - `test_recipe_edit_rejects_duplicate_new_tag_name_within_household`
 
-**Gaps:**
-- `RecipeListView` — sort by newest/oldest/rating/title, search filter, household scope
-- `RecipeDetailView` — full context including `ingredients`, `instructions`, `ingredient_nutrition`
-- `RecipeCreateView` — form rendering, successful creation, validation errors
-- `RecipeDeleteView` — confirm page, deletion, redirect
-- `RecipeUpdateView` — full update flow (already partially covered by `RecipeEditingTests`)
-- `RecipeForm`:
-  - `clean_new_tag_name` whitespace normalisation
-  - `clean_new_tag_name` case-insensitive duplicate detection
-  - `clean_new_tag_name` empty string after whitespace
-  - `_save_instruction_order` when no instructions posted
-  - `_save_recipe_tags` deselects removed tags
-- `ImportForm` and `LLMImportForm`:
-  - Valid YouTube URL patterns (`youtube.com`, `youtu.be`)
-  - Rejects non-YouTube URLs
-  - Optional `title` and `model` fields
-- `LLMRecipeImportView`:
-  - Redirect to detail page on success
-  - Error when `OPENROUTER_API_KEY` is missing
-  - Error when video ID extraction fails
-  - Error when transcript fetch fails
-- Recipe API (`recipes/api.py`):
-  - `recipe_list_api` — returns recipe list for household, excludes `needs_review=True`
-  - `recipe_search_api` — filters by `title__icontains` and `description__icontains`
-  - `recipe_detail_api` — returns ingredients and ordered instructions
-  - `recipe_toggle_review` — flips flag, returns JSON
-  - All endpoints return 403/302 when unauthenticated
+**File:** `recipes/tests/test_views.py`
+
+`RecipeListViewTests`
+- `test_list_requires_authentication` — unauthenticated redirects to login (302)
+- `test_list_returns_200_for_authenticated`
+- `test_list_excludes_other_household_recipes`
+- `test_list_excludes_needs_review_recipes`
+- `test_list_sort_newest` — `-created` descending
+- `test_list_sort_oldest` — `created` ascending
+- `test_list_sort_title_az` — `title` ascending
+- `test_list_search_filters_results` — filters by `q` param on title/description
+- `test_list_search_by_description`
+- `test_list_context_includes_current_sort_and_query`
+- `test_list_context_includes_sort_choices`
+
+`RecipeDetailViewTests`
+- `test_detail_requires_authentication` — 302 redirect
+- `test_detail_returns_200_for_authenticated`
+- `test_detail_other_household_returns_404` — cross-household isolation
+- `test_detail_context_includes_ingredients`
+- `test_detail_context_includes_instructions_ordered`
+- `test_detail_context_includes_tags`
+- `test_detail_context_includes_average_rating`
+- `test_detail_context_includes_rating_form`
+
+`RecipeCreateViewTests`
+- `test_create_requires_authentication` — 302 redirect
+- `test_create_get_returns_form` — 200 with form in context
+- `test_create_post_with_title_redirects_to_detail` — successful creation
+- `test_create_post_without_title_returns_form_errors` — validation
+- `test_create_assigns_household_from_user`
+
+`RecipeDeleteViewTests`
+- `test_delete_requires_authentication` — 302 redirect
+- `test_delete_get_returns_confirm_template`
+- `test_delete_post_removes_recipe` — successful deletion
+- `test_delete_other_household_returns_404`
+
+`RecipeUpdateViewAdditionalTests`
+- `test_update_keeps_selected_tags` — existing tags preserved on edit
+- `test_update_deselects_removed_tags` — deselecting clears the association
+- `test_update_switches_tags` — changing selection replaces correctly
+- `test_update_other_household_returns_404`
+
+**File:** `recipes/tests/test_forms.py`
+
+`RecipeFormCleanNewTagNameTests`
+- `test_empty_tag_name_is_valid_for_form` — empty string passes form validation
+- `test_whitespace_only_rejected` — whitespace-only raises validation error
+- `test_whitespace_normalised` — `"  Quick  "` → `"Quick"`
+- `test_valid_new_tag_name_returns_normalised`
+- `test_duplicate_same_case_detected` — exact duplicate raises error
+- `test_case_insensitive_duplicate_detected` — `"quick"` vs `"Quick"` raises error
+- `test_different_household_duplicate_not_detected` — same name, different household allowed
+
+`ImportFormTests`
+- `test_valid_youtube_watch_url` — `https://www.youtube.com/watch?v=...`
+- `test_valid_youtu_be_short_url` — `https://youtu.be/...`
+- `test_valid_youtube_embed_url` — `https://www.youtube.com/embed/...`
+- `test_valid_youtube_shorts_url` — `https://www.youtube.com/shorts/...`
+- `test_rejects_empty_url`
+- `test_rejects_generic_video_url`
+- `test_rejects_vimeo_url`
+
+`LLMImportFormTests`
+- `test_valid_youtube_url_accepted`
+- `test_valid_youtu_be_accepted`
+- `test_rejects_non_youtube_url`
+- `test_optional_title_field`
+- `test_optional_model_field`
+- `test_title_can_override`
+
+**File:** `recipes/tests/test_api.py`
+
+`RecipeListAPITests`
+- `test_list_api_unauthenticated_returns_redirect` — 302
+- `test_list_api_returns_only_own_household_recipes`
+- `test_list_api_excludes_needs_review`
+- `test_list_api_returns_expected_fields` — `id`, `title`, `description`, `servings`, `avg_rating`, `tags`, `source_url`
+
+`RecipeSearchAPITests`
+- `test_search_api_unauthenticated_returns_redirect` — 302
+- `test_search_by_title`
+- `test_search_by_description`
+- `test_search_empty_query_returns_empty`
+- `test_search_only_returns_own_household`
+- `test_search_respects_limit`
+
+`RecipeDetailAPITests`
+- `test_detail_api_unauthenticated_returns_redirect` — 302
+- `test_detail_api_returns_ingredients_and_instructions`
+- `test_detail_api_other_household_returns_404`
+
+`RecipeToggleReviewAPITests`
+- `test_toggle_review_unauthenticated_returns_redirect` — 302
+- `test_toggle_review_flips_needs_review_true_to_false`
+- `test_toggle_review_flips_false_to_true`
+- `test_toggle_review_other_household_returns_404`
+
+**Bugs fixed during test-gap-fill:**
+- `RecipeListView` had no `get_queryset()`/`get_context_data()` — list showed all recipes with no sort/search/filter context
+- `RecipeDetailView.get_queryset()` used `|` with `needs_review=True`, leaking cross-household recipes
+- `RecipeUpdateView.form_valid()` never called `_save_recipe_tags` — tag changes were silently dropped
+- `RecipeCreateView.form_valid()` also never called `_save_recipe_tags` — new recipes got no tags
+- `RecipeForm._save_recipe_tags`: `int([])` raised `ValueError`, skipping all tags when `tags=[]` posted
+- `api.py recipe_list_api`: wrong prefetch path (`tags`/`tag_set` instead of `recipetag_set__tag`) + broken `avg_rating` calculation
+- `api.py recipe_detail_api`: wrong relation name `recipe.instructions` → `recipe.instruction_set`
+- `RecipeUpdateView._save_instructions`: blanket delete-before-recreate lost order overrides from `instruction_{id}_order` fields; now updates in-place and renumbers contiguously
+
+**No remaining gaps.**
 
 ---
 

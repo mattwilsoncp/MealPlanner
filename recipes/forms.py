@@ -200,7 +200,9 @@ class RecipeForm(forms.ModelForm):
         selected_tag_ids = []
         for tag_id in self.data.getlist("tags"):
             try:
-                selected_tag_ids.append(int(tag_id))
+                tag_id_int = int(tag_id)
+                if tag_id_int > 0:
+                    selected_tag_ids.append(tag_id_int)
             except (TypeError, ValueError):
                 continue
 

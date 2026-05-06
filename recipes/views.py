@@ -57,6 +57,42 @@ class RecipeListView(LoginRequiredMixin, ListView):
         ("title", "Title A-Z"),
     ]
 
+    def get_queryset(self):
+        queryset = Recipe.objects.filter(
+            household=self.request.user.household, needs_review=False
+        )
+
+        search_q = self.request.GET.get("q")
+        if search_q:
+            queryset = queryset.filter(
+                Q(title__icontains=search_q) | Q(description__icontains=search_q)
+            )
+
+        sort_by = self.request.GET.get("sort", "newest")
+        if sort_by == "newest":
+            queryset = queryset.order_by("-created_at")
+        elif sort_by == "oldest":
+            queryset = queryset.order_by("created_at")
+        elif sort_by == "rating":
+            queryset = queryset.annotate(avg_rating=Avg("rating__score")).order_by(
+                "-avg_rating"
+            )
+        elif sort_by == "title":
+            queryset = queryset.order_by("title")
+        else:
+            queryset = queryset.order_by("-created_at")
+
+        return queryset.select_related("household").prefetch_related(
+            "recipetag_set", "rating_set"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["q"] = self.request.GET.get("q", "")
+        context["sort"] = self.request.GET.get("sort", "newest")
+        context["sort_choices"] = self.SORT_CHOICES
+        return context
+
 
 class RecipeImportView(LoginRequiredMixin, FormView):
     form_class = ImportForm
@@ -708,12 +744,7 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
     template_name = "recipes/recipe_detail.html"
 
     def get_queryset(self):
-        household = self.request.user.household
-        if household:
-            return Recipe.objects.filter(household=household) | Recipe.objects.filter(
-                needs_review=True
-            )
-        return Recipe.objects.filter(needs_review=True)
+        return Recipe.objects.filter(household=self.request.user.household)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -825,6 +856,7 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
         else:
             self._save_ingredients(recipe)
             self._save_instructions(recipe)
+            form._save_recipe_tags(recipe)
             messages.success(self.request, f"Recipe '{recipe.title}' created!")
 
         return redirect("recipes:recipe_detail", pk=recipe.pk)
@@ -899,11 +931,14 @@ class RecipeUpdateView(LoginRequiredMixin, UpdateView):
         recipe = form.save(commit=False)
         recipe.save()
 
+        # Handle ingredients: delete all and recreate
         IngredientLink.objects.filter(recipe=recipe).delete()
         self._save_ingredients(recipe)
 
-        Instruction.objects.filter(recipe=recipe).delete()
+        # Handle instructions: update existing + add new (no blanket delete)
         self._save_instructions(recipe)
+
+        form._save_recipe_tags(recipe)
 
         return redirect("recipes:recipe_detail", pk=recipe.pk)
 
@@ -933,9 +968,39 @@ class RecipeUpdateView(LoginRequiredMixin, UpdateView):
                 )
 
     def _save_instructions(self, recipe):
+        # Build set of instruction IDs that were in the original recipe
+        original_ids = set(
+            Instruction.objects.filter(recipe=recipe).values_list("id", flat=True)
+        )
+
+        # Parse instruction order overrides (instruction_{id}_order)
+        order_overrides = {}  # id -> new step_number
+        for key, value in self.request.POST.items():
+            match = re.fullmatch(r"instruction_(\d+)_order", key)
+            if not match:
+                continue
+            try:
+                order_overrides[int(match.group(1))] = int(value)
+            except (TypeError, ValueError):
+                continue
+
+        submitted_ids = set(order_overrides.keys())
+
+        # Delete instructions that were removed (in original but not in submitted)
+        deleted_ids = original_ids - submitted_ids
+        if deleted_ids:
+            Instruction.objects.filter(recipe=recipe, id__in=deleted_ids).delete()
+
+        # Update order for existing instructions that have override values
+        for inst_id, new_order in order_overrides.items():
+            if inst_id in original_ids:
+                Instruction.objects.filter(recipe=recipe, id=inst_id).update(
+                    step_number=new_order
+                )
+
+        # Handle new instructions (from instruction_text/instruction_step pairs)
         texts = self.request.POST.getlist("instruction_text")
         orders = self.request.POST.getlist("instruction_step")
-
         for i, text in enumerate(texts):
             text = text.strip()
             if text:
@@ -945,6 +1010,54 @@ class RecipeUpdateView(LoginRequiredMixin, UpdateView):
                     step_number=order,
                     text=text,
                 )
+
+        # Renumber contiguously by current step_number order
+        for idx, inst in enumerate(
+            Instruction.objects.filter(recipe=recipe).order_by("step_number", "id"),
+            start=1,
+        ):
+            if inst.step_number != idx:
+                inst.step_number = idx
+                inst.save(update_fields=["step_number"])
+
+    def _save_recipe_tags(self, recipe):
+        selected_tag_ids = []
+        for tag_id in self.request.POST.getlist("tags"):
+            try:
+                tag_id_int = int(tag_id)
+                if tag_id_int > 0:
+                    selected_tag_ids.append(tag_id_int)
+            except (TypeError, ValueError):
+                continue
+
+        valid_tags = Tag.objects.filter(
+            household=recipe.household,
+            id__in=selected_tag_ids,
+        )
+        valid_tag_ids = list(valid_tags.values_list("id", flat=True))
+
+        RecipeTag.objects.filter(recipe=recipe).exclude(
+            tag_id__in=valid_tag_ids
+        ).delete()
+        for tag_id in valid_tag_ids:
+            RecipeTag.objects.get_or_create(recipe=recipe, tag_id=tag_id)
+
+        new_tag_name = self.request.POST.get("new_tag_name", "").strip()
+        if new_tag_name:
+            normalized = " ".join(new_tag_name.split())
+            if normalized:
+                existing = Tag.objects.filter(
+                    household=recipe.household,
+                    name__iexact=normalized,
+                ).exists()
+                if not existing:
+                    new_tag_color = self.request.POST.get("new_tag_color", "#6B7280")
+                    created_tag = Tag.objects.create(
+                        household=recipe.household,
+                        name=normalized,
+                        color=new_tag_color,
+                    )
+                    RecipeTag.objects.get_or_create(recipe=recipe, tag=created_tag)
 
 
 class RecipeDeleteView(LoginRequiredMixin, DeleteView):
