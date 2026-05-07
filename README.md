@@ -1,123 +1,135 @@
 # Meal Planner App v2
 
-A Django-based weekly meal planner with recipe management, household support, inventory tracking, and smart shopping list generation.
+A weekly meal planner for households — plan meals by ISO week, import recipes from YouTube, track what you have in the pantry, and auto-generate shopping lists.
 
-## Features
+```
+        MON        TUE        WED        THU        FRI        SAT        SUN
+     ┌─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┐
+BRK  │ Overnight│ Yogurt  │ Toast & │ Smoothie│ Avocado │ Pancakes│ Omelette│
+     │ Oats     │ Parfait │ Eggs    │ Bowl    │ Toast   │ w/bacon │         │
+LCH  │ Leftover│ Chicken │ Tacos   │ Pasta   │ Salad   │ Pizza   │ BBQ     │
+     │ Pasta    │ Wrap    │         │         │         │ Night   │ Chicken │
+DNR  │ Salmon   │ Stir    │ Meat    │ Burgers │ Thai    │ Salmon  │ Roast   │
+     │ & Rice   │ Fry     │ Loaf    │        │ Curry   │         │ Chicken │
+     └─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┘
+```
 
-- **Weekly Meal Planner** — ISO week-based planning view with breakfast/lunch/dinner/snack slots per day
-- **Recipe Management** — Add, edit, and organize recipes with ingredients and step-by-step instructions
-- **YouTube Importer** — Import recipes from YouTube video descriptions via URL
-- **Household Multi-User** — Share a household; recipes and meal plans are scoped per household
-- **Inventory Tracking** — Track what ingredients you have on hand
-- **Shopping Lists** — Auto-generate shopping lists from planned meals, accounting for inventory
-- **Recipe Reviews** — Flag recipes for review before they appear in meal planning
-- **Ratings** — Rate recipes to surface favorites in the planner
-- **Side Dishes** — Attach multiple side dishes (recipe or custom) to any meal plan entry
-- **On-Hand Ideas** — Mark recipes as "on-hand idea" for quick meal inspiration
+## What's inside
 
-## Tech Stack
+| Feature | What it does |
+|---------|-------------|
+| **Weekly Planner** | ISO week grid — navigate forward/back, add meals to any slot, rate them |
+| **Recipe Library** | Add recipes manually or import from a YouTube URL |
+| **Side Dishes** | Attach multiple sides (recipe or free-text) to any meal entry |
+| **On-Hand Ideas** | Star recipes as "on-hand" for quick-inspiration filtering |
+| **Pantry / Inventory** | Track what ingredients you have; shopping list subtracts what you've got |
+| **Shopping Lists** | One-click generate from a date range; grouped by aisle-style category |
+| **Review Queue** | New recipes land in review before they appear in meal planning |
+| **Household-scoped** | All data — recipes, plans, inventory — is scoped to your household |
 
-- **Django 6.0** (Python 3)
-- **SQLite** (development)
-- **YouTube API / markitdown** for recipe import
-- **OpenAI** for recipe summarization (optional)
-
-## Apps
-
-| App | Purpose |
-|-----|---------|
-| `accounts` | Custom user model, email authentication |
-| `household` | Household model shared by all other apps |
-| `recipes` | Recipe CRUD, YouTube import, parsing |
-| `ingredients` | Ingredient definitions and unit conversion |
-| `instructions` | Step-by-step recipe instructions |
-| `tags` | Tag recipes |
-| `ratings` | Recipe star ratings |
-| `reviews` | Recipe review/approval queue |
-| `inventory` | Track on-hand ingredients |
-| `shopping` | Generate shopping lists from meal plans |
-| `meal_planner_app` | Weekly planner views and meal plan model |
-| `meal_planner` | URL routing and settings |
-
-## Setup
+## Quick Start
 
 ```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
+# 1. Clone & set up
+git clone https://github.com/mattwilsoncp/meal_planner_app_v2.git
+cd meal_planner_app_v2
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-# Run migrations
 python manage.py migrate
-
-# Create a superuser (for admin access)
 python manage.py createsuperuser
 
-# Run the dev server
-python manage.py runserver
-```
-
-## Running
-
-```bash
+# 2. Run
 ./start_meal_planner.sh
-# Or manually:
-source .venv/bin/activate
-python manage.py runserver 192.168.4.28:8000
+# → http://192.168.4.28:8000
 ```
 
-## systemd Service (user-level)
-
-```ini
-# ~/.config/systemd/user/meal-planner.service
-[Unit]
-Description=Meal Planner App v2
-
-[Service]
-WorkingDirectory=%h/source/meal_planner_app_v2
-ExecStart=%h/source/meal_planner_app_v2/.venv/bin/python manage.py runserver 192.168.4.28:8000
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=default.target
-```
+Or with systemd (user-level, no `User=` line needed):
 
 ```bash
-systemctl --user daemon-reload
 systemctl --user enable --now meal-planner
 ```
 
-Note: Do not set `User=` in the `[Service]` section — user-level systemd services on this host fail to spawn if `User=` is explicitly set.
+## Key URLs
+
+| URL | What it is |
+|-----|-----------|
+| `/` | Planner home — current week's meal grid |
+| `/planner/<year>/<week>/` | Any ISO week directly |
+| `/recipes/` | Recipe library |
+| `/recipes/import/` | YouTube URL importer |
+| `/inventory/` | Pantry ingredient tracking |
+| `/shopping/` | Shopping list generator |
+| `/admin/` | Django admin (superuser only) |
+
+## Design
+
+Dark-mode-native, Supabase-inspired aesthetic:
+
+- `#171717` page background, `#0f0f0f` card/button surfaces
+- `#3ecf8e` / `#00c573` green accent — used sparingly for brand identity
+- `#fafafa` primary text, `#898989` muted
+- Border-defined depth (no box shadows): `#2e2e2e` → `#363636` → `#393939`
+- Pill-shaped primary buttons (9999px radius), 6px for secondary/ghost
+- Source Code Pro for uppercase technical labels; Circular for everything else
+
+See [`DESIGN.md`](./DESIGN.md) for the full design system reference.
+
+## Tech Stack
+
+- **Django 6.0** — Python 3, SQLite (dev), allauth-free custom user model
+- **YouTube API** + **markitdown** — transcript parsing for recipe import
+- **OpenAI** — optional recipe summarization
+- **Django sessions + custom backend** — email or username login
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `YOUTUBE_API_KEY` | YouTube Data API v3 key (optional, for YouTube importer) |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `YOUTUBE_API_KEY` | No | YouTube Data API v3 — enables video metadata lookup |
+| `OPENAI_API_KEY` | No | Enables AI recipe summarization in the YouTube importer |
+
+## Apps
+
+```
+accounts          — CustomUser with email+household
+household         — Household model (join table for shared data)
+recipes           — Recipe CRUD, YouTube import, parsing
+ingredients       — Ingredient definitions, unit conversion, nutrition fields
+instructions      — Step-by-step recipe instructions
+tags              — Tag recipes
+ratings           — Per-recipe star rating (1–5)
+reviews           — needs_review queue gate for meal planning
+inventory         — Pantry: what you have on hand
+shopping          — Shopping list generation from planned meals
+meal_planner_app  — MealPlan, MealType, SideDish models + views
+```
 
 ## Project Structure
 
 ```
 meal_planner_app_v2/
-├── accounts/          # User authentication and profiles
-├── household/         # Household model
-├── recipes/          # Recipe management, YouTube import, parsing
-├── ingredients/      # Ingredient models with nutrition fields
-├── instructions/     # Step-by-step instructions
-├── tags/             # Recipe tagging
-├── ratings/          # Star ratings
-├── reviews/          # Recipe review queue
-├── inventory/        # Pantry/inventory tracking
-├── shopping/         # Shopping list generation
-├── meal_planner_app/ # Weekly planner core (MealPlan, MealType, SideDish)
-├── templates/         # HTML templates
-├── media/            # User-uploaded images
-├── logs/             # Application logs
+├── accounts/
+├── household/
+├── recipes/           ← YouTube importer lives here
+├── ingredients/
+├── instructions/
+├── tags/
+├── ratings/
+├── reviews/
+├── inventory/
+├── shopping/          ← Shopping list generation
+├── meal_planner_app/  ← Core planner: MealPlan, SideDish, week views
+├── meal_planner/      ← URL routing, WSGI, settings
+├── templates/         ← base.html + app template dirs
+├── media/             ← Uploaded recipe photos
+├── logs/              ← App logs
 ├── start_meal_planner.sh
 ├── meal-planner.service
 ├── manage.py
-└── requirements.txt
+├── requirements.txt
+└── DESIGN.md
 ```
+
+## License
+
+MIT — built for personal use, shared freely.
