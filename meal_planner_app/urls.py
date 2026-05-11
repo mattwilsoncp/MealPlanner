@@ -19,6 +19,11 @@ urlpatterns = [
         name="api_recipe_select",
     ),
     path(
+        "api/recipes/expiring/",
+        views.RecipeExpiringMatchView.as_view(),
+        name="api_recipes_expiring",
+    ),
+    path(
         "api/recipes/<int:pk>/",
         views.RecipeDetailView.as_view(),
         name="api_recipe_detail",

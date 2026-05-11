@@ -1,7 +1,8 @@
 import calendar
-from datetime import date, datetime, timedelta
+from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.views.generic import (
     TemplateView,
     CreateView,
@@ -14,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.http import JsonResponse
 from django.urls import reverse, reverse_lazy
 from django.core.serializers import serialize
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -21,6 +23,8 @@ from django.contrib import messages
 from .models import MealPlan, MealType, SideDish
 from .forms import MealPlanForm, SideDishForm
 from recipes.models import Recipe
+from ingredients.models import IngredientLink
+from inventory.models import InventoryItem
 
 
 class PlannerHomeView(LoginRequiredMixin, TemplateView):
@@ -378,12 +382,81 @@ class RecipeSelectView(LoginRequiredMixin, View):
     """API endpoint for recipe selection dropdown."""
 
     def get(self, request):
+        from django.db.models import Avg
+        from ratings.models import Rating
+
         recipes = (
             request.user.household.recipes.filter(needs_review=False)
-            .values("id", "title", "rating")
+            .annotate(avg_rating=Avg("rating__score"))
+            .values("id", "title", "avg_rating")
             .order_by("title")
         )
         return JsonResponse({"recipes": list(recipes)})
+
+
+class RecipeExpiringMatchView(LoginRequiredMixin, View):
+    """Return recipes whose ingredients match expiring inventory items."""
+
+    def get(self, request):
+        today = timezone.localdate()
+        threshold = today + timedelta(days=request.user.household.expiring_threshold_days)
+
+        # Get expiring inventory items
+        expiring_items = InventoryItem.objects.filter(
+            household=request.user.household,
+            expiration_date__gte=today,
+            expiration_date__lte=threshold,
+        )
+        expiring_names = {item.name.lower(): item for item in expiring_items}
+
+        if not expiring_names:
+            return JsonResponse({"recipes": []})
+
+        # Find recipes that use any expiring ingredient
+        # Match: ingredient name is a substring of inventory name OR vice versa
+        # (case-insensitive, word-boundary-friendly)
+        matched_recipes = []
+
+        recipes = (
+            request.user.household.recipes.filter(needs_review=False)
+            .select_related()
+            .prefetch_related("ingredients__ingredient")
+        )
+
+        for recipe in recipes:
+            matched_ingredients = []
+            for link in recipe.ingredients.all():
+                ing_name = link.ingredient.name.lower()
+                for inv_name, inv_item in expiring_names.items():
+                    if ing_name in inv_name or inv_name in ing_name:
+                        matched_ingredients.append({
+                            "name": link.ingredient.name,
+                            "quantity": str(link.quantity),
+                            "unit": link.unit,
+                            "expiration_date": inv_item.expiration_date.isoformat(),
+                            "days_until_expiry": (inv_item.expiration_date - today).days,
+                        })
+                        break
+
+            if matched_ingredients:
+                # Sort by urgency (days until expiry)
+                matched_ingredients.sort(key=lambda x: x["days_until_expiry"])
+                matched_recipes.append({
+                    "id": recipe.id,
+                    "title": recipe.title,
+                    "matched_ingredients": matched_ingredients,
+                    "match_count": len(matched_ingredients),
+                })
+
+        # Sort by match count desc, then by most urgent expiry
+        matched_recipes.sort(
+            key=lambda r: (
+                -r["match_count"],
+                min(i["days_until_expiry"] for i in r["matched_ingredients"]),
+            )
+        )
+
+        return JsonResponse({"recipes": matched_recipes})
 
 
 class RecipeDetailView(LoginRequiredMixin, DetailView):

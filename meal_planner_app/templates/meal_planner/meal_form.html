@@ -36,6 +36,21 @@
                     <p class="text-sm mt-1" style="color: #fc7981;">{{ form.recipe.errors }}</p>
                     {% endif %}
                 </div>
+
+                <div id="expiring-section" class="mb-4" style="display: none;">
+                    <div class="p-3 rounded" style="background: rgba(251, 189, 65, 0.08); border: 1px solid rgba(251, 189, 65, 0.25);">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="#fbbd41" viewBox="0 0 24 24" style="flex-shrink: 0;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                <span class="text-sm font-medium" style="color: #fbbd41;">Use Before It Spoils</span>
+                            </div>
+                            <span id="expiring-count" class="text-xs px-2 py-0.5 rounded-full" style="background: rgba(251,189,65,0.15); color: #fbbd41;"></span>
+                        </div>
+                        <div id="expiring-recipes" class="space-y-2"></div>
+                    </div>
+                </div>
                 
                 <div class="mb-4">
                     <label class="label-dark" for="id_custom_meal">Or Custom Meal Name</label>
@@ -96,6 +111,66 @@ async function loadRecipes() {
         recipes = data.recipes || [];
     } catch (error) {
         console.error('Error loading recipes:', error);
+    }
+}
+
+async function loadExpiringRecipes() {
+    try {
+        const response = await fetch('{% url "meal_planner:api_recipes_expiring" %}');
+        const data = await response.json();
+        const expiringRecipes = data.recipes || [];
+        const container = document.getElementById('expiring-recipes');
+        const section = document.getElementById('expiring-section');
+
+        if (!expiringRecipes.length) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        container.innerHTML = '';
+
+        const count = expiringRecipes.length;
+        const countEl = document.getElementById('expiring-count');
+        countEl.textContent = count + (count === 1 ? ' recipe' : ' recipes');
+
+        expiringRecipes.slice(0, 8).forEach(recipe => {
+            const ingredientBadges = recipe.matched_ingredients.map(i => {
+                const days = i.days_until_expiry;
+                const urgencyLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`;
+                return `<span class="inline-flex items-center gap-1" style="font-size: 0.7rem; padding: 1px 6px; border-radius: 9999px; background: rgba(251,189,65,0.12); color: #fbbd41; border: 1px solid rgba(251,189,65,0.25);">
+                    ${i.name}
+                    <span style="opacity: 0.6;">(${urgencyLabel})</span>
+                 </span>`;
+            }).join(' ');
+
+            container.innerHTML += `
+                <div class="flex items-center justify-between gap-2 p-2 rounded cursor-pointer"
+                     style="background: var(--bg-near-black); border: 1px solid var(--border-dark);"
+                     onclick="selectExpiringRecipe(${recipe.id})"
+                     title="Uses: ${recipe.matched_ingredients.map(i => i.name).join(', ')}">
+                    <div>
+                        <div class="text-sm font-medium">${recipe.title}</div>
+                        <div class="flex flex-wrap gap-1 mt-1">${ingredientBadges}</div>
+                    </div>
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-muted);">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading expiring recipes:', error);
+    }
+}
+
+function selectExpiringRecipe(recipeId) {
+    const recipeSelect = document.getElementById('id_recipe');
+    if (recipeSelect) {
+        recipeSelect.value = recipeId;
+        recipeSelect.dispatchEvent(new Event('change'));
+        // Scroll recipe select into view
+        recipeSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
 
@@ -188,6 +263,8 @@ document.addEventListener('DOMContentLoaded', function() {
             addSideDishBtn.addEventListener('click', () => addSideDish());
         });
     }
+
+    loadExpiringRecipes();
 });
 </script>
 {% endblock %}
