@@ -1,1 +1,17 @@
 .gitnexus
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# Django
+db.sqlite3
+*.log
+
+# Coverage
+.coverage
+
+# Media
+media/

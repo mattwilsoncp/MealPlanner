@@ -8,4 +8,9 @@ PORT="8000"
 
 cd "$APP_DIR" || exit 1
 source "$VENV_DIR/bin/activate"
-exec python manage.py runserver "$HOST:$PORT"
+exec gunicorn meal_planner.wsgi:application \
+    --bind "$HOST:$PORT" \
+    --workers 2 \
+    --threads 2 \
+    --access-logfile - \
+    --error-logfile -

@@ -2,6 +2,9 @@
 Django>=6.0
 psycopg[binary]>=3.0
 
+# Server
+gunicorn>=26.0
+
 # External APIs
 google-api-python-client>=2.194
 markitdown[youtube-transcription]
