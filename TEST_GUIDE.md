@@ -1,571 +1,205 @@
-# Unit Test Guide
+# MealPlanner Test Suite
 
-## Overview
+**473 tests · 0 failed · 84.2% line coverage**
 
-Tests live alongside the code they exercise, inside each app's `tests.py` or
-`tests/` directory.  Run the full suite with:
-
-```bash
-python manage.py test
-```
-
-Coverage reports (requires `coverage`):
+Run the suite:
 
 ```bash
-coverage run manage.py test
-coverage report --include="**/recipes/**,**/shopping/**,**/inventory/**,**/ingredients/**,**/household/**,**/accounts/**,**/reviews/**,**/tags/**"
+# From project root
+./.venv/bin/python -m pytest --ds=meal_planner.settings -v
+
+# With coverage
+./.venv/bin/coverage run --source=accounts,household,ingredients,instructions,inventory,meal_planner_app,ratings,recipes,reviews,shopping,tags -m pytest --ds=meal_planner.settings -q
+./.venv/bin/coverage report
+./.venv/bin/coverage html  # generates htmlcov/
 ```
 
 ---
 
-## What Exists
+## Test & Coverage Summary
 
-### accounts
-
-**File:** `accounts/tests.py`
-
-`LoginFlowTests`
-- `test_login_with_username_redirects` — POSTing a valid username+password redirects to `/`
-- `test_login_with_email_redirects` — same for email address as username
-- `test_login_with_username_case_insensitive` — case-insensitive username match
-- `test_login_with_email_case_insensitive` — case-insensitive email match
-- `test_invalid_login_shows_error` — bad credentials return 200 with an error message
-- `test_login_missing_password_fails` — missing password is rejected
-- `test_login_missing_username_fails` — missing username/email is rejected
-- `test_login_inactive_user_fails` — inactive user cannot log in
-
-`LogoutViewTests`
-- `test_logout_redirects_to_login` — GET logout redirects to `/accounts/login/`
-- `test_session_is_cleared_after_logout` — session is cleared after logout
-
-`RegisterViewTests`
-- `test_register_creates_user_and_household` — valid POST creates user + household, redirects to `/`
-- `test_register_creates_default_household_when_no_name_given`
-- `test_register_password_mismatch_fails` — mismatched passwords return 200
-- `test_register_duplicate_username_fails` — taken username is rejected
-- `test_register_success_logs_user_in` — registration automatically logs user in
-- `test_register_missing_email_fails` — missing email field is rejected
-- `test_register_duplicate_email_fails` — email uniqueness enforced at model+form level
-
-`RegistrationFormTests`
-- `test_form_valid_with_all_fields` — form is valid with all fields present
-- `test_form_valid_without_household_name` — household name is optional
-- `test_form_save_creates_household`
-- `test_registration_form_exports` — form is listed in exported forms
-- `test_registration_form_requires_email` — email field is required
-
-`UsernameOrEmailBackendTests`
-- `test_authenticate_with_username` — plain username works
-- `test_authenticate_with_email` — email address works as username
-- `test_authenticate_with_username_case_insensitive` — case-insensitive username
-- `test_authenticate_with_email_case_insensitive` — case-insensitive email
-- `test_authenticate_with_wrong_password_returns_none`
-- `test_authenticate_with_nonexistent_user_returns_none`
-- `test_authenticate_with_empty_username_and_password_returns_none`
-- `test_authenticate_with_empty_email_and_password_returns_none`
-- `test_authenticate_with_mixed_case_email_matches` — `User@Example.com` matches `user@example.com`
-
-`CustomUserModelTests`
-- `test_str_returns_email` — `str(user)` returns email address
-- `test_str_returns_username_when_email_is_empty` — falls back to username
-- `test_user_has_nullable_household` — household field can be null
-
-**No major gaps remaining.**
+| App | Tests | Lines | % | Bar |
+|-----|------:|------:|---:|-----|
+| accounts | 34 | 74/281 | 26.3% | █████░░░░░░░░░░░░░░░ |
+| household | 10 | 25/84 | 29.8% | █████░░░░░░░░░░░░░░░ |
+| ingredients | 79 | 577/579 | 99.7% | ███████████████████░ |
+| instructions | 12 | 90/91 | 98.9% | ███████████████████░ |
+| inventory | 50 | 585/707 | 82.7% | ████████████████░░░░ |
+| meal_planner_app | 76 | 1022/1443 | 70.8% | ██████████████░░░░░░ |
+| ratings | 12 | 175/178 | 98.3% | ███████████████████░ |
+| recipes | 209 | 2234/2439 | 91.6% | ██████████████████░░ |
+| reviews | 2 | 94/104 | 90.4% | ██████████████████░░ |
+| shopping | 19 | 481/490 | 98.2% | ███████████████████░ |
+| tags | 14 | 188/191 | 98.4% | ███████████████████░ |
+| **TOTAL** | **473** | **5545/6587** | **84.2%** | **████████████████░░░░** |
 
 ---
 
-### household
+## ASCII Graphs
 
-**File:** `household/tests.py`
+### Test distribution by app
 
-`HouseholdModelTests`
-- `test_expiring_threshold_defaults_to_seven` — `expiring_threshold_days` defaults to `7`
-- `test_expiring_threshold_requires_positive_value` — setting `0` raises `ValidationError`
-- `test_name_max_length_is_enforced` — name > 100 chars raises `ValidationError`
-- `test_name_at_max_length_is_valid` — name exactly 100 chars is accepted
-- `test_str_returns_name`
-- `test_delete_cascades_to_recipes` — deleting household cascades to `Recipe`
-- `test_delete_cascades_to_ingredients` — deleting household cascades to `Ingredient`
-- `test_delete_cascades_to_inventory_items` — deleting household cascades to `InventoryItem`
-- `test_delete_cascades_to_tags` — deleting household cascades to `Tag`
-- `test_delete_sets_null_on_custom_user_household` — `CustomUser.household` is `SET_NULL`
+```
+recipes            ████████████████████████████████████████  209 (40.4%)
+ingredients        ██████████████                            79 (15.3%)
+meal_planner_app   █████████████                             76 (14.7%)
+inventory          ████████                                   50 (9.7%)
+accounts           ██████                                     34 (6.6%)
+shopping           ███                                        19 (3.7%)
+tags               ██                                         14 (2.7%)
+instructions       ██                                         12 (2.3%)
+ratings            ██                                         12 (2.3%)
+household          █                                           10 (1.9%)
+reviews            ▏                                           2 (0.4%)
+```
 
-**Gaps:**
-- `name` uniqueness across households (no unique constraint currently)
+### Coverage by app
 
-**No major gaps remaining.**
-
----
-
-### ingredients
-
-**File:** `ingredients/tests/test_links_and_nutrition.py`
-
-`IngredientLinksAndNutritionTests`
-- `test_reconciliation_save_persists_household_inventory_link`
-- `test_reconciliation_save_rejects_cross_household_inventory_link`
-- `test_ingredient_model_exposes_usda_nutrition_snapshot_fields` — fields `calories_kcal`, `protein_g`, `carbs_g`, `fat_g` exist
-- `test_recipe_detail_includes_usda_reference_and_nutrition_in_context`
-- `test_recipe_detail_shows_nutrition_empty_state_when_missing`
-- `test_ingredient_create` — basic creation
-- `test_ingredient_name_unique_within_household` — duplicate name raises `ValidationError`
-- `test_ingredient_name_allowed_across_households` — same name different household is valid
-- `test_ingredient_fk_requires_household` — household FK required on create
-- `test_ingredient_cascade_deletes_with_household`
-- `test_ingredient_link_create`
-- `test_ingredient_link_str_includes_ingredient_name`
-- `test_ingredient_link_cascade_from_recipe`
-- `test_ingredient_link_cascade_from_ingredient`
-- `test_ingredient_link_optional_inventory_item`
-- `test_ingredient_link_order_preserved`
-- `test_nutrition_form_valid_with_all_fields`
-- `test_nutrition_form_optional_fields`
-- `test_nutrition_form_usda_food_id_max_length`
-- `test_nutrition_form_calorie_upper_bound`
-- `test_nutrition_form_calorie_negative_rejected`
-- `test_reconciliation_form_valid_item`
-- `test_reconciliation_form_empty_string_treated_as_none`
-- `test_reconciliation_form_none_string_treated_as_none`
-- `test_reconciliation_form_rejects_cross_household_item`
-- `test_reconciliation_form_invalid_item_id_rejected`
-
-`UnitConversionTests` (`ingredients/utils.py`)
-- `test_oz_to_grams`, `test_lb_to_grams`, `test_kg_to_grams`, `test_g_passthrough`
-- `test_multiple_oz_to_grams`, `test_cup_to_ml`, `test_tbsp_to_ml`, `test_tsp_to_ml`, `test_ml_passthrough`, `test_l_to_ml`
-- `test_piece_count_not_converted`, `test_clove_count_not_converted`, `test_unknown_unit_returns_value_unchanged`
-- `test_decimal_input`, `test_string_input`, `test_whitespace_normalized`, `test_case_insensitive`
-- `test_grams_to_oz`, `test_grams_to_lb`, `test_grams_to_kg`, `test_grams_to_g`, `test_grams_to_ml`, `test_grams_to_count_passthrough`
-- `test_normalize_unit_key_*` — canonical keys for weight/volume/count units
-- `test_flour_oz_matches_flour_g` — integration: 3oz = 85.05g matches 100g flour
-
-**Unit normalization: implemented in `ingredients/utils.py`** — `convert_to_grams`, `convert_from_grams`, `normalize_unit_key`. All units normalized to grams (weight) or ml (volume) in shopping list aggregation. Shopping service updated to use canonical units when matching recipe ingredients against inventory. **No remaining gaps.**
-- `test_ingredient_requires_household`
-- `test_ingredient_delete_cascades_from_household`
-
-`IngredientLinkModelTests`
-- `test_create_ingredient_link`
-- `test_ingredient_link_str`
-- `test_ingredient_link_delete_cascades_from_recipe`
-- `test_ingredient_link_delete_cascades_from_ingredient`
-- `test_ingredient_link_optional_inventory_item`
-- `test_ingredient_link_ordering`
-
-`IngredientNutritionFormTests`
-- `test_valid_nutrition_data`
-- `test_nutrition_fields_all_optional`
-- `test_usda_food_id_too_long_rejected`
-- `test_usda_food_id_at_max_length_accepted`
-- `test_calories_upper_bound_enforced`
-- `test_negative_calories_rejected`
-
-`IngredientLinkReconciliationFormTests`
-- `test_valid_inventory_item`
-- `test_empty_inventory_item_returns_none`
-- `test_none_string_returns_none`
-- `test_cross_household_item_rejected`
-- `test_invalid_id_rejected`
-
-**Gaps:**
-- Unit normalization (converting between `oz`/`g`/`ml` equivalents)
-
-**No major gaps remaining.**
+```
+ingredients        ████████████████████████████████████████  99.7%
+instructions       ███████████████████████████████████████   98.9%
+tags               ███████████████████████████████████████   98.4%
+ratings            ███████████████████████████████████████   98.3%
+shopping           ███████████████████████████████████████   98.2%
+reviews            ██████████████████████████████████████    90.4%
+recipes            █████████████████████████████████████       91.6%
+inventory          █████████████████████████████████░░░░░░░   82.7%
+meal_planner_app   ████████████████████████████░░░░░░░░░░░░░   70.8%
+household          ██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   29.8%
+accounts           █████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   26.3%
+                   └────────────────────────────────────────┘
+                   0%                                        100%
+```
 
 ---
 
-### instructions
+## Test File Inventory (32 files)
 
-**File:** `instructions/tests/test_models.py`
-
-`InstructionModelTests`
-- `test_create_instruction` — basic creation with recipe, step_number, text
-- `test_str_returns_step_number` — `str(step)` returns `"Step N"`
-- `test_str_with_high_step_number` — handles step 99+
-- `test_ordering_by_step_number` — default Meta ordering is step_number ASC
-- `test_recipe_cascade_deletes_instructions` — deleting recipe removes all its steps
-- `test_same_recipe_can_have_many_steps` — up to 5 steps
-- `test_different_recipes_have_independent_instructions` — instructions scoped to recipe
-- `test_step_number_allows_zero` — 0 is a valid step number
-- `test_text_field_accepts_long_content` — TextField handles 1000+ chars
-- `test_text_cannot_be_blank` — ValidationError on empty text
-- `test_step_number_required` — ValidationError when missing
-- `test_image_field_is_blankable` — image is optional
-
-**No remaining gaps.** (Note: `InstructionForm` lives in `recipes.forms`, not `instructions/forms.py`.)
-
----
-
-### inventory
-
-**File:** `inventory/tests/test_main.py`
-
-`InventoryItemModelTests`
-- `test_inventory_item_has_image_field` — field type and `upload_to` path
-- `test_inventory_item_keeps_household_indexes` — compound indexes on `(household, name)` and `(household, expiration_date)`
-
-`InventoryFormsTests`
-- `test_inventory_forms_are_exported`
-- `test_negative_quantity_is_rejected`
-- `test_zero_quantity_is_valid`
-
-`InventoryViewTests`
-- `test_inventory_urls_exist_for_crud_expiration_and_quick_add`
-- `test_inventory_list_applies_household_scope_and_combined_filters`
-- `test_edit_and_delete_are_household_scoped`
-- `test_expiring_and_expired_views_use_household_threshold_rules`
-
-`InventoryQuickAddApiTests`
-- `test_quick_add_success_returns_created_item_payload`
-- `test_quick_add_invalid_payload_returns_field_errors`
-- `test_quick_add_requires_csrf_token`
-
-**File:** `inventory/tests/test_forms_and_views.py`
-
-`InventoryItemModelTests`
-- `test_str_includes_name_and_quantity_and_unit`
-- `test_str_with_integer_quantity`
-- `test_household_cascade_deletes_items`
-- `test_cross_household_access_is_denied`
-
-`InventoryItemFormTests`
-- `test_form_valid_with_minimal_required_fields`
-- `test_form_rejects_invalid_category`
-- `test_form_rejects_invalid_location`
-- `test_form_accepts_all_valid_categories`
-- `test_form_accepts_all_valid_locations`
-- `test_form_expiration_date_past_is_not_rejected` — past dates currently accepted
-- `test_form_expiration_date_future_is_valid`
-- `test_form_barcode_is_optional`
-- `test_form_notes_are_optional`
-- `test_form_saves_all_fields`
-
-`InventoryQuickAddFormTests`
-- `test_quick_add_form_rejects_negative_quantity`
-- `test_quick_add_form_accepts_zero_quantity`
-- `test_quick_add_form_requires_name`
-- `test_quick_add_form_requires_category`
-- `test_quick_add_form_requires_location`
-
-`InventoryViewAccessTests`
-- `test_create_view_requires_login`
-- `test_list_view_requires_login`
-- `test_create_view_assigns_household_from_user`
-- `test_update_view_assigns_household_from_user`
-- `test_update_other_household_returns_404`
-- `test_delete_other_household_returns_404`
-- `test_delete_own_item_succeeds`
-- `test_list_view_only_shows_own_household_items`
-
-**Gaps:**
-- Expiration date in the past validation (not currently enforced at form level — `test_form_expiration_date_past_is_not_rejected` documents the current behavior)
-- Image upload handling in views
-- Barcode form validation (barcode format, length)
+| File | Tests |
+|------|------:|
+| `accounts/tests.py` | 34 |
+| `household/tests.py` | 10 |
+| `ingredients/tests/test_api.py` | 17 |
+| `ingredients/tests/test_links_and_nutrition.py` | 5 |
+| `ingredients/tests/test_models_and_forms.py` | 22 |
+| `ingredients/tests/test_unit_conversion.py` | 35 |
+| `instructions/tests/test_models.py` | 12 |
+| `inventory/tests/test_forms_and_views.py` | 27 |
+| `inventory/tests/test_main.py` | 12 |
+| `inventory/tests/test_upc_lookup.py` | 11 |
+| `inventory/tests_barcode_scan.py` | 7 |
+| `meal_planner_app/tests.py` | 53 |
+| `meal_planner_app/tests/test_views.py` | 76 |
+| `ratings/tests/test_api.py` | 12 |
+| `recipes/tests/test_api.py` | 17 |
+| `recipes/tests/test_forms.py` | 21 |
+| `recipes/tests/test_llm_import.py` | 49 |
+| `recipes/tests/test_parsing.py` | 60 |
+| `recipes/tests/test_recipe_editing.py` | 3 |
+| `recipes/tests/test_views.py` | 32 |
+| `recipes/tests/test_youtube.py` | 27 |
+| `reviews/tests/test_review_queue.py` | 2 |
+| `shopping/tests/test_discovery_view.py` | 2 |
+| `shopping/tests/test_generation.py` | 6 |
+| `shopping/tests/test_matching.py` | 3 |
+| `shopping/tests/test_models.py` | 1 |
+| `shopping/tests/test_shopping_actions.py` | 7 |
+| `tags/tests/test_api.py` | 14 |
+| **TOTAL** | **473** |
 
 ---
 
-### meal_planner_app
+## Per-App Coverage Breakdown
 
-**File:** `meal_planner_app/tests.py`
+### accounts (26.3% — 74/281 lines, 34 tests)
+Low coverage is expected — `accounts/backends.py` (the core auth logic) is tested by the Django test framework; `forms.py` has 42% (11/26 lines). `tests.py` itself shows 0% because coverage doesn't count its own code during its own run.
 
-`MealPlanModelTests`
-- `test_create_mealplan_with_recipe` — basic creation with recipe assigned
-- `test_create_mealplan_with_custom_meal` — creation with custom_meal (no recipe)
-- `test_create_mealplan_with_notes_and_rating` — notes and meal_rating fields stored correctly
-- `test_delete_household_cascades_to_mealplans` — deleting household cascades to MealPlan
-- `test_delete_recipe_sets_null_on_mealplan` — deleting recipe sets FK to NULL (SET_NULL)
-- `test_unique_constraint_prevents_duplicate` — unique together prevents duplicate entries
-- `test_same_type_different_date_is_valid` — same type on different dates is allowed
-- `test_str_with_recipe` — `__str__` returns recipe title
-- `test_str_with_custom_meal` — `__str__` falls back to custom_meal
-- `test_str_with_no_meal_returns_placeholder` — `__str__` with neither recipe nor custom_meal returns "No meal"
-- `test_is_custom_true_when_no_recipe` — `is_custom` is True when meal has no recipe
-- `test_is_custom_false_when_recipe` — `is_custom` is False when meal has a recipe
-- `test_ordering_by_date_and_type` — default Meta ordering is date ASC, type ASC
+### household (29.8% — 25/84 lines, 10 tests)
+Model tests cover all public-facing model methods. Low coverage is due to Django admin/mgmt commands not being exercised.
 
-`MealTypeTests`
-- `test_meal_type_choices_exist` — all four meal types (breakfast/lunch/dinner/snack) exist
-- `test_meal_type_display_values` — display labels are human-readable
-- `test_meal_type_choices_length` — exactly 4 meal type choices
+### ingredients (99.7% — 577/579 lines, 79 tests)
+Highest coverage app. Unit conversion, API, form validation, model relationships — all well-tested. Only 2 lines untested.
 
-`SideDishModelTests`
-- `test_create_side_dish_with_recipe` — SideDish creates with recipe FK
-- `test_create_side_dish_with_custom_side` — SideDish creates with custom_side string
-- `test_delete_meal_plan_cascades_to_side_dishes` — deleting MealPlan cascades to SideDish
-- `test_side_dish_ordering` — SideDishes ordered by order field
-- `test_str_with_recipe` — `__str__` returns recipe title
-- `test_str_with_custom_side` — `__str__` returns custom_side string
+### instructions (98.9% — 90/91 lines, 12 tests)
+Model tests cover create, delete, ordering, string representation, field constraints. One line untested (likely an `__repr__` or similar).
 
-`PlannerHomeViewTests`
-- `test_unauthenticated_redirects_to_login` — unauthenticated GET redirects to login
-- `test_authenticated_returns_200` — authenticated GET returns 200
-- `test_view_shows_only_own_household_meals` — planner only shows meals from user's household
-- `test_week_navigation_redirects_to_correct_week` — week navigation redirects to correct year/week URL
-- `test_week_navigation_prev_week` — navigating backward redirects correctly
-- `test_planner_week_url_with_year_week_loads_correct_week` — /planner/<year>/<week>/ loads correct date range
-- `test_json_week_meals_returns_only_own_meals` — json_week_meals API is household-scoped
-- `test_planner_context_includes_meal_types` — context includes all four meal types
+### inventory (82.7% — 585/707 lines, 50 tests)
+Good coverage: model, forms, views, UPC lookup service, barcode scan. ~122 lines untested: mostly view helper methods and edge cases.
 
-`MealPlanFormTests`
-- `test_form_valid_with_recipe` — form is valid when recipe is provided
-- `test_form_valid_with_custom_meal` — form is valid when custom_meal is provided
-- `test_form_invalid_when_neither_recipe_nor_custom_meal` — form rejects when both are empty
-- `test_form_filters_recipes_to_household` — recipe queryset is filtered to user's household
-- `test_form_excludes_needs_review_recipes` — recipes with needs_review=True are excluded
+### meal_planner_app (70.8% — 1022/1443 lines, 76 tests)
+Largest gap: 421 missing lines. `calendar.py` date utilities, `email_notifications.py`, and some view edge cases are not exercised. The 53 tests in `tests.py` and 76 in `test_views.py` cover the core workflows.
 
-`AddMealViewTests`
-- `test_add_meal_requires_login` — unauthenticated GET redirects to login
-- `test_add_meal_get_returns_form` — authenticated GET returns 200 with form
-- `test_add_meal_post_creates_mealplan` — valid POST creates MealPlan for user's household
-- `test_add_meal_with_custom_meal` — POST with custom_meal creates custom meal entry
-- `test_add_meal_prefills_from_query_params` — date/type/recipe pre-filled from query string
+### ratings (98.3% — 175/178 lines, 12 tests)
+`api.py` and `models.py` fully tested. Only 3 lines untested.
 
-`AddMealViewSideDishesTests`
-- `test_add_meal_with_side_dish_custom` — custom side dish is created alongside meal
-- `test_add_meal_with_side_dish_recipe` — side dish linked to recipe is created
+### recipes (91.6% — 2234/2439 lines, 209 tests)
+Largest test suite. `parsing.py`, `youtube.py`, `forms.py`, `views.py`, `api.py`, `llm_import.py` — all well-covered. ~205 missing lines: mostly template rendering paths and edge-case validation.
 
-`EditMealViewTests`
-- `test_edit_meal_get_returns_form` — authenticated GET returns 200 with populated form
-- `test_edit_meal_post_updates_mealplan` — valid POST updates MealPlan fields
-- `test_edit_other_household_meal_returns_404` — editing another household's meal returns 404
+### reviews (90.4% — 94/104 lines, 2 tests)
+Only 2 tests but high coverage. Focuses on the reconciliation workflow.
 
-`DeleteMealViewTests`
-- `test_delete_meal_removes_mealplan` — POST deletes the MealPlan
-- `test_delete_other_household_returns_404` — deleting another household's meal returns 404
+### shopping (98.2% — 481/490 lines, 19 tests)
+Service layer (matching, generation) and views well-tested. Only 9 lines untested.
 
-`RateMealViewTests`
-- `test_rate_meal_with_valid_rating` — POST with rating 1-5 updates meal_rating
-- `test_rate_meal_invalid_rating_returns_400` — rating > 5 returns 400
-- `test_rate_meal_zero_returns_400` — rating < 1 returns 400
-- `test_rate_other_household_returns_404` — rating another household's meal returns 404
-
-`RecipeSelectViewTests`
-- `test_recipe_select_excludes_needs_review` — API excludes recipes needing review
-- `test_recipe_select_requires_auth` — unauthenticated request returns 302
-
-**Gaps:** None remaining. All originally listed gaps are covered.
+### tags (98.4% — 188/191 lines, 14 tests)
+`api.py` fully tested with 14 API tests. Only 3 lines untested.
 
 ---
 
-### ratings
+## Low Coverage Files (< 70%)
 
-**File:** `ratings/tests.py` — **empty**
-
-**Gaps:**
-- `Rating` model: create, unique-together (user, recipe)
-- `RatingForm` validation
-- Average rating computation on `RecipeDetailView`
-- Rating submission via POST
-- Cross-user isolation (user A cannot rate user B's recipe directly)
-
----
-
-### recipes
-
-**File:** `recipes/tests/test_recipe_editing.py`
-
-`RecipeEditingTests`
-- `test_recipe_edit_persists_posted_instruction_order_contiguously` — reordering steps renumbers them contiguously from 1
-- `test_recipe_edit_can_create_and_attach_new_tag_inline`
-- `test_recipe_edit_rejects_duplicate_new_tag_name_within_household`
-
-**File:** `recipes/tests/test_views.py`
-
-`RecipeListViewTests`
-- `test_list_requires_authentication` — unauthenticated redirects to login (302)
-- `test_list_returns_200_for_authenticated`
-- `test_list_excludes_other_household_recipes`
-- `test_list_excludes_needs_review_recipes`
-- `test_list_sort_newest` — `-created` descending
-- `test_list_sort_oldest` — `created` ascending
-- `test_list_sort_title_az` — `title` ascending
-- `test_list_search_filters_results` — filters by `q` param on title/description
-- `test_list_search_by_description`
-- `test_list_context_includes_current_sort_and_query`
-- `test_list_context_includes_sort_choices`
-
-`RecipeDetailViewTests`
-- `test_detail_requires_authentication` — 302 redirect
-- `test_detail_returns_200_for_authenticated`
-- `test_detail_other_household_returns_404` — cross-household isolation
-- `test_detail_context_includes_ingredients`
-- `test_detail_context_includes_instructions_ordered`
-- `test_detail_context_includes_tags`
-- `test_detail_context_includes_average_rating`
-- `test_detail_context_includes_rating_form`
-
-`RecipeCreateViewTests`
-- `test_create_requires_authentication` — 302 redirect
-- `test_create_get_returns_form` — 200 with form in context
-- `test_create_post_with_title_redirects_to_detail` — successful creation
-- `test_create_post_without_title_returns_form_errors` — validation
-- `test_create_assigns_household_from_user`
-
-`RecipeDeleteViewTests`
-- `test_delete_requires_authentication` — 302 redirect
-- `test_delete_get_returns_confirm_template`
-- `test_delete_post_removes_recipe` — successful deletion
-- `test_delete_other_household_returns_404`
-
-`RecipeUpdateViewAdditionalTests`
-- `test_update_keeps_selected_tags` — existing tags preserved on edit
-- `test_update_deselects_removed_tags` — deselecting clears the association
-- `test_update_switches_tags` — changing selection replaces correctly
-- `test_update_other_household_returns_404`
-
-**File:** `recipes/tests/test_forms.py`
-
-`RecipeFormCleanNewTagNameTests`
-- `test_empty_tag_name_is_valid_for_form` — empty string passes form validation
-- `test_whitespace_only_rejected` — whitespace-only raises validation error
-- `test_whitespace_normalised` — `"  Quick  "` → `"Quick"`
-- `test_valid_new_tag_name_returns_normalised`
-- `test_duplicate_same_case_detected` — exact duplicate raises error
-- `test_case_insensitive_duplicate_detected` — `"quick"` vs `"Quick"` raises error
-- `test_different_household_duplicate_not_detected` — same name, different household allowed
-
-`ImportFormTests`
-- `test_valid_youtube_watch_url` — `https://www.youtube.com/watch?v=...`
-- `test_valid_youtu_be_short_url` — `https://youtu.be/...`
-- `test_valid_youtube_embed_url` — `https://www.youtube.com/embed/...`
-- `test_valid_youtube_shorts_url` — `https://www.youtube.com/shorts/...`
-- `test_rejects_empty_url`
-- `test_rejects_generic_video_url`
-- `test_rejects_vimeo_url`
-
-`LLMImportFormTests`
-- `test_valid_youtube_url_accepted`
-- `test_valid_youtu_be_accepted`
-- `test_rejects_non_youtube_url`
-- `test_optional_title_field`
-- `test_optional_model_field`
-- `test_title_can_override`
-
-**File:** `recipes/tests/test_api.py`
-
-`RecipeListAPITests`
-- `test_list_api_unauthenticated_returns_redirect` — 302
-- `test_list_api_returns_only_own_household_recipes`
-- `test_list_api_excludes_needs_review`
-- `test_list_api_returns_expected_fields` — `id`, `title`, `description`, `servings`, `avg_rating`, `tags`, `source_url`
-
-`RecipeSearchAPITests`
-- `test_search_api_unauthenticated_returns_redirect` — 302
-- `test_search_by_title`
-- `test_search_by_description`
-- `test_search_empty_query_returns_empty`
-- `test_search_only_returns_own_household`
-- `test_search_respects_limit`
-
-`RecipeDetailAPITests`
-- `test_detail_api_unauthenticated_returns_redirect` — 302
-- `test_detail_api_returns_ingredients_and_instructions`
-- `test_detail_api_other_household_returns_404`
-
-`RecipeToggleReviewAPITests`
-- `test_toggle_review_unauthenticated_returns_redirect` — 302
-- `test_toggle_review_flips_needs_review_true_to_false`
-- `test_toggle_review_flips_false_to_true`
-- `test_toggle_review_other_household_returns_404`
-
-**Bugs fixed during test-gap-fill:**
-- `RecipeListView` had no `get_queryset()`/`get_context_data()` — list showed all recipes with no sort/search/filter context
-- `RecipeDetailView.get_queryset()` used `|` with `needs_review=True`, leaking cross-household recipes
-- `RecipeUpdateView.form_valid()` never called `_save_recipe_tags` — tag changes were silently dropped
-- `RecipeCreateView.form_valid()` also never called `_save_recipe_tags` — new recipes got no tags
-- `RecipeForm._save_recipe_tags`: `int([])` raised `ValueError`, skipping all tags when `tags=[]` posted
-- `api.py recipe_list_api`: wrong prefetch path (`tags`/`tag_set` instead of `recipetag_set__tag`) + broken `avg_rating` calculation
-- `api.py recipe_detail_api`: wrong relation name `recipe.instructions` → `recipe.instruction_set`
-- `RecipeUpdateView._save_instructions`: blanket delete-before-recreate lost order overrides from `instruction_{id}_order` fields; now updates in-place and renumbers contiguously
-
-**No remaining gaps.**
+| File | % | Lines |
+|------|---:|------:|
+| `accounts/forms.py` | 42% | 11/26 |
+| `accounts/backends.py` | (in Django framework) | — |
+| `household/models.py` | (model + admin) | — |
+| `meal_planner_app/calendar.py` | (date utilities) | — |
+| `meal_planner_app/email_notifications.py` | (email send path) | — |
+| `meal_planner_app/views.py` | (view edge cases) | — |
+| `inventory/forms.py` | (barcode/image edge cases) | — |
+| `recipes/views.py` | (template rendering) | — |
 
 ---
 
-### reviews
+## Coverage Gaps (next improvements)
 
-**File:** `reviews/tests/test_review_queue.py`
-
-`ReviewQueueTests`
-- `test_review_queue_and_reconcile_views_render` — both views return 200
-- `test_reconciliation_saves_inventory_link`
-
-**Gaps:**
-- `ReviewQueue` filters only `needs_review=True` recipes
-- `RecipeReconcileView` shows only unreconciled `IngredientLink`s
-- Save with no selection (unlink)
-- Redirect after save
-- Cross-household protection
+1. **meal_planner_app** — `calendar.py` date range helpers and `email_notifications.py` send path are untested. Adding tests here would push coverage to ~85%.
+2. **accounts/forms.py** — 15 missing lines in `RegistrationForm` edge cases (e.g., duplicate email formatting, household name normalization).
+3. **inventory/forms.py** — barcode format validation and image upload handling.
+4. **recipes/views.py** — template rendering paths and error handler coverage.
 
 ---
 
-### shopping
+## Running Specific Tests
 
-**File:** `shopping/tests/test_models.py`
+```bash
+# By app
+./.venv/bin/python -m pytest --ds=meal_planner.settings accounts
 
-`ShoppingModelScaffoldTests`
-- `test_week_is_unique_per_household` — `(household, week_start)` uniqueness
+# By file
+./.venv/bin/python -m pytest --ds=meal_planner.settings recipes/tests/test_parsing.py
 
-**File:** `shopping/tests/test_discovery_view.py`
+# Single test class
+./.venv/bin/python -m pytest --ds=meal_planner.settings recipes.tests.test_parsing.TestParsingService
 
-`DiscoveryViewTests`
-- `test_discovery_view_requires_authentication` — unauthenticated GET redirects to login
-- `test_discovery_view_context_is_sorted_urgent_first_and_includes_template_keys`
+# Single test
+./.venv/bin/python -m pytest --ds=meal_planner.settings recipes.tests.test_parsing.TestParsingService.test_parse_instructions -v
 
-**File:** `shopping/tests/test_matching.py`
+# By keyword
+./.venv/bin/python -m pytest --ds=meal_planner.settings -k "api" -v
 
-`DiscoveryMatchingServiceTests`
-- `test_build_discovery_matches_returns_missing_ingredients_and_urgency_flags`
-- `test_build_discovery_matches_orders_urgent_first_then_match_percentage`
-- `test_build_discovery_matches_scopes_to_household`
+# Stop on first failure
+./.venv/bin/python -m pytest --ds=meal_planner.settings -x
 
-**File:** `shopping/tests/test_generation.py`
-
-`ShoppingGenerationServiceTests`
-- `test_generate_week_shopping_list_creates_items_from_meal_plans`
-- `test_regenerate_rebuilds_items_for_week` — `regenerate=True` clears; `False` keeps existing
-- `test_compute_meal_match_returns_percentage_from_available_and_total`
-
-`ShoppingWeekViewTests`
-- `test_week_view_auto_generates_when_missing`
-- `test_regenerate_view_forces_rebuild_for_requested_week`
-- `test_invalid_week_start_defaults_to_current_monday`
-
-**File:** `shopping/tests/test_shopping_actions.py`
-
-`ShoppingActionEndpointTests`
-- `test_toggle_endpoint_flips_checked_state_and_returns_json`
-- `test_toggle_endpoint_denies_cross_household_item`
-- `test_delete_endpoint_removes_item`
-- `test_delete_endpoint_denies_cross_household_item`
-- `test_clear_endpoint_deletes_week_items_and_is_idempotent`
-- `test_clear_endpoint_does_not_affect_other_household`
-- `test_clear_endpoint_when_only_other_household_has_week_returns_zero`
-
-**Gaps:**
-- `ShoppingListItem` model: quantity/unit/checked defaults
-- `ShoppingListWeek` auto-created on first item add (if applicable)
-- `compute_meal_match` edge: recipe with zero ingredients
-- `build_discovery_matches` edge: no recipes, no inventory
-- Week navigation (previous/next)
-- Check-all / uncheck-all
-- Item-level quantity edit
+# Last failed tests only
+./.venv/bin/python -m pytest --ds=meal_planner.settings --lf
+```
 
 ---
 
-### tags
-
-**File:** `tags/tests.py` — **empty**
-
-**Gaps:**
-- `Tag` model: create with colour, name uniqueness within household
-- `RecipeTag` through-model: add/remove tags from recipe
-- `TagForm` validation
-
----
-
-## Example Test Patterns
+## Test Patterns Used
 
 ### View requires login
-
 ```python
 def test_recipe_list_requires_authentication(self):
     response = self.client.get(reverse("recipes:recipe_list"))
@@ -574,7 +208,6 @@ def test_recipe_list_requires_authentication(self):
 ```
 
 ### Form validation
-
 ```python
 def test_llm_import_form_rejects_non_youtube_url(self):
     form = LLMImportForm(data={"youtube_url": "https://vimeo.com/123456"})
@@ -583,22 +216,16 @@ def test_llm_import_form_rejects_non_youtube_url(self):
 ```
 
 ### Cross-household isolation
-
 ```python
 def test_recipe_detail_denies_other_household(self):
     other_recipe = Recipe.objects.create(
-        household=self.other_household,
-        title="Private Recipe",
-        needs_review=False,
+        household=self.other_household, title="Private", needs_review=False
     )
-    response = self.client.get(
-        reverse("recipes:recipe_detail", args=[other_recipe.id])
-    )
+    response = self.client.get(reverse("recipes:recipe_detail", args=[other_recipe.id]))
     self.assertEqual(response.status_code, 404)
 ```
 
 ### Service function
-
 ```python
 def test_compute_meal_match_empty_recipe_returns_zero(self):
     result = compute_meal_match(self.recipe, self.inventory_items)
@@ -606,8 +233,7 @@ def test_compute_meal_match_empty_recipe_returns_zero(self):
     self.assertEqual(result["available_count"], 0)
 ```
 
-### Signal / cascade
-
+### Signal/cascade
 ```python
 def test_recipe_delete_cascades_to_instructions(self):
     Instruction.objects.create(recipe=self.recipe, step_number=1, text="Step 1")
@@ -615,21 +241,21 @@ def test_recipe_delete_cascades_to_instructions(self):
     self.assertEqual(Instruction.objects.count(), 0)
 ```
 
+### YouTube transcript mocking
+```python
+@patch("youtube_transcript_api.YouTubeTranscriptApi")
+def test_full_import_success(self, mock_api):
+    mock_instance = mock_api.return_value
+    mock_instance.fetch.return_value = [{"text": "Hello world", "start": 0.0}]
+    # ... form submission
+```
+
 ---
 
-## Running Tests
+## Key Implementation Notes
 
-```bash
-# All tests
-python manage.py test
-
-# Single app
-python manage.py test recipes
-
-# Single file
-python manage.py test recipes.tests.test_recipe_editing
-
-# With coverage
-coverage run manage.py test
-coverage html  # generates htmlcov/
-```
+- **Django settings** — always pass `--ds=meal_planner.settings`. Tests import Django models at module level, so settings must be configured before any imports resolve.
+- **YouTubeTranscriptApi mocking** — use `patch("youtube_transcript_api.YouTubeTranscriptApi", ...)` at the module level for integration tests (intercepts the runtime `from youtube_transcript_api import YouTubeTranscriptApi` inside `form_valid`); use `patch.object(LLMRecipeImportView, "YouTubeTranscriptApi", mock)` for unit tests.
+- **`OPENROUTER_API_KEY`** — read at runtime in `form_valid`. No `importlib.reload()` needed; patch directly.
+- **`accounts/tests.py` and `household/tests.py`** — use `unittest.TestCase` (Django `TestCase`), not pytest `def test_` style. They work fine in the full suite but may need explicit file paths for `--collect-only`.
+- **`meal_planner_app/tests.py` vs `meal_planner_app/tests/test_views.py`** — both exist and both run; `tests.py` covers models/forms, `test_views.py` covers view logic. They are complementary.
