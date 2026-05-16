@@ -2,6 +2,8 @@ import re
 import json
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from openai import OpenAI
+from pathlib import Path
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import (
     ListView,
@@ -18,6 +20,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db.models import Avg, Q
 from .models import Recipe
+from django.core.files.base import File
 from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm
 from .youtube import YouTubeService, InvalidVideoError, APIError
 from .parsing import RecipeParsingService
@@ -315,11 +318,7 @@ Source Context:
         import os
         import json
         import re
-        from pathlib import Path
         import urllib.request
-
-        from django.conf import settings
-        from openai import OpenAI
 
         try:
             from youtube_transcript_api import YouTubeTranscriptApi
@@ -496,7 +495,6 @@ Source Context:
         raise RuntimeError("youtube-transcript-api is not installed")
 
     def _write_transcript_log(self, metadata: dict, transcript: str) -> Path:
-        from pathlib import Path
         TRANSCRIPT_DIR = Path(__file__).resolve().parent.parent / "logs" / "transcripts"
         TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -623,8 +621,6 @@ Source Context:
     def _create_recipe(
         self, data: dict, household, youtube_url: str, transcript_log: Path, video_id: str = None
     ) -> Recipe:
-        from django.core.files import File
-        from pathlib import Path
         import urllib.request
         import logging
         

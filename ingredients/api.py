@@ -20,7 +20,6 @@ def ingredient_list_api(request):
             {
                 "id": ingredient.id,
                 "name": ingredient.name,
-                "category": ingredient.category,
             }
         )
 
@@ -46,7 +45,6 @@ def ingredient_search_api(request):
             {
                 "id": ingredient.id,
                 "name": ingredient.name,
-                "category": ingredient.category,
             }
         )
 

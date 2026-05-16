@@ -11,8 +11,11 @@ urlpatterns = [
     path("recipes/", include("recipes.urls", namespace="recipes")),
     path("reviews/", include("reviews.urls", namespace="reviews")),
     path("inventory/", include("inventory.urls", namespace="inventory")),
+    path("ingredients/", include("ingredients.urls", namespace="ingredients")),
     path("", include("meal_planner_app.urls", namespace="meal_planner")),
     path("shopping/", include("shopping.urls", namespace="shopping")),
+    path("tags/", include("tags.urls", namespace="tags")),
+    path("ratings/", include("ratings.urls", namespace="ratings")),
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
     path(
         "accounts/logged-out/",

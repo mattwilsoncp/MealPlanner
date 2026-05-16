@@ -477,12 +477,12 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
             "title": recipe.title,
             "description": recipe.description,
             "ingredients": [
-                {"name": ing.name, "quantity": ing.quantity, "unit": ing.unit}
+                {"name": ing.ingredient.name, "quantity": ing.quantity, "unit": ing.unit}
                 for ing in recipe.ingredients.all()
             ],
             "instructions": [
                 {"step_number": inst.step_number, "text": inst.text}
-                for inst in recipe.instructions.all()
+                for inst in recipe.instruction_set.all()
             ],
         }
         return JsonResponse(data)
