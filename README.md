@@ -27,7 +27,38 @@ DNR  │ Salmon   │ Stir    │ Meat    │ Burgers │ Thai    │ Salmon  �
 | **Review Queue** | New recipes land in review before they appear in meal planning |
 | **Household-scoped** | All data — recipes, plans, inventory — is scoped to your household |
 
-## Quick Start
+## Run with Docker (Production)
+
+```bash
+# 1. Clone
+git clone https://github.com/mattwilsoncp/meal_planner_app_v2.git
+cd meal_planner_app_v2
+
+# 2. Configure — edit .env
+#    Set SECRETE_KEY to a long random value:
+#    python -c "import secrets; print(secrets.token_urlsafe(64))"
+#    Set POSTGRES_PASSWORD to a strong password
+
+# 3. Build & start
+docker compose up -d --build
+
+# 4. Run migrations (first time only)
+docker compose exec app python manage.py migrate
+
+# 5. (Optional) Load existing SQLite data
+#    Export: python manage.py dumpdata -o db.json
+#    Import: docker compose exec app python manage.py loaddata db.json
+
+# → http://localhost:8000
+```
+
+To stop: `docker compose down`
+To see logs: `docker compose logs -f app`
+To update: `docker compose up -d --build`
+
+---
+
+## Run Locally (Development)
 
 ```bash
 # 1. Clone & set up
@@ -76,10 +107,12 @@ See [`DESIGN.md`](./DESIGN.md) for the full design system reference.
 
 ## Tech Stack
 
-- **Django 6.0** — Python 3, SQLite (dev), allauth-free custom user model
+- **Django 6.0** — Python 3, custom user model (no allauth)
+- **PostgreSQL** — via `DATABASE_URL` env var (Docker: `docker-compose.yml`)
 - **YouTube API** + **markitdown** — transcript parsing for recipe import
 - **OpenAI** — optional recipe summarization
 - **Django sessions + custom backend** — email or username login
+- **Gunicorn** — production server (3 workers, 2 threads)
 
 ## Environment Variables
 
