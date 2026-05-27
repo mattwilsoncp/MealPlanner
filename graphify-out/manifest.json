@@ -1,0 +1,1472 @@
+{
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/start_meal_planner.sh": {
+    "mtime": 1779839534.6501248,
+    "ast_hash": "d5eb79c7db5431b628e2a00af247a487",
+    "semantic_hash": "d5eb79c7db5431b628e2a00af247a487"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/youtube_summarizer.py": {
+    "mtime": 1779839534.653778,
+    "ast_hash": "aedc1e48197b65818803b130041adc95",
+    "semantic_hash": "aedc1e48197b65818803b130041adc95"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/test-import.py": {
+    "mtime": 1779839534.6533992,
+    "ast_hash": "f654959257d44502494065b59416313b",
+    "semantic_hash": "f654959257d44502494065b59416313b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/manage.py": {
+    "mtime": 1779839534.6387792,
+    "ast_hash": "92836f3a508bd8923a7c68526448129c",
+    "semantic_hash": "92836f3a508bd8923a7c68526448129c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/seed_data.py": {
+    "mtime": 1779839534.6484911,
+    "ast_hash": "e7997e76f49488b9395ac512032914c1",
+    "semantic_hash": "e7997e76f49488b9395ac512032914c1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/youtube_importer.py": {
+    "mtime": 1779839534.6534994,
+    "ast_hash": "7f3b166a6587d16519ce4187e97fde45",
+    "semantic_hash": "7f3b166a6587d16519ce4187e97fde45"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/models.py": {
+    "mtime": 1779839534.6349657,
+    "ast_hash": "701aafa28656d86e0277220ea46f7dc3",
+    "semantic_hash": "701aafa28656d86e0277220ea46f7dc3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/__init__.py": {
+    "mtime": 1779839534.6345634,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/apps.py": {
+    "mtime": 1779839534.6347198,
+    "ast_hash": "4de857e83559e051dc2796d357e665d0",
+    "semantic_hash": "4de857e83559e051dc2796d357e665d0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/admin.py": {
+    "mtime": 1779839534.634658,
+    "ast_hash": "243a49a650ecdcc9c99f97f5bca31c7e",
+    "semantic_hash": "243a49a650ecdcc9c99f97f5bca31c7e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/views.py": {
+    "mtime": 1779839534.6353033,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": "f467fa232324ad139aaecd0df7698f3f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/migrations/__init__.py": {
+    "mtime": 1779839534.6348753,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/migrations/0001_initial.py": {
+    "mtime": 1779839534.6348455,
+    "ast_hash": "9dab31f13f82cfc6246bca3c1a139651",
+    "semantic_hash": "9dab31f13f82cfc6246bca3c1a139651"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/tests/__init__.py": {
+    "mtime": 1779839534.635042,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/tests/test_models.py": {
+    "mtime": 1779839534.6352348,
+    "ast_hash": "d04cdfa00fb315193f371c93dafba94e",
+    "semantic_hash": "d04cdfa00fb315193f371c93dafba94e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/instructions/tests/test_main.py": {
+    "mtime": 1779839534.6351376,
+    "ast_hash": "465b7e9f69bfd158c850cdfbc7306818",
+    "semantic_hash": "465b7e9f69bfd158c850cdfbc7306818"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/services.py": {
+    "mtime": 1779839534.649153,
+    "ast_hash": "c47fe63000e1e8f6a3f7c7e17dc033ef",
+    "semantic_hash": "c47fe63000e1e8f6a3f7c7e17dc033ef"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/models.py": {
+    "mtime": 1779839534.6490338,
+    "ast_hash": "115a7f40bd59c71270f4c6a680c8d071",
+    "semantic_hash": "115a7f40bd59c71270f4c6a680c8d071"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/__init__.py": {
+    "mtime": 1779839534.6485822,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/apps.py": {
+    "mtime": 1779839534.6487274,
+    "ast_hash": "cac1c4f1ba343dcab409fe507cc84e02",
+    "semantic_hash": "cac1c4f1ba343dcab409fe507cc84e02"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/urls.py": {
+    "mtime": 1779839534.6499302,
+    "ast_hash": "1b1bf07e7ad07d6c16c4dea6f7bc9cf3",
+    "semantic_hash": "1b1bf07e7ad07d6c16c4dea6f7bc9cf3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/views.py": {
+    "mtime": 1779839534.650027,
+    "ast_hash": "a3a833b07430bc99d54331448c38eb26",
+    "semantic_hash": "a3a833b07430bc99d54331448c38eb26"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/migrations/__init__.py": {
+    "mtime": 1779839534.6489165,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/migrations/0001_initial.py": {
+    "mtime": 1779839534.6488767,
+    "ast_hash": "7baf50eb565c461d8ff900ed53fbb1f9",
+    "semantic_hash": "7baf50eb565c461d8ff900ed53fbb1f9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/tests/__init__.py": {
+    "mtime": 1779839534.649381,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/tests/test_discovery_view.py": {
+    "mtime": 1779839534.6494756,
+    "ast_hash": "da13d27cca0bd70178f2a24203a50c9b",
+    "semantic_hash": "da13d27cca0bd70178f2a24203a50c9b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/tests/test_shopping_actions.py": {
+    "mtime": 1779839534.649847,
+    "ast_hash": "50330e2bd3ded27fc39ff83627229b50",
+    "semantic_hash": "50330e2bd3ded27fc39ff83627229b50"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/tests/test_models.py": {
+    "mtime": 1779839534.6497464,
+    "ast_hash": "c7be8883e0fcc58bab43269857b43a35",
+    "semantic_hash": "c7be8883e0fcc58bab43269857b43a35"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/tests/test_matching.py": {
+    "mtime": 1779839534.649674,
+    "ast_hash": "805c05714577c4949662696c1ed63871",
+    "semantic_hash": "805c05714577c4949662696c1ed63871"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/tests/test_generation.py": {
+    "mtime": 1779839534.649578,
+    "ast_hash": "dd3a08216ba46a01ce14d428681178d6",
+    "semantic_hash": "dd3a08216ba46a01ce14d428681178d6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/models.py": {
+    "mtime": 1779839534.6401424,
+    "ast_hash": "6bfc78501b2f985416c0eae7f07b9ae5",
+    "semantic_hash": "6bfc78501b2f985416c0eae7f07b9ae5"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/__init__.py": {
+    "mtime": 1779839534.6395366,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/apps.py": {
+    "mtime": 1779839534.6397295,
+    "ast_hash": "cdc0fb6250be4f51eba0bc9d5a0bc49e",
+    "semantic_hash": "cdc0fb6250be4f51eba0bc9d5a0bc49e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/forms.py": {
+    "mtime": 1779839534.6398075,
+    "ast_hash": "61b1bad5ec6f149fd0c5ad2f272bcc93",
+    "semantic_hash": "61b1bad5ec6f149fd0c5ad2f272bcc93"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/admin.py": {
+    "mtime": 1779839534.6396444,
+    "ast_hash": "94d5ae9758683abb3e60ef4dc8b9bc31",
+    "semantic_hash": "94d5ae9758683abb3e60ef4dc8b9bc31"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/tests.py": {
+    "mtime": 1779839534.6409028,
+    "ast_hash": "707929b48a8ab5743969ea18831f431a",
+    "semantic_hash": "707929b48a8ab5743969ea18831f431a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/urls.py": {
+    "mtime": 1779839534.641239,
+    "ast_hash": "790af01054a1b80643efc40c79f32fed",
+    "semantic_hash": "790af01054a1b80643efc40c79f32fed"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/views.py": {
+    "mtime": 1779839534.6413465,
+    "ast_hash": "12bba7f1479febfdd0694d05bd72e4b1",
+    "semantic_hash": "12bba7f1479febfdd0694d05bd72e4b1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/migrations/0002_mealplan_cooked_at_sidedish.py": {
+    "mtime": 1779839534.6400146,
+    "ast_hash": "c26f901f5427b43a937d175fbd18d5ac",
+    "semantic_hash": "c26f901f5427b43a937d175fbd18d5ac"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/migrations/__init__.py": {
+    "mtime": 1779839534.6400425,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/migrations/0001_initial.py": {
+    "mtime": 1779839534.639926,
+    "ast_hash": "dd9d89f5a2be37a637ecee2c17b95fe2",
+    "semantic_hash": "dd9d89f5a2be37a637ecee2c17b95fe2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/tests/test_views.py": {
+    "mtime": 1779839534.6411295,
+    "ast_hash": "05e3f1c782daa273c7f4889ec8bdba4b",
+    "semantic_hash": "05e3f1c782daa273c7f4889ec8bdba4b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/package.json": {
+    "mtime": 1779839719.5776417,
+    "ast_hash": "878115d31c721840fc3330b89a3f8c20",
+    "semantic_hash": "878115d31c721840fc3330b89a3f8c20"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/opencode.json": {
+    "mtime": 1779840283.4796078,
+    "ast_hash": "e5f74d14a81702b55bdf53b33ec991d7",
+    "semantic_hash": "e5f74d14a81702b55bdf53b33ec991d7"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/plugins/graphify.js": {
+    "mtime": 1779840189.021978,
+    "ast_hash": "64ccd3c03dbfe0980b6095766f5c4e52",
+    "semantic_hash": "64ccd3c03dbfe0980b6095766f5c4e52"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/skills/ui-ux-pro-max/scripts/design_system.py": {
+    "mtime": 1779839534.6202211,
+    "ast_hash": "08f84d04608a19049c90fc2b1ef314f9",
+    "semantic_hash": "08f84d04608a19049c90fc2b1ef314f9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/skills/ui-ux-pro-max/scripts/core.py": {
+    "mtime": 1779839534.620105,
+    "ast_hash": "3df4734a785963a8242a56c1b926adfd",
+    "semantic_hash": "3df4734a785963a8242a56c1b926adfd"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/skills/ui-ux-pro-max/scripts/search.py": {
+    "mtime": 1779839534.6203241,
+    "ast_hash": "8c7e35426fe8f6f3ed91e9dce0ed7af1",
+    "semantic_hash": "8c7e35426fe8f6f3ed91e9dce0ed7af1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/skills/youtube-recipe-importer/__init__.py": {
+    "mtime": 1779839534.6205587,
+    "ast_hash": "c15685866d16027a742e55d3237af2bd",
+    "semantic_hash": "c15685866d16027a742e55d3237af2bd"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/models.py": {
+    "mtime": 1779839534.644716,
+    "ast_hash": "703441a6aed0e888f5490f858ae4231f",
+    "semantic_hash": "703441a6aed0e888f5490f858ae4231f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/__init__.py": {
+    "mtime": 1779839534.6440623,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/apps.py": {
+    "mtime": 1779839534.6443863,
+    "ast_hash": "9e5be75ab046c49ebcfe3e50a8f2f324",
+    "semantic_hash": "9e5be75ab046c49ebcfe3e50a8f2f324"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/api.py": {
+    "mtime": 1779839534.6442955,
+    "ast_hash": "6004223b6e7df3f305873d58c6438392",
+    "semantic_hash": "6004223b6e7df3f305873d58c6438392"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/admin.py": {
+    "mtime": 1779839534.6441836,
+    "ast_hash": "f66bffcb50f58392e5b4b8712ac91cf3",
+    "semantic_hash": "f66bffcb50f58392e5b4b8712ac91cf3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/tests.py": {
+    "mtime": 1779839534.6448097,
+    "ast_hash": "465b7e9f69bfd158c850cdfbc7306818",
+    "semantic_hash": "465b7e9f69bfd158c850cdfbc7306818"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/urls.py": {
+    "mtime": 1779839534.6451151,
+    "ast_hash": "5f13b2316ecead46fd1a83e80dcbbf38",
+    "semantic_hash": "5f13b2316ecead46fd1a83e80dcbbf38"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/views.py": {
+    "mtime": 1779839534.6451974,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": "f467fa232324ad139aaecd0df7698f3f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/migrations/__init__.py": {
+    "mtime": 1779839534.6445649,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/migrations/0001_initial.py": {
+    "mtime": 1779839534.6445367,
+    "ast_hash": "771cadd28dfe8aae395384705eb34e97",
+    "semantic_hash": "771cadd28dfe8aae395384705eb34e97"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ratings/tests/test_api.py": {
+    "mtime": 1779839534.6450288,
+    "ast_hash": "7822e09f4554caeecbc7d91706c265cb",
+    "semantic_hash": "7822e09f4554caeecbc7d91706c265cb"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/models.py": {
+    "mtime": 1779839534.6512036,
+    "ast_hash": "e230d1fc7a91d040a8fc5bebf7618be1",
+    "semantic_hash": "e230d1fc7a91d040a8fc5bebf7618be1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/__init__.py": {
+    "mtime": 1779839534.6506166,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/apps.py": {
+    "mtime": 1779839534.650972,
+    "ast_hash": "2f62b68946db51430341d5aadf8b72dc",
+    "semantic_hash": "2f62b68946db51430341d5aadf8b72dc"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/api.py": {
+    "mtime": 1779839534.6508973,
+    "ast_hash": "1be8ca58651edb911bebb8e643e806eb",
+    "semantic_hash": "1be8ca58651edb911bebb8e643e806eb"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/admin.py": {
+    "mtime": 1779839534.6508057,
+    "ast_hash": "162e9175dc668c9d670aecb2a513bdb9",
+    "semantic_hash": "162e9175dc668c9d670aecb2a513bdb9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/tests.py": {
+    "mtime": 1779839534.6512656,
+    "ast_hash": "465b7e9f69bfd158c850cdfbc7306818",
+    "semantic_hash": "465b7e9f69bfd158c850cdfbc7306818"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/urls.py": {
+    "mtime": 1779839534.6515064,
+    "ast_hash": "cfa3ab691b96b2ba849fb72ad6c9f79b",
+    "semantic_hash": "cfa3ab691b96b2ba849fb72ad6c9f79b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/views.py": {
+    "mtime": 1779839534.651566,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": "f467fa232324ad139aaecd0df7698f3f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/migrations/__init__.py": {
+    "mtime": 1779839534.6511219,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/migrations/0001_initial.py": {
+    "mtime": 1779839534.651095,
+    "ast_hash": "f222672fa6ee933ddef0607fc517b052",
+    "semantic_hash": "f222672fa6ee933ddef0607fc517b052"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/tests/__init__.py": {
+    "mtime": 1779839534.6513305,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/tags/tests/test_api.py": {
+    "mtime": 1779839534.6514392,
+    "ast_hash": "3e799b870f77738061dac4d87a7b46c4",
+    "semantic_hash": "3e799b870f77738061dac4d87a7b46c4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner/asgi.py": {
+    "mtime": 1779839534.6390517,
+    "ast_hash": "c53dd9c430166c2d71152339c890241f",
+    "semantic_hash": "c53dd9c430166c2d71152339c890241f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner/__init__.py": {
+    "mtime": 1779839534.6389573,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner/settings.py": {
+    "mtime": 1779839534.6391547,
+    "ast_hash": "dca3224e752c4db5557bbf542834ed96",
+    "semantic_hash": "dca3224e752c4db5557bbf542834ed96"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner/urls.py": {
+    "mtime": 1779839534.6393714,
+    "ast_hash": "46321b3d9995daf260aeefa8abe03f08",
+    "semantic_hash": "46321b3d9995daf260aeefa8abe03f08"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner/wsgi.py": {
+    "mtime": 1779839534.639454,
+    "ast_hash": "209f5080d40da344ad950437e08c866c",
+    "semantic_hash": "209f5080d40da344ad950437e08c866c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/models.py": {
+    "mtime": 1779839534.6303954,
+    "ast_hash": "603b930a67da0cde16f409ff71914fc5",
+    "semantic_hash": "603b930a67da0cde16f409ff71914fc5"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/__init__.py": {
+    "mtime": 1779839534.6298013,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/apps.py": {
+    "mtime": 1779839534.62995,
+    "ast_hash": "c5d664e94cff62cf1ba50dcf76ec3f57",
+    "semantic_hash": "c5d664e94cff62cf1ba50dcf76ec3f57"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/forms.py": {
+    "mtime": 1779839534.6300886,
+    "ast_hash": "518a3367baa0090a89ec7ebd9db5cc31",
+    "semantic_hash": "518a3367baa0090a89ec7ebd9db5cc31"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/backends.py": {
+    "mtime": 1779839534.6300142,
+    "ast_hash": "663b4abed98a0421b12a56eb4f3337f3",
+    "semantic_hash": "663b4abed98a0421b12a56eb4f3337f3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/admin.py": {
+    "mtime": 1779839534.6298857,
+    "ast_hash": "abc91c399ed36df3db0521f37861d4ed",
+    "semantic_hash": "abc91c399ed36df3db0521f37861d4ed"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/tests.py": {
+    "mtime": 1779839534.6309776,
+    "ast_hash": "97998ddf5ac66eec4ad1c082e81856da",
+    "semantic_hash": "97998ddf5ac66eec4ad1c082e81856da"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/urls.py": {
+    "mtime": 1779839534.6310616,
+    "ast_hash": "0a9dbc50f48d5483f2f8384ed5b23321",
+    "semantic_hash": "0a9dbc50f48d5483f2f8384ed5b23321"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/views.py": {
+    "mtime": 1779839534.631134,
+    "ast_hash": "2f0adc1a18d016f5f1f637fabdc7098d",
+    "semantic_hash": "2f0adc1a18d016f5f1f637fabdc7098d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/migrations/0002_enforce_email_unique.py": {
+    "mtime": 1779839534.6302845,
+    "ast_hash": "ad87f1751959b36d20378e7df8bf0fa0",
+    "semantic_hash": "ad87f1751959b36d20378e7df8bf0fa0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/migrations/__init__.py": {
+    "mtime": 1779839534.630309,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/migrations/0001_initial.py": {
+    "mtime": 1779839534.630205,
+    "ast_hash": "b4ff5bacf52e96b9408d843bbeca5419",
+    "semantic_hash": "b4ff5bacf52e96b9408d843bbeca5419"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/youtube.py": {
+    "mtime": 1779839534.6477957,
+    "ast_hash": "ead2b0a487c264471bbf50f56913d9a6",
+    "semantic_hash": "ead2b0a487c264471bbf50f56913d9a6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/parsing.py": {
+    "mtime": 1779839534.6460323,
+    "ast_hash": "ec6f63bfbe432da7ce34fded2d14c0e8",
+    "semantic_hash": "ec6f63bfbe432da7ce34fded2d14c0e8"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/models.py": {
+    "mtime": 1779839534.6459274,
+    "ast_hash": "e1624471ef8a5abb396de3d60b05e751",
+    "semantic_hash": "e1624471ef8a5abb396de3d60b05e751"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/__init__.py": {
+    "mtime": 1779839534.645311,
+    "ast_hash": "e34160323033a4e402a70c57b1aca294",
+    "semantic_hash": "e34160323033a4e402a70c57b1aca294"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/apps.py": {
+    "mtime": 1779839534.6455722,
+    "ast_hash": "93ea91943a2d3456ee87b8f838206584",
+    "semantic_hash": "93ea91943a2d3456ee87b8f838206584"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/forms.py": {
+    "mtime": 1779839534.645674,
+    "ast_hash": "5095d18429f139f5cedc5ce2dc6a3c29",
+    "semantic_hash": "5095d18429f139f5cedc5ce2dc6a3c29"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/api.py": {
+    "mtime": 1779839534.6455119,
+    "ast_hash": "3029d31d9eea7e7b366db9ce618404a2",
+    "semantic_hash": "3029d31d9eea7e7b366db9ce618404a2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/admin.py": {
+    "mtime": 1779839534.6453977,
+    "ast_hash": "fefc5ec4078022538cf6fcb581aa038c",
+    "semantic_hash": "fefc5ec4078022538cf6fcb581aa038c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/urls.py": {
+    "mtime": 1779839534.6475406,
+    "ast_hash": "87e448416a20ddb9bf785ef7c348dd22",
+    "semantic_hash": "87e448416a20ddb9bf785ef7c348dd22"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/views.py": {
+    "mtime": 1779839534.6476808,
+    "ast_hash": "e82968c64fee9fc608dd54e7215a7b18",
+    "semantic_hash": "e82968c64fee9fc608dd54e7215a7b18"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/migrations/__init__.py": {
+    "mtime": 1779839534.6458151,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/migrations/0001_initial.py": {
+    "mtime": 1779839534.6457837,
+    "ast_hash": "d12da840a649055016414fa976682bbc",
+    "semantic_hash": "d12da840a649055016414fa976682bbc"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_forms.py": {
+    "mtime": 1779839534.6465516,
+    "ast_hash": "61194b17444bf49edcfa99bcf5d90d49",
+    "semantic_hash": "61194b17444bf49edcfa99bcf5d90d49"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_recipe_editing.py": {
+    "mtime": 1779839534.6470163,
+    "ast_hash": "94570d701828ab42c9212404cb0de0fe",
+    "semantic_hash": "94570d701828ab42c9212404cb0de0fe"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_parsing.py": {
+    "mtime": 1779839534.6469133,
+    "ast_hash": "1e90c836facb716e46f35aafda0c2011",
+    "semantic_hash": "1e90c836facb716e46f35aafda0c2011"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_youtube.py": {
+    "mtime": 1779839534.6474507,
+    "ast_hash": "ed54df40f293cb2d2813a62aee03fe6d",
+    "semantic_hash": "ed54df40f293cb2d2813a62aee03fe6d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_llm_import.py": {
+    "mtime": 1779839534.6467912,
+    "ast_hash": "0042eb628f951aa745fcac50a206143b",
+    "semantic_hash": "0042eb628f951aa745fcac50a206143b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/__init__.py": {
+    "mtime": 1779839534.646104,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_views.py": {
+    "mtime": 1779839534.6470993,
+    "ast_hash": "1a5aaf8ffdf68244f3142687adbaf202",
+    "semantic_hash": "1a5aaf8ffdf68244f3142687adbaf202"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/recipes/tests/test_api.py": {
+    "mtime": 1779839534.646443,
+    "ast_hash": "0bc79927387e25b32d77c4808fd545f1",
+    "semantic_hash": "0bc79927387e25b32d77c4808fd545f1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/models.py": {
+    "mtime": 1779839534.635924,
+    "ast_hash": "544a40dfd50ec84895a9e567465ef0b7",
+    "semantic_hash": "544a40dfd50ec84895a9e567465ef0b7"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/__init__.py": {
+    "mtime": 1779839534.6354127,
+    "ast_hash": "09791ba278470c850aa08a424d6bb5b8",
+    "semantic_hash": "09791ba278470c850aa08a424d6bb5b8"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/apps.py": {
+    "mtime": 1779839534.6355526,
+    "ast_hash": "af4bd81a4804c5ab2c615803133b00a1",
+    "semantic_hash": "af4bd81a4804c5ab2c615803133b00a1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/forms.py": {
+    "mtime": 1779839534.6356232,
+    "ast_hash": "096fbff44b9b7d795a2cfaeff130249d",
+    "semantic_hash": "096fbff44b9b7d795a2cfaeff130249d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/admin.py": {
+    "mtime": 1779839534.6354828,
+    "ast_hash": "9019b168d18613d5d63a2efc1fc056d2",
+    "semantic_hash": "9019b168d18613d5d63a2efc1fc056d2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/tests_barcode_scan.py": {
+    "mtime": 1779839534.6367826,
+    "ast_hash": "42d2f6c297207eb3733ff13d3e7aa654",
+    "semantic_hash": "42d2f6c297207eb3733ff13d3e7aa654"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/urls.py": {
+    "mtime": 1779839534.636858,
+    "ast_hash": "892b2b392f9e0d1a30a7cf3930a47bec",
+    "semantic_hash": "892b2b392f9e0d1a30a7cf3930a47bec"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/views.py": {
+    "mtime": 1779839534.6369576,
+    "ast_hash": "28e487833f34ac744dde089dc39311ab",
+    "semantic_hash": "28e487833f34ac744dde089dc39311ab"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/migrations/__init__.py": {
+    "mtime": 1779839534.6358304,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/migrations/0002_inventoryitem_image_and_more.py": {
+    "mtime": 1779839534.6358037,
+    "ast_hash": "09685b100abd56a7ae09204e7c5a601e",
+    "semantic_hash": "09685b100abd56a7ae09204e7c5a601e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/migrations/0001_initial.py": {
+    "mtime": 1779839534.635732,
+    "ast_hash": "04a098b6771bf396f3ad3f98cd4c0bb6",
+    "semantic_hash": "04a098b6771bf396f3ad3f98cd4c0bb6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/tests/__init__.py": {
+    "mtime": 1779839534.6361773,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/tests/test_upc_lookup.py": {
+    "mtime": 1779839534.6366925,
+    "ast_hash": "dfb99b6d8c1792a72d7f91643735caf4",
+    "semantic_hash": "dfb99b6d8c1792a72d7f91643735caf4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/tests/test_forms_and_views.py": {
+    "mtime": 1779839534.636496,
+    "ast_hash": "0f28ca70483c501808e14590c17e7f55",
+    "semantic_hash": "0f28ca70483c501808e14590c17e7f55"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/tests/test_main.py": {
+    "mtime": 1779839534.6365983,
+    "ast_hash": "bfe378606dc9b29e148c851ea908ed62",
+    "semantic_hash": "bfe378606dc9b29e148c851ea908ed62"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/services/__init__.py": {
+    "mtime": 1779839534.6360025,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/inventory/services/upc_lookup.py": {
+    "mtime": 1779839534.636102,
+    "ast_hash": "681cff984f6d5bb362f44f6353fda424",
+    "semantic_hash": "681cff984f6d5bb362f44f6353fda424"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/models.py": {
+    "mtime": 1779839534.6337373,
+    "ast_hash": "2cc0f309211f5b8734135f86a996cf93",
+    "semantic_hash": "2cc0f309211f5b8734135f86a996cf93"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/__init__.py": {
+    "mtime": 1779839534.6323848,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/apps.py": {
+    "mtime": 1779839534.6332533,
+    "ast_hash": "95c5e1c31a8cc3f710e9dff7c7494b81",
+    "semantic_hash": "95c5e1c31a8cc3f710e9dff7c7494b81"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/forms.py": {
+    "mtime": 1779839534.6333568,
+    "ast_hash": "e36a76c4f996ae3d624095e58687f094",
+    "semantic_hash": "e36a76c4f996ae3d624095e58687f094"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/api.py": {
+    "mtime": 1779839534.6330225,
+    "ast_hash": "d2a6e089668a7b9e648f71a244d54dcf",
+    "semantic_hash": "d2a6e089668a7b9e648f71a244d54dcf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/admin.py": {
+    "mtime": 1779839534.6326933,
+    "ast_hash": "8aa367f816ef4bd3cbf80c74b0481c16",
+    "semantic_hash": "8aa367f816ef4bd3cbf80c74b0481c16"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/utils.py": {
+    "mtime": 1779839534.6344187,
+    "ast_hash": "87f8e618c6c64cb68aced75ba89d4bc4",
+    "semantic_hash": "87f8e618c6c64cb68aced75ba89d4bc4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/urls.py": {
+    "mtime": 1779839534.6343317,
+    "ast_hash": "26a3e1de608147f7522559049658e689",
+    "semantic_hash": "26a3e1de608147f7522559049658e689"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/views.py": {
+    "mtime": 1779839534.6344953,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": "f467fa232324ad139aaecd0df7698f3f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/migrations/0002_ingredientlink_inventory_item.py": {
+    "mtime": 1779839534.6335511,
+    "ast_hash": "053341a4440b874cae7c63c2785e0337",
+    "semantic_hash": "053341a4440b874cae7c63c2785e0337"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/migrations/0003_ingredient_nutrition_fields.py": {
+    "mtime": 1779839534.6336195,
+    "ast_hash": "75e21e86e627655e1a67d93e0c219348",
+    "semantic_hash": "75e21e86e627655e1a67d93e0c219348"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/migrations/__init__.py": {
+    "mtime": 1779839534.6336498,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/migrations/0001_initial.py": {
+    "mtime": 1779839534.6334796,
+    "ast_hash": "04a8b2bc806b60869a960333c957e067",
+    "semantic_hash": "04a8b2bc806b60869a960333c957e067"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/tests/test_links_and_nutrition.py": {
+    "mtime": 1779839534.6340327,
+    "ast_hash": "5c60ae91c4c4e08e1daa3177a9dd2ab0",
+    "semantic_hash": "5c60ae91c4c4e08e1daa3177a9dd2ab0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/tests/test_unit_conversion.py": {
+    "mtime": 1779839534.634252,
+    "ast_hash": "9cf8887fe1bbeed2b1cccd97d5547f3f",
+    "semantic_hash": "9cf8887fe1bbeed2b1cccd97d5547f3f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/tests/__init__.py": {
+    "mtime": 1779839534.633808,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/tests/test_models_and_forms.py": {
+    "mtime": 1779839534.6341329,
+    "ast_hash": "cf50063d33c464d4a0e32305739384aa",
+    "semantic_hash": "cf50063d33c464d4a0e32305739384aa"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/ingredients/tests/test_api.py": {
+    "mtime": 1779839534.6339254,
+    "ast_hash": "1e182c57031251b6f58f5d935919705e",
+    "semantic_hash": "1e182c57031251b6f58f5d935919705e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/models.py": {
+    "mtime": 1779839534.6316755,
+    "ast_hash": "35620b66b263e4eb59d250ac54dec969",
+    "semantic_hash": "35620b66b263e4eb59d250ac54dec969"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/__init__.py": {
+    "mtime": 1779839534.6312754,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/apps.py": {
+    "mtime": 1779839534.6313584,
+    "ast_hash": "c4137675e0affd98c24df0741350b954",
+    "semantic_hash": "c4137675e0affd98c24df0741350b954"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/tests.py": {
+    "mtime": 1779839534.631974,
+    "ast_hash": "747b2e3b892f82ae585e122889acb7c0",
+    "semantic_hash": "747b2e3b892f82ae585e122889acb7c0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/migrations/__init__.py": {
+    "mtime": 1779839534.6315684,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/migrations/0002_household_expiring_threshold_days.py": {
+    "mtime": 1779839534.6315446,
+    "ast_hash": "fa0049b6cf5a0621ccee4af2b0d675b3",
+    "semantic_hash": "fa0049b6cf5a0621ccee4af2b0d675b3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/household/migrations/0001_initial.py": {
+    "mtime": 1779839534.6314747,
+    "ast_hash": "0c698ca36e4bb4658097faa75595fba0",
+    "semantic_hash": "0c698ca36e4bb4658097faa75595fba0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/config.json": {
+    "mtime": 1779839534.6213043,
+    "ast_hash": "6332cbe43283adc02b3cf0fbf709a5fa",
+    "semantic_hash": "6332cbe43283adc02b3cf0fbf709a5fa"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/reviews/__init__.py": {
+    "mtime": 1779839534.6479897,
+    "ast_hash": "f59c76f8a95bb6e903a202c8c6fa5f23",
+    "semantic_hash": "f59c76f8a95bb6e903a202c8c6fa5f23"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/reviews/apps.py": {
+    "mtime": 1779839534.6480632,
+    "ast_hash": "ed698c7cbf17ef447f7826ee4f07ec3c",
+    "semantic_hash": "ed698c7cbf17ef447f7826ee4f07ec3c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/reviews/urls.py": {
+    "mtime": 1779839534.6482894,
+    "ast_hash": "2c31347c1cafd6938f51dc4f2a9d4cca",
+    "semantic_hash": "2c31347c1cafd6938f51dc4f2a9d4cca"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/reviews/views.py": {
+    "mtime": 1779839534.6483831,
+    "ast_hash": "ac03dd85742eab5acf9bea2270d616d4",
+    "semantic_hash": "ac03dd85742eab5acf9bea2270d616d4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/reviews/tests/__init__.py": {
+    "mtime": 1779839534.6481292,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/reviews/tests/test_review_queue.py": {
+    "mtime": 1779839534.6482244,
+    "ast_hash": "020e60aea3dee9b2eeb107e2006b1d8f",
+    "semantic_hash": "020e60aea3dee9b2eeb107e2006b1d8f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/TEST_GUIDE.md": {
+    "mtime": 1779839534.6297295,
+    "ast_hash": "18c24ce9c1749a30092efcf8e390a5ca",
+    "semantic_hash": "18c24ce9c1749a30092efcf8e390a5ca"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/requirements.txt": {
+    "mtime": 1779839534.6478777,
+    "ast_hash": "623e905352704c5f33e687d78113944c",
+    "semantic_hash": "623e905352704c5f33e687d78113944c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/README.md": {
+    "mtime": 1779839534.629435,
+    "ast_hash": "1194161315956cd7cb0d9ed6c2c3df07",
+    "semantic_hash": "1194161315956cd7cb0d9ed6c2c3df07"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/docker-compose.yml": {
+    "mtime": 1779839534.6312025,
+    "ast_hash": "0bf0993ab695ccfc1a64a9d8caccbc0b",
+    "semantic_hash": "0bf0993ab695ccfc1a64a9d8caccbc0b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/DESIGN.md": {
+    "mtime": 1779839534.629273,
+    "ast_hash": "c9ba6ea806e1b7f818b93b4734e8a325",
+    "semantic_hash": "c9ba6ea806e1b7f818b93b4734e8a325"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/AGENTS.md": {
+    "mtime": 1779840189.021677,
+    "ast_hash": "00748725adebb624a4ef2609fe2afbc1",
+    "semantic_hash": "00748725adebb624a4ef2609fe2afbc1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/CLAUDE.md": {
+    "mtime": 1779839534.6289773,
+    "ast_hash": "62425d81f31595529a0ebd37b33fee0d",
+    "semantic_hash": "62425d81f31595529a0ebd37b33fee0d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.config/opencode/skills/graphify/SKILL.md": {
+    "mtime": 1779840189.0207772,
+    "ast_hash": "a40b1bdf74ba936cb110d0d8226a4661",
+    "semantic_hash": "a40b1bdf74ba936cb110d0d8226a4661"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/shopping/templates/shopping/week.html": {
+    "mtime": 1779839534.649314,
+    "ast_hash": "dffb97f217a9f155c2a59bfa4812326c",
+    "semantic_hash": "dffb97f217a9f155c2a59bfa4812326c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/templates/meal_planner/meal_form.html": {
+    "mtime": 1779839534.6405723,
+    "ast_hash": "9e11db32b592a491ecf6e0df75bf2c68",
+    "semantic_hash": "9e11db32b592a491ecf6e0df75bf2c68"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/templates/meal_planner/planner.html": {
+    "mtime": 1779839534.6407845,
+    "ast_hash": "7ebc13176ac79c32f0e55e32f26b5327",
+    "semantic_hash": "7ebc13176ac79c32f0e55e32f26b5327"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/templates/meal_planner/on_hand_ideas.html": {
+    "mtime": 1779839534.6406841,
+    "ast_hash": "f574df0283a4c12ed554e385a3f2eca2",
+    "semantic_hash": "f574df0283a4c12ed554e385a3f2eca2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/templates/meal_planner/cooking_home.html": {
+    "mtime": 1779839534.640449,
+    "ast_hash": "77fd4c266c1930e200f10cbe1a9001e9",
+    "semantic_hash": "77fd4c266c1930e200f10cbe1a9001e9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner_app/templates/meal_planner/cooking.html": {
+    "mtime": 1779839534.6403568,
+    "ast_hash": "d52afd8efcb95a63e89bfed15e2e910a",
+    "semantic_hash": "d52afd8efcb95a63e89bfed15e2e910a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/skills/ui-ux-pro-max/SKILL.md": {
+    "mtime": 1779839534.6155093,
+    "ast_hash": "e745b5a6c71379800b232a1ba32d16ec",
+    "semantic_hash": "e745b5a6c71379800b232a1ba32d16ec"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.opencode/skills/youtube-recipe-importer/SKILL.md": {
+    "mtime": 1779839534.6204371,
+    "ast_hash": "600ad4551b8cc039fee2a97863b8c3fc",
+    "semantic_hash": "600ad4551b8cc039fee2a97863b8c3fc"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md": {
+    "mtime": 1779839534.6149826,
+    "ast_hash": "9ba618bb478c9fe1efb360d255a25eba",
+    "semantic_hash": "9ba618bb478c9fe1efb360d255a25eba"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/gitnexus/gitnexus-debugging/SKILL.md": {
+    "mtime": 1779839534.6144648,
+    "ast_hash": "3998c14d1bb3558b716ea55d9971826b",
+    "semantic_hash": "3998c14d1bb3558b716ea55d9971826b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/gitnexus/gitnexus-exploring/SKILL.md": {
+    "mtime": 1779839534.6145966,
+    "ast_hash": "e938f38cf262c7daad36be1794517ca2",
+    "semantic_hash": "e938f38cf262c7daad36be1794517ca2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/gitnexus/gitnexus-guide/SKILL.md": {
+    "mtime": 1779839534.614715,
+    "ast_hash": "52a6df29e7e6161fc0ccfc3a42a1cb88",
+    "semantic_hash": "52a6df29e7e6161fc0ccfc3a42a1cb88"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/gitnexus/gitnexus-cli/SKILL.md": {
+    "mtime": 1779839534.6143146,
+    "ast_hash": "4990f214db3cbd43b6de75d81a10dda2",
+    "semantic_hash": "4990f214db3cbd43b6de75d81a10dda2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md": {
+    "mtime": 1779839534.6148355,
+    "ast_hash": "aad191ea3512d8a10e3749f24cabca46",
+    "semantic_hash": "aad191ea3512d8a10e3749f24cabca46"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.claude/skills/test-gap-filler/SKILL.md": {
+    "mtime": 1779839534.6151164,
+    "ast_hash": "a5fb2625e177f53aa9af7d88876a94d4",
+    "semantic_hash": "a5fb2625e177f53aa9af7d88876a94d4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/supabase/DESIGN.md": {
+    "mtime": 1779839534.6505017,
+    "ast_hash": "c9ba6ea806e1b7f818b93b4734e8a325",
+    "semantic_hash": "c9ba6ea806e1b7f818b93b4734e8a325"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260423_232227_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6371763,
+    "ast_hash": "dba59a8a4755d0ba314be537ec4ba01a",
+    "semantic_hash": "dba59a8a4755d0ba314be537ec4ba01a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260430_190353_ZSDhHg8Vllk.txt": {
+    "mtime": 1779839534.638526,
+    "ast_hash": "268dfa13159f6a7579fb2067dc8ed4cf",
+    "semantic_hash": "268dfa13159f6a7579fb2067dc8ed4cf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260430_185728_ZSDhHg8Vllk.txt": {
+    "mtime": 1779839534.6383824,
+    "ast_hash": "268dfa13159f6a7579fb2067dc8ed4cf",
+    "semantic_hash": "268dfa13159f6a7579fb2067dc8ed4cf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260423_234858_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6373365,
+    "ast_hash": "15a6231225aa08a24e0ce177244130a9",
+    "semantic_hash": "15a6231225aa08a24e0ce177244130a9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260423_235828_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6376693,
+    "ast_hash": "d094e9e3abeea2f78d56d2bb1af18412",
+    "semantic_hash": "d094e9e3abeea2f78d56d2bb1af18412"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260423_235509_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6375728,
+    "ast_hash": "15a6231225aa08a24e0ce177244130a9",
+    "semantic_hash": "15a6231225aa08a24e0ce177244130a9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260423_235216_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.63748,
+    "ast_hash": "15a6231225aa08a24e0ce177244130a9",
+    "semantic_hash": "15a6231225aa08a24e0ce177244130a9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260430_185934_ZSDhHg8Vllk.txt": {
+    "mtime": 1779839534.6384559,
+    "ast_hash": "268dfa13159f6a7579fb2067dc8ed4cf",
+    "semantic_hash": "268dfa13159f6a7579fb2067dc8ed4cf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260426_180246_QYa_TsFWx-4.txt": {
+    "mtime": 1779839534.6380386,
+    "ast_hash": "20fd23ebf6aad3b98aebc776a31996a9",
+    "semantic_hash": "20fd23ebf6aad3b98aebc776a31996a9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260428_002045_Tz7qskj7ffs.txt": {
+    "mtime": 1779839534.6381674,
+    "ast_hash": "a42ac76eb793681985ced1f9065da7ba",
+    "semantic_hash": "a42ac76eb793681985ced1f9065da7ba"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260423_233347_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6372542,
+    "ast_hash": "dba59a8a4755d0ba314be537ec4ba01a",
+    "semantic_hash": "dba59a8a4755d0ba314be537ec4ba01a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260424_000516_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6378436,
+    "ast_hash": "d094e9e3abeea2f78d56d2bb1af18412",
+    "semantic_hash": "d094e9e3abeea2f78d56d2bb1af18412"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260428_002346_Tz7qskj7ffs.txt": {
+    "mtime": 1779839534.6382391,
+    "ast_hash": "a42ac76eb793681985ced1f9065da7ba",
+    "semantic_hash": "a42ac76eb793681985ced1f9065da7ba"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260430_185608_ZSDhHg8Vllk.txt": {
+    "mtime": 1779839534.638312,
+    "ast_hash": "268dfa13159f6a7579fb2067dc8ed4cf",
+    "semantic_hash": "268dfa13159f6a7579fb2067dc8ed4cf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260424_000401_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6377552,
+    "ast_hash": "d094e9e3abeea2f78d56d2bb1af18412",
+    "semantic_hash": "d094e9e3abeea2f78d56d2bb1af18412"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260430_190549_ZSDhHg8Vllk.txt": {
+    "mtime": 1779839534.6385934,
+    "ast_hash": "268dfa13159f6a7579fb2067dc8ed4cf",
+    "semantic_hash": "268dfa13159f6a7579fb2067dc8ed4cf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260430_191030_eO70cIlPkxU.txt": {
+    "mtime": 1779839534.6387043,
+    "ast_hash": "e7601b317419a13d1f608fbd1489ed5d",
+    "semantic_hash": "e7601b317419a13d1f608fbd1489ed5d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/logs/transcripts/20260424_001452_lwxj_4NwOYM.txt": {
+    "mtime": 1779839534.6379282,
+    "ast_hash": "d094e9e3abeea2f78d56d2bb1af18412",
+    "semantic_hash": "d094e9e3abeea2f78d56d2bb1af18412"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/meal_planner/templates/index.html": {
+    "mtime": 1779839534.639292,
+    "ast_hash": "68a7d882dd7234e7cba93243b2520960",
+    "semantic_hash": "68a7d882dd7234e7cba93243b2520960"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/templates/registration/register.html": {
+    "mtime": 1779839534.6306791,
+    "ast_hash": "ab88a8e0eb9cbe23f358ba7377b92d09",
+    "semantic_hash": "ab88a8e0eb9cbe23f358ba7377b92d09"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/templates/registration/login.html": {
+    "mtime": 1779839534.630619,
+    "ast_hash": "6ea8c1578f6b10ee3e072f9af5dd6021",
+    "semantic_hash": "6ea8c1578f6b10ee3e072f9af5dd6021"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/accounts/templates/registration/logged_out.html": {
+    "mtime": 1779839534.6305428,
+    "ast_hash": "37e149c172bd042e82d29c7311a17080",
+    "semantic_hash": "37e149c172bd042e82d29c7311a17080"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/base.html": {
+    "mtime": 1779839534.6517305,
+    "ast_hash": "8ab1595f250d6670fc36a1f43edc5938",
+    "semantic_hash": "8ab1595f250d6670fc36a1f43edc5938"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/shopping/discovery.html": {
+    "mtime": 1779839534.653231,
+    "ast_hash": "75df6251dbc3f7be4d5097a7b23da2c1",
+    "semantic_hash": "75df6251dbc3f7be4d5097a7b23da2c1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/shopping/shopping_week.html": {
+    "mtime": 1779839534.653316,
+    "ast_hash": "e1ac81aadcaf5fa3a3e7011a3d60aa53",
+    "semantic_hash": "e1ac81aadcaf5fa3a3e7011a3d60aa53"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/includes/modal.html": {
+    "mtime": 1779839534.651862,
+    "ast_hash": "e9b761caeb1b7dd52166d685dfbbf2c4",
+    "semantic_hash": "e9b761caeb1b7dd52166d685dfbbf2c4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/recipes/llm_import.html": {
+    "mtime": 1779839534.6523948,
+    "ast_hash": "4e0006599e712b1d423247df6045e2c9",
+    "semantic_hash": "4e0006599e712b1d423247df6045e2c9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/recipes/recipe_detail.html": {
+    "mtime": 1779839534.6525772,
+    "ast_hash": "e38acdff15d2e52260c40d1fbe9b83cf",
+    "semantic_hash": "e38acdff15d2e52260c40d1fbe9b83cf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/recipes/recipe_confirm_delete.html": {
+    "mtime": 1779839534.6524813,
+    "ast_hash": "2986a1ac6e3cfcfbca0cbf0ddf03c3e7",
+    "semantic_hash": "2986a1ac6e3cfcfbca0cbf0ddf03c3e7"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/recipes/recipe_form.html": {
+    "mtime": 1779839534.6526735,
+    "ast_hash": "0a401df992f6f3eeed528697ab8cdfb6",
+    "semantic_hash": "0a401df992f6f3eeed528697ab8cdfb6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/recipes/recipe_list.html": {
+    "mtime": 1779839534.6527982,
+    "ast_hash": "1a75eebe4496cd6d7754b0790b36c115",
+    "semantic_hash": "1a75eebe4496cd6d7754b0790b36c115"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/inventory/barcode_scan.html": {
+    "mtime": 1779839534.6520085,
+    "ast_hash": "61fc3f2678d5f533c7b67a4eb12047ed",
+    "semantic_hash": "61fc3f2678d5f533c7b67a4eb12047ed"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/inventory/inventory_expiring.html": {
+    "mtime": 1779839534.6520932,
+    "ast_hash": "54cadc6443d27a937b4d9cd914228cd1",
+    "semantic_hash": "54cadc6443d27a937b4d9cd914228cd1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/inventory/inventory_list.html": {
+    "mtime": 1779839534.6522858,
+    "ast_hash": "2bac00fef226d8b8b4dff8485d3672c6",
+    "semantic_hash": "2bac00fef226d8b8b4dff8485d3672c6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/inventory/inventory_form.html": {
+    "mtime": 1779839534.6521764,
+    "ast_hash": "eab9e2eb7a1c1268d5795fce957fee49",
+    "semantic_hash": "eab9e2eb7a1c1268d5795fce957fee49"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/reviews/review_queue.html": {
+    "mtime": 1779839534.653116,
+    "ast_hash": "f0e653d8e0c5b8b8d56d49807f7bfc91",
+    "semantic_hash": "f0e653d8e0c5b8b8d56d49807f7bfc91"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/reviews/reconcile.html": {
+    "mtime": 1779839534.6530473,
+    "ast_hash": "7915687e3e6384a80ab176afc03b05e4",
+    "semantic_hash": "7915687e3e6384a80ab176afc03b05e4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/templates/reviews/mark_ready.html": {
+    "mtime": 1779839534.6529324,
+    "ast_hash": "01fb1ba88a278288f1d40632c5ffbb45",
+    "semantic_hash": "01fb1ba88a278288f1d40632c5ffbb45"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/REQUIREMENTS.md": {
+    "mtime": 1779839534.620834,
+    "ast_hash": "67647bbf0c6e461f057fa6c12312f8f4",
+    "semantic_hash": "67647bbf0c6e461f057fa6c12312f8f4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/v1-MILESTONE-AUDIT.md": {
+    "mtime": 1779839534.6286592,
+    "ast_hash": "4a6f4376bb96b8b639c2ec3d2d6a61f2",
+    "semantic_hash": "4a6f4376bb96b8b639c2ec3d2d6a61f2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/v1.1-STATE.md": {
+    "mtime": 1779839534.6288195,
+    "ast_hash": "8c1f4a5449afc8017a43ee9acebabe57",
+    "semantic_hash": "8c1f4a5449afc8017a43ee9acebabe57"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/PROJECT.md": {
+    "mtime": 1779839534.6207688,
+    "ast_hash": "ef3b5590d9babfd66bb439527e750f1c",
+    "semantic_hash": "ef3b5590d9babfd66bb439527e750f1c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/STATE.md": {
+    "mtime": 1779839534.6209846,
+    "ast_hash": "f6ab68a38eb1e0ab953441b677e00eee",
+    "semantic_hash": "f6ab68a38eb1e0ab953441b677e00eee"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/ROADMAP.md": {
+    "mtime": 1779839534.6208959,
+    "ast_hash": "f7ffc51619f183b879866aad0b53e4bf",
+    "semantic_hash": "f7ffc51619f183b879866aad0b53e4bf"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/v1.1-ROADMAP.md": {
+    "mtime": 1779839534.6287498,
+    "ast_hash": "e3e08c141bbd0daa3df3f44f584b29e1",
+    "semantic_hash": "e3e08c141bbd0daa3df3f44f584b29e1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/MILESTONES.md": {
+    "mtime": 1779839534.6206708,
+    "ast_hash": "32192bab2ac597f4122a85064525081f",
+    "semantic_hash": "32192bab2ac597f4122a85064525081f"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/research/STACK.md": {
+    "mtime": 1779839534.6284795,
+    "ast_hash": "51dcdb76877c08960b372947b9737257",
+    "semantic_hash": "51dcdb76877c08960b372947b9737257"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/research/ARCHITECTURE.md": {
+    "mtime": 1779839534.6277704,
+    "ast_hash": "27b9f61fee9fee0a2bb0d30cab560896",
+    "semantic_hash": "27b9f61fee9fee0a2bb0d30cab560896"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/research/PITFALLS.md": {
+    "mtime": 1779839534.628386,
+    "ast_hash": "b1aaefce31a55e7f928a5679d3c226c0",
+    "semantic_hash": "b1aaefce31a55e7f928a5679d3c226c0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/research/SUMMARY.md": {
+    "mtime": 1779839534.6285841,
+    "ast_hash": "8bc5da4ec254a8f486767fdece5e6fad",
+    "semantic_hash": "8bc5da4ec254a8f486767fdece5e6fad"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/research/FEATURES.md": {
+    "mtime": 1779839534.628079,
+    "ast_hash": "c5ef49e2c6dd57eca52c699fab255cc4",
+    "semantic_hash": "c5ef49e2c6dd57eca52c699fab255cc4"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/milestones/v1-REQUIREMENTS.md": {
+    "mtime": 1779839534.6214132,
+    "ast_hash": "7dbf3a254068fbb79ed63d0e43eaa7ed",
+    "semantic_hash": "7dbf3a254068fbb79ed63d0e43eaa7ed"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/milestones/v1-ROADMAP.md": {
+    "mtime": 1779839534.621507,
+    "ast_hash": "081ef9563374893e7408ebaa7c23f7ff",
+    "semantic_hash": "081ef9563374893e7408ebaa7c23f7ff"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/codebase/STACK.md": {
+    "mtime": 1779839534.6212072,
+    "ast_hash": "f48e5fb2c786549459cc592fcafa1c51",
+    "semantic_hash": "f48e5fb2c786549459cc592fcafa1c51"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/codebase/INTEGRATIONS.md": {
+    "mtime": 1779839534.6211154,
+    "ast_hash": "4d9ea1da1579eb79ac1f6632d3d63a6d",
+    "semantic_hash": "4d9ea1da1579eb79ac1f6632d3d63a6d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-02-PLAN.md": {
+    "mtime": 1779839534.6220794,
+    "ast_hash": "a0a0250e4238560e9864c8c8de798466",
+    "semantic_hash": "a0a0250e4238560e9864c8c8de798466"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-05-SUMMARY.md": {
+    "mtime": 1779839534.622901,
+    "ast_hash": "79ca2643c982d663eb2fdb91715b5ab1",
+    "semantic_hash": "79ca2643c982d663eb2fdb91715b5ab1"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-03-PLAN.md": {
+    "mtime": 1779839534.6224566,
+    "ast_hash": "7d3c0338b65e1821373b2c49a21893df",
+    "semantic_hash": "7d3c0338b65e1821373b2c49a21893df"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-VERIFICATION.md": {
+    "mtime": 1779839534.623135,
+    "ast_hash": "b7bb2ecb691d5df722625857a15d724a",
+    "semantic_hash": "b7bb2ecb691d5df722625857a15d724a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-01-PLAN.md": {
+    "mtime": 1779839534.6216953,
+    "ast_hash": "9ecc717d00687cc283813c35e11a2566",
+    "semantic_hash": "9ecc717d00687cc283813c35e11a2566"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-02-SUMMARY.md": {
+    "mtime": 1779839534.6221583,
+    "ast_hash": "a72e20e68593affb36dca8b2d27a1f76",
+    "semantic_hash": "a72e20e68593affb36dca8b2d27a1f76"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-01-SUMMARY.md": {
+    "mtime": 1779839534.6217678,
+    "ast_hash": "445eef2ecfe4d11b1b3710e41d3c8d51",
+    "semantic_hash": "445eef2ecfe4d11b1b3710e41d3c8d51"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-05-PLAN.md": {
+    "mtime": 1779839534.6228163,
+    "ast_hash": "12a2608592e7f0b4334408df4d046f8d",
+    "semantic_hash": "12a2608592e7f0b4334408df4d046f8d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-04-SUMMARY.md": {
+    "mtime": 1779839534.622721,
+    "ast_hash": "0e0eaa1d303a02b12644e56c396a7ba6",
+    "semantic_hash": "0e0eaa1d303a02b12644e56c396a7ba6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-04-PLAN.md": {
+    "mtime": 1779839534.6226516,
+    "ast_hash": "c22391fd84136fd8b356c97501c6b436",
+    "semantic_hash": "c22391fd84136fd8b356c97501c6b436"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-06-PLAN.md": {
+    "mtime": 1779839534.6229925,
+    "ast_hash": "1fae9712e136c0acf57d1bf7555e9c18",
+    "semantic_hash": "1fae9712e136c0acf57d1bf7555e9c18"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-03-SUMMARY.md": {
+    "mtime": 1779839534.6225564,
+    "ast_hash": "0f66888a810ff3640ffc8fdeafd7de3c",
+    "semantic_hash": "0f66888a810ff3640ffc8fdeafd7de3c"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-foundation-recipes/01-06-SUMMARY.md": {
+    "mtime": 1779839534.6230679,
+    "ast_hash": "d9cfbcf5a128d68515eb4d1cdb50adb7",
+    "semantic_hash": "d9cfbcf5a128d68515eb4d1cdb50adb7"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-youtube-import/01-01-PLAN.md": {
+    "mtime": 1779839534.623269,
+    "ast_hash": "103c6da4ed79248df584925cce2dfce5",
+    "semantic_hash": "103c6da4ed79248df584925cce2dfce5"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-youtube-import/01-01-SUMMARY.md": {
+    "mtime": 1779839534.62334,
+    "ast_hash": "717667ad262c1d71189c0132c9c8c7c8",
+    "semantic_hash": "717667ad262c1d71189c0132c9c8c7c8"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/01-youtube-import/01-CONTEXT.md": {
+    "mtime": 1779839534.6234481,
+    "ast_hash": "d54c36db4d766f66f2ff0383d56d7af2",
+    "semantic_hash": "d54c36db4d766f66f2ff0383d56d7af2"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-05-SUMMARY.md": {
+    "mtime": 1779839534.6243153,
+    "ast_hash": "dc30a0e0f79a1a41e3139dbae9a619b0",
+    "semantic_hash": "dc30a0e0f79a1a41e3139dbae9a619b0"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-04-PLAN.md": {
+    "mtime": 1779839534.6240675,
+    "ast_hash": "c073736cea54a1897f4d1db32035f30a",
+    "semantic_hash": "c073736cea54a1897f4d1db32035f30a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-02-SUMMARY.md": {
+    "mtime": 1779839534.6238391,
+    "ast_hash": "cac9aeab65c9ea257ce7ce6d53d23030",
+    "semantic_hash": "cac9aeab65c9ea257ce7ce6d53d23030"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-05-PLAN.md": {
+    "mtime": 1779839534.6242182,
+    "ast_hash": "f2399f0fa689675e5c60bffef554c914",
+    "semantic_hash": "f2399f0fa689675e5c60bffef554c914"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-04-SUMMARY.md": {
+    "mtime": 1779839534.6241322,
+    "ast_hash": "5ce2f731b23bfa609f66c804c654fe96",
+    "semantic_hash": "5ce2f731b23bfa609f66c804c654fe96"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-VERIFICATION.md": {
+    "mtime": 1779839534.6243916,
+    "ast_hash": "c6774acd7351e65c75d69f49020e78da",
+    "semantic_hash": "c6774acd7351e65c75d69f49020e78da"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-01-SUMMARY.md": {
+    "mtime": 1779839534.6236877,
+    "ast_hash": "fe01d63ab2cfe3290fad20a53cdb219b",
+    "semantic_hash": "fe01d63ab2cfe3290fad20a53cdb219b"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-01-PLAN.md": {
+    "mtime": 1779839534.6236215,
+    "ast_hash": "b2d21c37379e7875b8b1ad36c2977c44",
+    "semantic_hash": "b2d21c37379e7875b8b1ad36c2977c44"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-03-PLAN.md": {
+    "mtime": 1779839534.623922,
+    "ast_hash": "98885dd8c9f4161e4a993732fe2521d6",
+    "semantic_hash": "98885dd8c9f4161e4a993732fe2521d6"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-03-SUMMARY.md": {
+    "mtime": 1779839534.6239865,
+    "ast_hash": "49d2336eef760b1b4286bb321ea6c746",
+    "semantic_hash": "49d2336eef760b1b4286bb321ea6c746"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-meal-planning/02-02-PLAN.md": {
+    "mtime": 1779839534.623772,
+    "ast_hash": "c8dc7bfa47fb446db96f3c42a66aae03",
+    "semantic_hash": "c8dc7bfa47fb446db96f3c42a66aae03"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/06-verification-closure/06-01-PLAN.md": {
+    "mtime": 1779839534.6273274,
+    "ast_hash": "b0b3aefa4d14bb881c229c6d309a5ff3",
+    "semantic_hash": "b0b3aefa4d14bb881c229c6d309a5ff3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/06-verification-closure/06-01-SUMMARY.md": {
+    "mtime": 1779839534.627415,
+    "ast_hash": "0fb8c069dcafd7d787ecbf8cb2bee9ee",
+    "semantic_hash": "0fb8c069dcafd7d787ecbf8cb2bee9ee"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-metadata-fetch/02-01-SUMMARY.md": {
+    "mtime": 1779839534.6245954,
+    "ast_hash": "a0aed6867ab34ca5c863580ee79e47ee",
+    "semantic_hash": "a0aed6867ab34ca5c863580ee79e47ee"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/02-metadata-fetch/02-01-PLAN.md": {
+    "mtime": 1779839534.6245313,
+    "ast_hash": "72b8dcde0cbc85e15bd4dfa6b514352d",
+    "semantic_hash": "72b8dcde0cbc85e15bd4dfa6b514352d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-form-population/04-01-PLAN.md": {
+    "mtime": 1779839534.6266997,
+    "ast_hash": "0b6775ff62e7aa9943be040567fd6f94",
+    "semantic_hash": "0b6775ff62e7aa9943be040567fd6f94"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-form-population/04-01-SUMMARY.md": {
+    "mtime": 1779839534.6268058,
+    "ast_hash": "d468daa7d8883cbd201585aa77460a9d",
+    "semantic_hash": "d468daa7d8883cbd201585aa77460a9d"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-content-parsing/03-01-PLAN.md": {
+    "mtime": 1779839534.624929,
+    "ast_hash": "ebb4e2c1c5dbf049ad7f46c5d81cdcf9",
+    "semantic_hash": "ebb4e2c1c5dbf049ad7f46c5d81cdcf9"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-content-parsing/03-01-SUMMARY.md": {
+    "mtime": 1779839534.6249933,
+    "ast_hash": "439f5c4df6235c4dac70354731791d0a",
+    "semantic_hash": "439f5c4df6235c4dac70354731791d0a"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-content-parsing/03-CONTEXT.md": {
+    "mtime": 1779839534.625058,
+    "ast_hash": "c889e408561cffcfcd0c15c4ce215970",
+    "semantic_hash": "c889e408561cffcfcd0c15c4ce215970"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-discovery-matching/04-02-PLAN.md": {
+    "mtime": 1779839534.6263356,
+    "ast_hash": "368b6a1c3d0f214d5b1525093e2e6399",
+    "semantic_hash": "368b6a1c3d0f214d5b1525093e2e6399"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-discovery-matching/04-RESEARCH.md": {
+    "mtime": 1779839534.6264966,
+    "ast_hash": "b2179c2993e9a26490a3aa238fbd3685",
+    "semantic_hash": "b2179c2993e9a26490a3aa238fbd3685"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-discovery-matching/04-01-PLAN.md": {
+    "mtime": 1779839534.6261606,
+    "ast_hash": "f14b9b89bdc4f04e266bf5a85749bcca",
+    "semantic_hash": "f14b9b89bdc4f04e266bf5a85749bcca"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-discovery-matching/04-01-SUMMARY.md": {
+    "mtime": 1779839534.626234,
+    "ast_hash": "c1448892f76f905f05bdf42e48ee25ce",
+    "semantic_hash": "c1448892f76f905f05bdf42e48ee25ce"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-discovery-matching/04-02-SUMMARY.md": {
+    "mtime": 1779839534.6264293,
+    "ast_hash": "4c398d6f698b50c97d0e19d7a39d57e7",
+    "semantic_hash": "4c398d6f698b50c97d0e19d7a39d57e7"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/04-discovery-matching/04-VERIFICATION.md": {
+    "mtime": 1779839534.6265626,
+    "ast_hash": "07accc8a8ce4fa53a3918d6962c8fd3e",
+    "semantic_hash": "07accc8a8ce4fa53a3918d6962c8fd3e"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-03-SUMMARY.md": {
+    "mtime": 1779839534.6256196,
+    "ast_hash": "cd93dfd61bf50b4d787e7897a4a85f21",
+    "semantic_hash": "cd93dfd61bf50b4d787e7897a4a85f21"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-01-PLAN.md": {
+    "mtime": 1779839534.6251833,
+    "ast_hash": "2fe9f4be051473df826400413618e3b3",
+    "semantic_hash": "2fe9f4be051473df826400413618e3b3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-02-PLAN.md": {
+    "mtime": 1779839534.6253629,
+    "ast_hash": "c9f70881473f4ba9fa5f38f594171c05",
+    "semantic_hash": "c9f70881473f4ba9fa5f38f594171c05"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-01-SUMMARY.md": {
+    "mtime": 1779839534.6252697,
+    "ast_hash": "7e59eeaf5dcb5859190920c67b3542fc",
+    "semantic_hash": "7e59eeaf5dcb5859190920c67b3542fc"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-03-PLAN.md": {
+    "mtime": 1779839534.6255386,
+    "ast_hash": "f3075ce343961c327edb60e704eebb77",
+    "semantic_hash": "f3075ce343961c327edb60e704eebb77"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-04-SUMMARY.md": {
+    "mtime": 1779839534.6257937,
+    "ast_hash": "9e9c285f0acd6853628ad1536aadeafb",
+    "semantic_hash": "9e9c285f0acd6853628ad1536aadeafb"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-02-SUMMARY.md": {
+    "mtime": 1779839534.6254506,
+    "ast_hash": "9a1da61362fb2bec08adc4437735fb26",
+    "semantic_hash": "9a1da61362fb2bec08adc4437735fb26"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-05-PLAN.md": {
+    "mtime": 1779839534.6258795,
+    "ast_hash": "6d97d9b530b4dffc6502cc7594326bd8",
+    "semantic_hash": "6d97d9b530b4dffc6502cc7594326bd8"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-05-SUMMARY.md": {
+    "mtime": 1779839534.625965,
+    "ast_hash": "6cf3c4b5b9c220ca830f9af3a2043c17",
+    "semantic_hash": "6cf3c4b5b9c220ca830f9af3a2043c17"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-04-PLAN.md": {
+    "mtime": 1779839534.6257038,
+    "ast_hash": "55d1701b58a349da99e092165c9aa411",
+    "semantic_hash": "55d1701b58a349da99e092165c9aa411"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/03-inventory-shopping/03-VERIFICATION.md": {
+    "mtime": 1779839534.6260326,
+    "ast_hash": "d98b85a2cf169c9bb905272a18dd94ca",
+    "semantic_hash": "d98b85a2cf169c9bb905272a18dd94ca"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-02-SUMMARY.md": {
+    "mtime": 1779839534.627191,
+    "ast_hash": "333914d4511913d35fe2927e94877c64",
+    "semantic_hash": "333914d4511913d35fe2927e94877c64"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-02-PLAN.md": {
+    "mtime": 1779839534.627099,
+    "ast_hash": "d0c98388e2c319a17e658025ac3403e3",
+    "semantic_hash": "d0c98388e2c319a17e658025ac3403e3"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-01-SUMMARY.md": {
+    "mtime": 1779839534.6270072,
+    "ast_hash": "de07b6a7402a2ed3603b18f3c10b0401",
+    "semantic_hash": "de07b6a7402a2ed3603b18f3c10b0401"
+  },
+  "/Users/mwilson/Documents/Windsurf/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-01-PLAN.md": {
+    "mtime": 1779839534.6269343,
+    "ast_hash": "dedd8680261a5cbd68245a7401cf8581",
+    "semantic_hash": "dedd8680261a5cbd68245a7401cf8581"
+  }
+}
