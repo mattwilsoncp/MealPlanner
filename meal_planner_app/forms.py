@@ -1,8 +1,118 @@
 from django import forms
 from django.forms import modelform_factory, modelformset_factory
 
-from .models import MealPlan, MealType, SideDish
+from .models import MealPlan, MealType, SideDish, MealPreferences, CookingEffort
 from recipes.models import Recipe
+
+
+CUISINE_CHOICES = [
+    ("italian", "Italian"),
+    ("mexican", "Mexican"),
+    ("asian", "Asian"),
+    ("american", "American"),
+    ("mediterranean", "Mediterranean"),
+    ("indian", "Indian"),
+    ("japanese", "Japanese"),
+    ("thai", "Thai"),
+    ("greek", "Greek"),
+    ("french", "French"),
+    ("korean", "Korean"),
+    ("middle-eastern", "Middle Eastern"),
+    ("southern", "Southern"),
+    ("caribbean", "Caribbean"),
+    ("cajun", "Cajun"),
+    ("german", "German"),
+    ("vietnamese", "Vietnamese"),
+    ("brazilian", "Brazilian"),
+    ("spanish", "Spanish"),
+    ("moroccan", "Moroccan"),
+]
+
+DIETARY_CHOICES = [
+    ("vegetarian", "Vegetarian"),
+    ("vegan", "Vegan"),
+    ("gluten-free", "Gluten-Free"),
+    ("dairy-free", "Dairy-Free"),
+    ("low-carb", "Low-Carb"),
+    ("keto", "Keto"),
+    ("nut-free", "Nut-Free"),
+    ("egg-free", "Egg-Free"),
+    ("soy-free", "Soy-Free"),
+    ("pescatarian", "Pescatarian"),
+]
+
+
+class MealPreferencesForm(forms.ModelForm):
+    """Form for configuring meal planning preferences."""
+
+    cuisine_preferences = forms.MultipleChoiceField(
+        choices=CUISINE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Cuisine Preferences",
+    )
+    dietary_restrictions = forms.MultipleChoiceField(
+        choices=DIETARY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Dietary Restrictions",
+    )
+    cooking_effort = forms.ChoiceField(
+        choices=CookingEffort.choices,
+        widget=forms.RadioSelect,
+        required=True,
+        label="Cooking Effort",
+    )
+    servings_per_meal = forms.IntegerField(
+        min_value=1,
+        max_value=8,
+        widget=forms.NumberInput(
+            attrs={"class": "input input-bordered w-20", "min": 1, "max": 8}
+        ),
+        label="Servings Per Meal",
+    )
+    excluded_ingredients = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "class": "input input-bordered w-full",
+                "placeholder": "e.g., mushrooms, cilantro, anchovies",
+            }
+        ),
+        required=False,
+        label="Excluded Ingredients",
+        help_text="Comma-separated list of ingredients to exclude",
+    )
+
+    class Meta:
+        model = MealPreferences
+        fields = [
+            "cuisine_preferences",
+            "dietary_restrictions",
+            "cooking_effort",
+            "servings_per_meal",
+            "excluded_ingredients",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        # Convert list values back to checkbox-friendly format
+        if self.instance.pk:
+            if self.instance.cuisine_preferences:
+                self.initial["cuisine_preferences"] = self.instance.cuisine_preferences
+            if self.instance.dietary_restrictions:
+                self.initial["dietary_restrictions"] = self.instance.dietary_restrictions
+            if self.instance.excluded_ingredients:
+                self.initial["excluded_ingredients"] = ", ".join(
+                    self.instance.excluded_ingredients
+                )
+
+    def clean_excluded_ingredients(self):
+        """Split comma-separated string into a list."""
+        value = self.cleaned_data.get("excluded_ingredients", "")
+        if not value:
+            return []
+        return [item.strip() for item in value.split(",") if item.strip()]
 
 
 class MealPlanForm(forms.ModelForm):

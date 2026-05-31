@@ -1,7 +1,41 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from household.models import Household
 from recipes.models import Recipe
+
+
+class CookingEffort(models.TextChoices):
+    QUICK = "quick", "Quick (<30 min)"
+    MODERATE = "moderate", "Moderate (30-60 min)"
+    ELABORATE = "elaborate", "Elaborate (>60 min)"
+
+
+class MealPreferences(models.Model):
+    household = models.OneToOneField(
+        Household, on_delete=models.CASCADE, related_name="meal_preferences"
+    )
+    cuisine_preferences = ArrayField(
+        models.CharField(max_length=50), default=list, blank=True
+    )
+    dietary_restrictions = ArrayField(
+        models.CharField(max_length=50), default=list, blank=True
+    )
+    cooking_effort = models.CharField(
+        max_length=20, choices=CookingEffort.choices, default="moderate"
+    )
+    servings_per_meal = models.PositiveSmallIntegerField(default=2)
+    excluded_ingredients = ArrayField(
+        models.CharField(max_length=100), default=list, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "meal preferences"
+
+    def __str__(self):
+        return f"Meal preferences for {self.household}"
 
 
 class MealType(models.TextChoices):
