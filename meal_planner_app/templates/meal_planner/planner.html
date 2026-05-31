@@ -45,7 +45,7 @@
     <div class="card m-auto p-6" style="max-width: 32rem; max-height: 85vh; overflow-y: auto; margin: auto;">
         <div class="flex justify-between items-start mb-4">
             <h3 id="recipe-modal-title" class="text-xl font-semibold"></h3>
-            <button @click="closeModal()" class="btn-ghost" style="padding: 4px;">
+            <button type="button" id="recipe-modal-close-icon" class="btn-ghost" style="padding: 4px;">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -65,7 +65,7 @@
         
         <div class="flex gap-3">
             <a id="recipe-modal-full-link" href="" class="btn-secondary">View Full Recipe</a>
-            <button @click="closeModal()" class="btn-ghost">Close</button>
+            <button type="button" id="recipe-modal-close-button" class="btn-ghost">Close</button>
         </div>
     </div>
 </div>
@@ -74,19 +74,19 @@
     {% for day in week_days %}
     <div class="card p-4" style="min-height: 280px;">
         <div class="text-center mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
-            <div class="font-semibold text-sm" style="color: var(--text-secondary);">{{ day|date:"l" }}</div>
-            <div class="text-lg font-semibold">{{ day|date:"M d" }}</div>
+            <div class="font-semibold text-sm" style="color: var(--text-secondary);">{{ day.day_name }}</div>
+            <div class="text-lg font-semibold">{{ day.date|date:"M d" }}</div>
         </div>
-        
-        {% for meal_type, meals in day.meals.items %}
+
+        {% for meal_type in planner_meal_types %}
         <div class="mb-4">
             <div class="font-medium text-xs mb-2 uppercase tracking-wide" style="color: var(--text-muted); text-transform: capitalize;">{{ meal_type }}</div>
-            {% for meal in meals %}
+            {% for meal in day.meals|get_item:meal_type %}
             <div class="p-2 mb-2 rounded-lg" style="background: var(--bg-page); border: 1px solid var(--border-subtle);">
                 {% if meal.recipe %}
                 <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
                 <div class="flex gap-2">
-                    <button @click="openRecipeModal({{ meal.recipe.pk }})" class="link text-xs">View</button>
+                    <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link text-xs js-open-recipe-modal">View</button>
                     <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link text-xs">Cook</a>
                 </div>
                 {% else %}
@@ -94,8 +94,8 @@
                 {% endif %}
             </div>
             {% endfor %}
-            
-            <a href="{% url 'meal_planner:add_meal' %}?date={{ day|date:'Y-m-d' }}&type={{ meal_type }}" 
+
+            <a href="{% url 'meal_planner:add_meal' %}?date={{ day.date|date:'Y-m-d' }}&type={{ meal_type }}"
                class="link text-xs">+ Add {{ meal_type }}</a>
         </div>
         {% endfor %}
@@ -106,9 +106,11 @@
 {% block extra_js %}
 <script>
 const modal = document.getElementById('recipe-modal');
+const recipeDetailApiTemplate = "{% url 'recipes:recipe_detail_api' 999999 %}";
+const recipeDetailPageTemplate = "{% url 'recipes:recipe_detail' 999999 %}";
 
 function openRecipeModal(recipeId) {
-    fetch(`/recipes/api/${recipeId}/`)
+    fetch(recipeDetailApiTemplate.replace('999999', recipeId))
         .then(r => r.json())
         .then(data => {
             document.getElementById('recipe-modal-title').textContent = data.title;
@@ -120,7 +122,7 @@ function openRecipeModal(recipeId) {
             const instructionsEl = document.getElementById('recipe-modal-instructions');
             instructionsEl.innerHTML = data.instructions.map((i, idx) => `<li class="ml-2">${idx + 1}. ${i.step}</li>`).join('');
             
-            document.getElementById('recipe-modal-full-link').href = `/recipes/${recipeId}/`;
+            document.getElementById('recipe-modal-full-link').href = recipeDetailPageTemplate.replace('999999', recipeId);
             
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -131,6 +133,15 @@ function closeModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
+
+document.querySelectorAll('.js-open-recipe-modal').forEach(button => {
+    button.addEventListener('click', function () {
+        openRecipeModal(this.dataset.recipeId);
+    });
+});
+
+document.getElementById('recipe-modal-close-icon').addEventListener('click', closeModal);
+document.getElementById('recipe-modal-close-button').addEventListener('click', closeModal);
 
 modal.addEventListener('click', function(e) {
     if (e.target === modal) {
