@@ -182,3 +182,12 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # YouTube API Configuration
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+
+# AI Meal Suggestions Configuration
+AI_API_BASE_URL = os.environ.get(
+    "AI_API_BASE_URL",
+    "https://opencode.ai/zen/v1",
+)
+AI_MODEL = os.environ.get("AI_MODEL", "deepseek-v4-flash-free")
+AI_REQUEST_TIMEOUT = int(os.environ.get("AI_REQUEST_TIMEOUT", "60"))
+AI_MAX_RETRIES = int(os.environ.get("AI_MAX_RETRIES", "3"))

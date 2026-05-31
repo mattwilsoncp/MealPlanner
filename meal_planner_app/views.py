@@ -961,3 +961,122 @@ class MealPreferencesView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Preferences saved")
         return super().form_valid(form)
+
+
+class GenerateAiPlanView(LoginRequiredMixin, View):
+    """View for generating weekly meal plans using AI."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        household = request.user.household
+        week_start_str = request.POST.get("week_start")
+
+        if not week_start_str:
+            messages.error(request, "No week selected")
+            return redirect("meal_planner:planner")
+
+        try:
+            start_date = date.fromisoformat(week_start_str)
+            end_date = start_date + timedelta(days=6)
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid week start date")
+            return redirect("meal_planner:planner")
+
+        # Load preferences
+        try:
+            preferences = MealPreferences.objects.get(household=household)
+        except MealPreferences.DoesNotExist:
+            messages.error(
+                request, "Please save your meal preferences first before generating a plan"
+            )
+            return redirect("meal_planner:preferences")
+
+        # Load inventory (non-expired items, mark near-expiry)
+        inventory_items = []
+        today = date.today()
+        threshold_days = getattr(household, "expiring_threshold_days", 3)
+
+        for item in InventoryItem.objects.filter(
+            household=household,
+        ):
+            name = item.name
+            expiring = False
+            if item.expiration_date:
+                days_until_expiry = (item.expiration_date - today).days
+                expiring = 0 <= days_until_expiry <= threshold_days
+
+            inventory_items.append({
+                "name": name,
+                "qty": str(item.quantity) if item.quantity else "1",
+                "unit": item.unit or "",
+                "expiring": expiring,
+            })
+
+        # Generate the plan
+        from meal_planner_app.services.ai_service import AIService
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=household,
+            start_date=start_date,
+            end_date=end_date,
+            preferences=preferences,
+            inventory_items=inventory_items,
+        )
+
+        if not result.success:
+            messages.error(request, f"AI generation failed: {result.error}")
+            return redirect("meal_planner:planner_week", year=start_date.year, week=start_date.isocalendar()[1])
+
+        # Create MealPlan entries
+        created_count = 0
+        for day_data in result.meals:
+            meal_date_str = day_data.get("date")
+            try:
+                meal_date = date.fromisoformat(meal_date_str)
+            except (ValueError, TypeError):
+                continue
+
+            for meal_data in day_data.get("meals", []):
+                meal_type_raw = meal_data.get("meal_type", "dinner").lower()
+                meal_type = meal_type_raw
+                for valid_type in ("breakfast", "lunch", "dinner", "snack"):
+                    if valid_type in meal_type_raw:
+                        meal_type = valid_type
+                        break
+
+                title = meal_data.get("title", "AI Meal")
+                description = meal_data.get("description", "")
+                cook_time = meal_data.get("cook_time_minutes", 30)
+
+                try:
+                    # Check slot is not already occupied
+                    slot_exists = MealPlan.objects.filter(
+                        household=household,
+                        meal_date=meal_date,
+                        meal_type=meal_type,
+                    ).exists()
+                    if slot_exists:
+                        continue
+
+                    meal = MealPlan.objects.create(
+                        household=household,
+                        meal_date=meal_date,
+                        meal_type=meal_type,
+                        custom_meal=f"{title}: {description}".strip(": ")[:500],
+                        notes=f"AI-generated | Cook time: {cook_time} min",
+                    )
+                    created_count += 1
+                except IntegrityError:
+                    # Slot already taken, skip
+                    continue
+
+        if created_count > 0:
+            messages.success(
+                request, f"AI generated {created_count} meals for this week!"
+            )
+        else:
+            messages.info(request, "AI generated no new meals (slots may already be filled)")
+
+        return redirect("meal_planner:planner_week", year=start_date.year, week=start_date.isocalendar()[1])
