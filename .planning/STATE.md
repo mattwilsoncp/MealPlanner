@@ -1,7 +1,7 @@
 # Meal Planner App v2 — State
 
 **Project:** Meal Planner App v2  
-**Last Updated:** 2026-04-22
+**Last Updated:** 2026-05-31
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Defining v1.1 Requirements |
+| Status | Defining v1.2 Requirements |
 | Mode | YOLO |
 | Granularity | Coarse |
 | Phase | Not Started (defining requirements) |
@@ -48,17 +48,13 @@ Django-based meal planning web application with recipe management, weekly meal p
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-04-22 — Milestone v1.1 started
+Last activity: 2026-05-31 — Milestone v1.2 started
 
-**Previous v1 milestone completed:**
-- Phase 1: Foundation & Recipes ✓
-- Phase 2: Meal Planning ✓
-- Phase 3: Inventory & Shopping ✓
-- Phase 4: Discovery Matching ✓
-- Phase 5: Gap Remediation ✓
-- Phase 6: Verification & Closure ✓
-
-**Next:** Start v1.1 YouTube Recipe Import with `/gsd-plan-phase 1`
+**Previous v1.1 milestone completed:**
+- Phase 1: URL Import & Validation ✓
+- Phase 2: Metadata Fetch ✓
+- Phase 3: Content Parsing ✓
+- Phase 4: Form Population & Photo ✓
 
 ---
 
@@ -88,6 +84,7 @@ Last activity: 2026-04-22 — Milestone v1.1 started
 - Key insight: normalize ingredient data from day one
 - 4 phases recommended (coarse granularity)
 - 63 requirements mapped across phases
-- v1.1 milestone now starting: YouTube Recipe Import
-- Full ingredient/instruction extraction requested
-- Both YouTube thumbnail and user upload supported
+- v1.2 milestone now starting: AI Meal Suggestions
+- Weekly meal generation via opencode.ai free models (deepseek-v4-flash-free, mimo-v2.5-free, nemotron-3-super-free)
+- Novel AI-generated recipes based on inventory + preferences
+- 1-2 person household preference

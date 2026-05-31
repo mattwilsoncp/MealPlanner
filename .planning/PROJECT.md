@@ -6,24 +6,25 @@ A Django-based meal planning web application that helps users organize recipes, 
 
 ## Current State
 
-- **Milestone:** v1.1 (YouTube Recipe Import)
+- **Milestone:** v1.2 (AI Meal Suggestions)
 - **Status:** Defining requirements
-- **Previous:** v1 shipped (2026-04-19)
+- **Previous:** v1.1 shipped (2026-04-22)
 
 ## Core Value
 
 **Recipe organization** — the app must excel at helping users store, find, and manage their recipes. Every feature should enhance, not distract from, this primary goal.
 
-## Current Milestone: v1.1 YouTube Recipe Import
+## Current Milestone: v1.2 AI Meal Suggestions
 
-**Goal:** Import recipes from YouTube URLs with automatic metadata, ingredient, and instruction extraction.
+**Goal:** Generate creative weekly meal plans using free models from opencode.ai based on user preferences and available inventory.
 
 **Target features:**
-- Fetch video metadata (title, description, thumbnail)
-- Parse ingredients from description using NLP
-- Parse instructions from video/timestamps
-- Photo: use YouTube thumbnail by default, allow user to upload their own
-- Recipe form pre-populated with import data
+- User preference configuration (dietary restrictions, cuisines, cooking effort)
+- AI-powered weekly meal generation via opencode.ai API (OpenAI-compatible)
+- Novel AI-generated recipes based on inventory + preferences
+- Generated plan integrates with existing weekly planner UI (side dishes, leftovers)
+- Shopping list generation for missing ingredients
+- Accept / reject / regenerate individual days
 
 ## Context
 
@@ -61,7 +62,8 @@ Users struggle with:
 | Server-rendered templates | User preference for selective JS enhancement | ✓ Confirmed in v1 |
 | Tailwind + DaisyUI | User-provided spec - rapid UI development | ✓ Confirmed in v1 |
 | User-scoped via households | Allows future multi-user household sharing | ✓ Confirmed in v1 |
-| YouTube import | User-requested v1.1 feature | New in v1.1 |
+| YouTube import | User-requested v1.1 feature | ✓ Confirmed in v1.1 |
+| AI meal suggestions | User-requested v1.2 feature | New in v1.2 |
 
 ## Evolution
 
@@ -82,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-04-22 — v1.1 milestone started*
+*Last updated: 2026-05-31 — v1.2 milestone started*
