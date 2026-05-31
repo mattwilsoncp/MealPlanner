@@ -98,4 +98,25 @@ urlpatterns = [
         views.GenerateAiPlanView.as_view(),
         name="generate_ai_plan",
     ),
+    # AI Plan Review
+    path(
+        "ai-plan/review/",
+        views.AiPlanReviewView.as_view(),
+        name="ai_plan_review",
+    ),
+    path(
+        "ai-plan/day-action/",
+        views.AiPlanDayActionView.as_view(),
+        name="ai_plan_day_action",
+    ),
+    path(
+        "ai-plan/save/",
+        views.AiPlanSaveView.as_view(),
+        name="ai_plan_save",
+    ),
+    path(
+        "ai-plan/cancel/",
+        views.AiPlanCancelView.as_view(),
+        name="ai_plan_cancel",
+    ),
 ]

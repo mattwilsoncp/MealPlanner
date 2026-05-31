@@ -60,6 +60,7 @@ class MealPlan(models.Model):
     )
     custom_meal = models.CharField(max_length=200, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    ingredients = models.JSONField(default=list, blank=True)
     meal_rating = models.IntegerField(blank=True, null=True)  # 1-5 scale
     cooked_at = models.DateTimeField(blank=True, null=True)  # When meal was cooked
     created_at = models.DateTimeField(auto_now_add=True)

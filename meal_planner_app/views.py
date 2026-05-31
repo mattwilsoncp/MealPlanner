@@ -643,13 +643,24 @@ class AddOnHandToMealView(LoginRequiredMixin, View):
         except ValueError:
             return JsonResponse({"error": "Invalid date format"}, status=400)
 
-        # Create meal
-        meal = MealPlan.objects.create(
+        # Create or get existing meal (atomic, avoids unique constraint violation)
+        meal, created = MealPlan.objects.get_or_create(
             household=request.user.household,
             recipe=recipe,
             meal_date=parsed_date,
             meal_type=meal_type,
         )
+
+        if not created:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": f"'{recipe.title}' is already planned for {meal.get_meal_type_display()} on {meal_date}.",
+                    "already_exists": True,
+                    "meal_id": meal.id,
+                },
+                status=409,
+            )
 
         return JsonResponse(
             {
@@ -963,8 +974,17 @@ class MealPreferencesView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
+def _normalize_meal_type(raw_type: str) -> str:
+    """Normalize a meal type string to one of the valid types (breakfast/lunch/dinner/snack)."""
+    raw = raw_type.lower().strip()
+    for valid_type in ("breakfast", "lunch", "dinner", "snack"):
+        if valid_type in raw:
+            return valid_type
+    return "dinner"
+
+
 class GenerateAiPlanView(LoginRequiredMixin, View):
-    """View for generating weekly meal plans using AI."""
+    """View for generating weekly meal plans using AI \u2014 stores in session for review."""
 
     http_method_names = ["post"]
 
@@ -1029,54 +1049,251 @@ class GenerateAiPlanView(LoginRequiredMixin, View):
             messages.error(request, f"AI generation failed: {result.error}")
             return redirect("meal_planner:planner_week", year=start_date.year, week=start_date.isocalendar()[1])
 
-        # Create MealPlan entries
-        created_count = 0
-        for day_data in result.meals:
+        # Build plan data for session (no direct DB creation)
+        days = []
+        for i, day_data in enumerate(result.meals):
             meal_date_str = day_data.get("date")
             try:
                 meal_date = date.fromisoformat(meal_date_str)
             except (ValueError, TypeError):
                 continue
 
+            meals_for_day = []
+            all_skipped = True
             for meal_data in day_data.get("meals", []):
-                meal_type_raw = meal_data.get("meal_type", "dinner").lower()
-                meal_type = meal_type_raw
-                for valid_type in ("breakfast", "lunch", "dinner", "snack"):
-                    if valid_type in meal_type_raw:
-                        meal_type = valid_type
-                        break
+                meal_type = _normalize_meal_type(meal_data.get("meal_type", "dinner"))
+                slot_exists = MealPlan.objects.filter(
+                    household=household,
+                    meal_date=meal_date,
+                    meal_type=meal_type,
+                ).exists()
+                if slot_exists:
+                    continue
+                all_skipped = False
+                meals_for_day.append({
+                    "meal_type": meal_type,
+                    "title": meal_data.get("title", "AI Meal"),
+                    "description": meal_data.get("description", ""),
+                    "cook_time_minutes": meal_data.get("cook_time_minutes", 30),
+                    "ingredients": meal_data.get("ingredients", []),
+                })
+
+            days.append({
+                "index": i,
+                "date": str(meal_date),
+                "status": "skipped" if all_skipped else "pending",
+                "meals": meals_for_day,
+                "day_name": meal_date.strftime("%A"),
+                "formatted_date": meal_date.strftime("%b %-d"),
+            })
+
+        plan_data = {
+            "week_start": str(start_date),
+            "days": days,
+        }
+
+        # Store in session
+        session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
+        request.session[session_key] = plan_data
+        request.session.modified = True
+
+        return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+
+
+class AiPlanReviewView(LoginRequiredMixin, TemplateView):
+    """View to review AI-generated meal plan before saving."""
+
+    template_name = "meal_planner/ai_plan_review.html"
+
+    def get(self, request, *args, **kwargs):
+        week_start_str = request.GET.get("week_start")
+        if not week_start_str:
+            messages.error(request, "Week start date is required.")
+            return redirect("meal_planner:planner")
+
+        household = request.user.household
+        session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
+        plan_data = request.session.get(session_key)
+
+        if not plan_data:
+            messages.info(request, "No pending AI plan found. Generate a new one.")
+            return redirect("meal_planner:planner")
+
+        days = plan_data.get("days", [])
+        if not days:
+            messages.info(request, "The AI plan is empty. Generate a new one.")
+            del request.session[session_key]
+            request.session.modified = True
+            return redirect("meal_planner:planner")
+
+        try:
+            week_start = date.fromisoformat(week_start_str)
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid week start date.")
+            return redirect("meal_planner:planner")
+
+        week_days = [week_start + timedelta(days=i) for i in range(7)]
+
+        accepted_count = sum(1 for d in days if d["status"] == "accepted")
+        pending_count = sum(1 for d in days if d["status"] == "pending")
+        rejected_count = sum(1 for d in days if d["status"] == "rejected")
+        skipped_count = sum(1 for d in days if d["status"] == "skipped")
+
+        context = {
+            "plan": plan_data,
+            "days": days,
+            "week_start": week_start,
+            "week_end": week_start + timedelta(days=6),
+            "week_days": week_days,
+            "week_start_str": week_start_str,
+            "accepted_count": accepted_count,
+            "pending_count": pending_count,
+            "rejected_count": rejected_count,
+            "skipped_count": skipped_count,
+            "total_days": len(days),
+            "has_accepted": accepted_count > 0,
+        }
+        return self.render_to_response(context)
+
+
+class AiPlanDayActionView(LoginRequiredMixin, View):
+    """View to accept/reject/regenerate a single day in the AI plan."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        week_start_str = request.POST.get("week_start")
+        action = request.POST.get("action")
+        day_index_str = request.POST.get("day_index")
+
+        if not all([week_start_str, action, day_index_str]):
+            messages.error(request, "Missing required parameters.")
+            return redirect("meal_planner:planner")
+
+        try:
+            day_index = int(day_index_str)
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid day index.")
+            return redirect("meal_planner:planner")
+
+        household = request.user.household
+        session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
+        plan_data = request.session.get(session_key)
+
+        if not plan_data:
+            messages.error(request, "No pending AI plan found.")
+            return redirect("meal_planner:planner")
+
+        days = plan_data.get("days", [])
+        if day_index < 0 or day_index >= len(days):
+            messages.error(request, "Invalid day index.")
+            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+
+        if action == "accept":
+            days[day_index]["status"] = "accepted"
+            messages.success(request, "Day accepted.")
+        elif action == "reject":
+            days[day_index]["status"] = "rejected"
+            messages.success(request, "Day rejected.")
+        elif action == "regenerate":
+            days[day_index]["status"] = "pending"
+            messages.success(request, "Day marked for regeneration.")
+        else:
+            messages.error(request, f"Unknown action: {action}")
+            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+
+        request.session[session_key] = plan_data
+        request.session.modified = True
+        return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+
+
+class AiPlanSaveView(LoginRequiredMixin, View):
+    """View to save accepted days from the AI plan to MealPlan records."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        week_start_str = request.POST.get("week_start")
+        if not week_start_str:
+            messages.error(request, "Week start date is required.")
+            return redirect("meal_planner:planner")
+
+        household = request.user.household
+        session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
+        plan_data = request.session.get(session_key)
+
+        if not plan_data:
+            messages.error(request, "No pending AI plan found.")
+            return redirect("meal_planner:planner")
+
+        days = plan_data.get("days", [])
+        accepted_days = [d for d in days if d["status"] == "accepted"]
+
+        if not accepted_days:
+            messages.info(request, "No accepted days to save.")
+            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+
+        created_count = 0
+        for day in accepted_days:
+            meal_date_str = day.get("date")
+            try:
+                meal_date = date.fromisoformat(meal_date_str)
+            except (ValueError, TypeError):
+                continue
+
+            for meal_data in day.get("meals", []):
+                meal_type = _normalize_meal_type(meal_data.get("meal_type", "dinner"))
+
+                slot_exists = MealPlan.objects.filter(
+                    household=household,
+                    meal_date=meal_date,
+                    meal_type=meal_type,
+                ).exists()
+                if slot_exists:
+                    continue
 
                 title = meal_data.get("title", "AI Meal")
                 description = meal_data.get("description", "")
                 cook_time = meal_data.get("cook_time_minutes", 30)
 
-                try:
-                    # Check slot is not already occupied
-                    slot_exists = MealPlan.objects.filter(
-                        household=household,
-                        meal_date=meal_date,
-                        meal_type=meal_type,
-                    ).exists()
-                    if slot_exists:
-                        continue
+                MealPlan.objects.create(
+                    household=household,
+                    meal_date=meal_date,
+                    meal_type=meal_type,
+                    custom_meal=f"{title}: {description}".strip(": ")[:500],
+                    notes=f"AI-generated | Cook time: {cook_time} min",
+                    ingredients=meal_data.get("ingredients", []),
+                )
+                created_count += 1
 
-                    meal = MealPlan.objects.create(
-                        household=household,
-                        meal_date=meal_date,
-                        meal_type=meal_type,
-                        custom_meal=f"{title}: {description}".strip(": ")[:500],
-                        notes=f"AI-generated | Cook time: {cook_time} min",
-                    )
-                    created_count += 1
-                except IntegrityError:
-                    # Slot already taken, skip
-                    continue
-
+        del request.session[session_key]
+        request.session.modified = True
         if created_count > 0:
             messages.success(
-                request, f"AI generated {created_count} meals for this week!"
+                request,
+                f"Saved {created_count} AI-generated meals! "
+                f"Check your Shopping List for missing ingredients.",
             )
         else:
-            messages.info(request, "AI generated no new meals (slots may already be filled)")
+            messages.info(request, "No new meals were saved (slots may already be filled).")
 
-        return redirect("meal_planner:planner_week", year=start_date.year, week=start_date.isocalendar()[1])
+        return redirect("meal_planner:planner")
+
+
+class AiPlanCancelView(LoginRequiredMixin, View):
+    """View to cancel the AI plan review and discard all pending data."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        week_start_str = request.POST.get("week_start")
+        household = request.user.household
+
+        if week_start_str:
+            session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
+            if session_key in request.session:
+                del request.session[session_key]
+                request.session.modified = True
+
+        messages.info(request, "AI plan review cancelled.")
+        return redirect("meal_planner:planner")

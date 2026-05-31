@@ -154,31 +154,34 @@ def generate_week_shopping_list(household, week_start, regenerate=False):
     if not created:
         shopping_week.items.all().delete()
 
+    # Fetch all meal plans for the week — both recipe-based and AI-generated
     meal_plans = (
         MealPlan.objects.filter(
             household=household,
             meal_date__gte=week_start,
             meal_date__lte=week_end,
-            recipe__isnull=False,
         )
         .select_related("recipe")
         .order_by("meal_date", "id")
     )
 
-    recipe_ids = [meal.recipe_id for meal in meal_plans if meal.recipe_id]
-    if not recipe_ids:
-        return shopping_week
+    # Split into recipe-based and AI meals
+    recipe_meal_plans = [m for m in meal_plans if m.recipe_id]
+    ai_meal_plans = [m for m in meal_plans if m.recipe_id is None and m.ingredients]
 
-    ingredient_links = list(
-        IngredientLink.objects.filter(recipe_id__in=recipe_ids)
-        .select_related("ingredient", "recipe", "inventory_item")
-        .order_by("recipe_id", "order", "id")
-    )
-
+    # --- Recipe-based meals: fetch ingredient links ---
+    recipe_ids = [meal.recipe_id for meal in recipe_meal_plans]
     links_by_recipe = defaultdict(list)
-    for link in ingredient_links:
-        links_by_recipe[link.recipe_id].append(link)
+    if recipe_ids:
+        ingredient_links = list(
+            IngredientLink.objects.filter(recipe_id__in=recipe_ids)
+            .select_related("ingredient", "recipe", "inventory_item")
+            .order_by("recipe_id", "order", "id")
+        )
+        for link in ingredient_links:
+            links_by_recipe[link.recipe_id].append(link)
 
+    # --- Load inventory ---
     inventory_items = InventoryItem.objects.filter(household=household)
     remaining_inventory = defaultdict(Decimal)
     inventory_category = {}
@@ -190,7 +193,8 @@ def generate_week_shopping_list(household, week_start, regenerate=False):
 
     aggregated = {}
 
-    for meal in meal_plans:
+    # --- Process recipe-based meals ---
+    for meal in recipe_meal_plans:
         for link in links_by_recipe.get(meal.recipe_id, []):
             name_key, canonical_unit = normalize_unit_key(link.ingredient.name, link.unit)
             ingredient_key = (name_key, canonical_unit)
@@ -222,6 +226,37 @@ def generate_week_shopping_list(household, week_start, regenerate=False):
                 }
 
             aggregated[aggregate_key]["quantity"] += needed
+
+    # --- Process AI meals (recipe=NULL, ingredients list populated) ---
+    # Build a set of normalized inventory item names for name-only matching.
+    # AI ingredients don't have real quantities/units, so we match by name.
+    inventory_name_set: set[str] = set()
+    for item in inventory_items:
+        normalized_name, _ = normalize_unit_key(item.name, item.unit)
+        inventory_name_set.add(normalized_name)
+
+    for meal in ai_meal_plans:
+        for ingredient_name in meal.ingredients:
+            if not ingredient_name or not isinstance(ingredient_name, str):
+                continue
+
+            ai_name_key, _ = normalize_unit_key(ingredient_name, "piece")
+
+            # Check if any inventory item covers this ingredient by name
+            if ai_name_key in inventory_name_set:
+                continue
+
+            aggregate_key = (ai_name_key, "piece", "other")
+            if aggregate_key not in aggregated:
+                aggregated[aggregate_key] = {
+                    "name": ingredient_name,
+                    "quantity": Decimal("0.00"),
+                    "unit": "piece",
+                    "category": "other",
+                    "source_recipe": None,
+                }
+
+            aggregated[aggregate_key]["quantity"] += Decimal("1.00")
 
     to_create = []
     for item in aggregated.values():
