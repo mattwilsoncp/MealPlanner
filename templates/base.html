@@ -1,9 +1,12 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Meal Planner{% endblock %}</title>
+    
+    <!-- Icon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'meal_planner_app/icons/icon.svg' %}">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -889,9 +892,12 @@
             <div class="max-w-[1600px] mx-auto flex items-center justify-between">
                 <div>
                     <a href="{% url 'home' %}" class="flex items-center gap-2 text-xl font-semibold" style="color: var(--text-primary); text-decoration: none;">
-                        <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none">
+                        <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect width="32" height="32" rx="8" fill="var(--brand-primary)"/>
-                            <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="16" cy="18" r="9" stroke="white" stroke-width="1.5" fill="none"/>
+                            <path d="M11 11v4M15 11v4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M10 14.5h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M13 15v5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
                         </svg>
                         <span class="hidden sm:inline">Meal Planner</span>
                     </a>
