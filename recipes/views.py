@@ -62,7 +62,7 @@ class RecipeListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = Recipe.objects.filter(
-            household=self.request.user.household, needs_review=False
+            household=self.request.user.household
         )
 
         search_q = self.request.GET.get("q")
@@ -335,7 +335,7 @@ Source Context:
 
         PROJECT_ROOT = Path(__file__).resolve().parent.parent
         youtube_url = form.cleaned_data["youtube_url"]
-        model = form.cleaned_data.get("model") or "qwen/qwen-turbo"
+        model = form.cleaned_data.get("model") or "openrouter/free"
 
         OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
         if not OPENROUTER_API_KEY:

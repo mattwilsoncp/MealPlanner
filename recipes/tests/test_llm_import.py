@@ -411,7 +411,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
         view = LLMRecipeImportView()
         with self.assertRaises(RuntimeError) as ctx:
             view._parse_with_llm(
-                MagicMock(), "qwen/qwen-turbo", {}, ""
+                MagicMock(), "openrouter/free", {}, ""
             )
         self.assertIn("No transcript available", str(ctx.exception))
 
@@ -427,7 +427,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             view._parse_with_llm(
                 mock_client,
-                "qwen/qwen-turbo",
+                "openrouter/free",
                 {"url": "https://youtube.com/watch?v=abc"},
                 "sample transcript text",
             )
@@ -446,7 +446,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
 
         result = view._parse_with_llm(
             mock_client,
-            "qwen/qwen-turbo",
+            "openrouter/free",
             {"url": "https://youtube.com/watch?v=abc"},
             "sample transcript",
         )
@@ -465,7 +465,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
 
         result = view._parse_with_llm(
             mock_client,
-            "qwen/qwen-turbo",
+            "openrouter/free",
             {"url": "https://youtube.com/watch?v=abc"},
             "sample transcript",
         )
@@ -486,7 +486,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
 
         result = view._parse_with_llm(
             mock_client,
-            "qwen/qwen-turbo",
+            "openrouter/free",
             {"url": "https://youtube.com/watch?v=abc"},
             "sample transcript",
         )
@@ -504,7 +504,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             view._parse_with_llm(
                 mock_client,
-                "qwen/qwen-turbo",
+                "openrouter/free",
                 {"url": "https://youtube.com/watch?v=abc"},
                 "sample transcript",
             )
@@ -875,7 +875,7 @@ class LLMRecipeImportViewFullIntegrationTests(TestCase):
                             self.url,
                             {
                                 "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                                "model": "qwen/qwen-turbo",
+                                "model": "openrouter/free",
                             },
                         )
 
@@ -916,7 +916,7 @@ class LLMRecipeImportViewFullIntegrationTests(TestCase):
                             {
                                 "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                                 "title": "My Custom Cookie Recipe",
-                                "model": "qwen/qwen-turbo",
+                                "model": "openrouter/free",
                             },
                         )
 

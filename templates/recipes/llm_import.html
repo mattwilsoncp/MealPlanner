@@ -3,7 +3,7 @@
 {% block title %}Import Recipe from YouTube{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto">
+<div class="max-w-2xl mx-auto">
     <div class="card-dark">
         <div class="p-8">
             <h1 class="text-2xl font-medium mb-2">Import from YouTube</h1>
@@ -44,12 +44,12 @@
                 <div class="mb-6">
                     <label class="label-dark" for="id_model">AI Model</label>
                     <select name="model" id="id_model" class="input-dark">
-                        <option value="qwen/qwen-turbo" {% if form.model.value == "qwen/qwen-turbo" %}selected{% endif %}>Qwen Turbo (Fast, Free)</option>
-                        <option value="qwen/qwen-plus" {% if form.model.value == "qwen/qwen-plus" %}selected{% endif %}>Qwen Plus</option>
-                        <option value="anthropic/claude-sonnet-4-20250514" {% if form.model.value == "anthropic/claude-sonnet-4-20250514" %}selected{% endif %}>Claude Sonnet</option>
+                        {% for value, label in form.fields.model.choices %}
+                        <option value="{{ value }}" {% if form.model.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                     <p class="text-xs mt-1" style="color: var(--text-light-gray);">
-                        Qwen Turbo is fastest and free. Claude Sonnet offers higher quality but uses more credits.
+                        All models are free through OpenRouter. "Auto" picks the best available and handles rate-limit fallback automatically.
                     </p>
                 </div>
 

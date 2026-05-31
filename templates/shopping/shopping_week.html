@@ -80,7 +80,7 @@
                             </td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
                             <td style="text-align: right;">
-                                <a href="{% url 'shopping:item_delete' item.pk %}" class="link-green text-sm">Delete</a>
+                                <button onclick="deleteShoppingItem({{ item.pk }})" class="link-green text-sm" style="background: none; border: none; cursor: pointer;">Delete</button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -110,7 +110,7 @@
 
 <script>
 function toggleShoppingItem(itemId, checkbox) {
-    fetch(`/shopping/toggle/${itemId}/`, {
+    fetch(`/shopping/api/item/${itemId}/toggle/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}',
@@ -128,14 +128,35 @@ function toggleShoppingItem(itemId, checkbox) {
     });
 }
 
-function clearWeekItems(weekStart) {
-    if (confirm('Clear all items for this week?')) {
-        fetch(`/shopping/clear/`, {
+function deleteShoppingItem(itemId) {
+    if (confirm('Delete this item?')) {
+        fetch(`/shopping/api/item/${itemId}/delete/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
                 'Content-Type': 'application/json'
             }
+        }).then(response => {
+            if (response.ok) {
+                // Remove the item row from the table
+                const row = document.getElementById(`item-row-${itemId}`);
+                if (row) {
+                    row.remove();
+                }
+            }
+        });
+    }
+}
+
+function clearWeekItems(weekStart) {
+    if (confirm('Clear all items for this week?')) {
+        fetch(`/shopping/api/week/clear/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ week_start: weekStart })
         }).then(response => {
             if (response.ok) {
                 window.location.reload();

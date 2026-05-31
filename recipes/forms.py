@@ -51,11 +51,14 @@ class LLMImportForm(forms.Form):
     model = forms.ChoiceField(
         label="AI Model",
         choices=[
-            ("qwen/qwen-turbo", "Qwen Turbo (Fast, Free)"),
-            ("qwen/qwen-plus", "Qwen Plus"),
-            ("anthropic/claude-sonnet-4-20250514", "Claude Sonnet"),
+            ("openrouter/free", "Auto (Best Free Model, Fallback)"),
+            ("deepseek/deepseek-v4-flash:free", "DeepSeek V4 Flash (Free)"),
+            ("google/gemma-4-31b-it:free", "Gemma 4 31B (Free)"),
+            ("meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B (Free)"),
+            ("qwen/qwen3-coder:free", "Qwen3 Coder (Free)"),
+            ("nousresearch/hermes-3-llama-3.1-405b:free", "Hermes 3 405B (Free)"),
         ],
-        initial="qwen/qwen-turbo",
+        initial="openrouter/free",
         required=False,
         widget=forms.Select(attrs={"class": "input-dark"}),
     )

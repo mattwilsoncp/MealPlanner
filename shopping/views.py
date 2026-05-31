@@ -115,7 +115,15 @@ class DeleteShoppingItemView(LoginRequiredMixin, View):
 
 class ClearShoppingWeekView(LoginRequiredMixin, View):
     def post(self, request):
-        week_start = _parse_week_start(request.POST.get("week_start"))
+        import json
+        
+        # Handle both form data and JSON
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            week_start = _parse_week_start(data.get("week_start"))
+        else:
+            week_start = _parse_week_start(request.POST.get("week_start"))
+            
         cleared_count, _ = ShoppingListItem.objects.filter(
             shopping_week__household=request.user.household,
             shopping_week__week_start=week_start,

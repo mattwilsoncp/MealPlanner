@@ -1,6 +1,7 @@
 # Core
 Django>=6.0
 psycopg[binary]>=3.0
+python-dotenv>=1.0
 
 # Database URL (for DATABASE_URL env var support)
 dj-database-url>=2.0
