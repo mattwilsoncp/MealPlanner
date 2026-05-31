@@ -199,7 +199,7 @@ class LLMImportFormTests(TestCase):
         form = LLMImportForm(
             data={
                 "youtube_url": "https://www.youtube.com/watch?v=abc123",
-                "model": "anthropic/claude-sonnet-4-20250514",
+                "model": "openrouter/free",
             }
         )
         self.assertTrue(form.is_valid(), form.errors)

@@ -14,26 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
-COPY . .
-
-# Static & media dirs
-RUN mkdir -p /app/media /app/static_collected
-
-# Collect static files at build time
-RUN python manage.py collectstatic --noinput || true
-
 EXPOSE 8000
 
-# Gunicorn — non-dev, production
-CMD [\
-    "gunicorn", \
-    "--bind", "0.0.0.0:8000", \
-    "--workers", "3", \
-    "--threads", "2", \
-    "--timeout", "120", \
-    "--access-logfile", "-", \
-    "--error-logfile", "-", \
-    "--log-level", "info", \
-    "meal_planner.wsgi:application" \
-]
+# Dev server with auto-reload — source is mounted at runtime
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

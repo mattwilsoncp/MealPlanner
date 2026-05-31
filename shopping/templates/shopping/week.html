@@ -3,14 +3,37 @@
 {% block title %}Shopping List{% endblock %}
 
 {% block content %}
-<section>
-  <h1>Shopping List - Week of {{ week_start }}</h1>
-  <ul>
-    {% for item in shopping_items %}
-      <li>{{ item.quantity }} {{ item.unit }} {{ item.name }}</li>
-    {% empty %}
-      <li>No items needed this week.</li>
-    {% endfor %}
-  </ul>
-</section>
+<div class="space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold">Shopping List</h1>
+            <p style="color: var(--text-secondary);">Week of {{ week_start }}</p>
+        </div>
+    </div>
+
+    {% if shopping_items %}
+    <div class="grid gap-3">
+        {% for item in shopping_items %}
+        <div class="card px-5 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--brand-primary);"></span>
+                <span class="font-medium">{{ item.name }}</span>
+            </div>
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <span class="text-sm" style="color: var(--text-secondary);">
+                    {{ item.quantity }} {{ item.unit }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+        <h2 class="text-xl font-semibold mb-2">Nothing to buy</h2>
+        <p style="color: var(--text-secondary);">
+            No shopping items this week. Plan some meals or add items to your inventory to generate a list.
+        </p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

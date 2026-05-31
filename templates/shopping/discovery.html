@@ -3,7 +3,7 @@
 {% block title %}What Can I Make?{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="space-y-6">
     <div class="card-dark">
         <div class="p-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -20,7 +20,7 @@
     </div>
 
     {% if matches %}
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {% for match in matches %}
         <article class="card-dark">
             <div class="p-6 space-y-4">

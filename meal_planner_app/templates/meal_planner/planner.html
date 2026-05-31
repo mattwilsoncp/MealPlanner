@@ -70,7 +70,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
     {% for day in week_days %}
     <div class="card p-4" style="min-height: 280px;">
         <div class="text-center mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
@@ -84,13 +84,33 @@
             {% for meal in day.meals|get_item:meal_type %}
             <div class="p-2 mb-2 rounded-lg" style="background: var(--bg-page); border: 1px solid var(--border-subtle);">
                 {% if meal.recipe %}
-                <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
+                <div class="flex items-center justify-between gap-1">
+                    <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
+                    <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-ghost" style="padding: 2px; color: var(--text-muted);" title="Delete meal">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
                 <div class="flex gap-2">
                     <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link text-xs js-open-recipe-modal">View</button>
                     <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link text-xs">Cook</a>
                 </div>
                 {% else %}
-                <div class="text-sm" style="color: var(--text-muted);">{{ meal.notes|truncatechars:30 }}</div>
+                <div class="flex items-center justify-between gap-1">
+                    <div class="text-sm" style="color: var(--text-muted);">{{ meal.notes|truncatechars:30 }}</div>
+                    <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-ghost" style="padding: 2px; color: var(--text-muted);" title="Delete meal">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
                 {% endif %}
             </div>
             {% endfor %}
