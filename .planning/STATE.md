@@ -45,10 +45,10 @@ Django-based meal planning web application with recipe management, weekly meal p
 
 ## Current Position
 
-Phase: 02-ai-service-integration (Plan 01-01)
-Plan: 01-01-PLAN.md (6 tasks, all complete)
-Status: Phase complete
-Last activity: 2026-05-31 — Phase 2 delivered: AIService/ResponseParser/GenerateAiPlanView + 33 tests
+Phase: 03-ai-plan-review-acceptance (Plan 01-01)
+Plan: 03-01-PLAN.md (9 tasks, planned)
+Status: Plan ready
+Last activity: 2026-05-31 — Phase 3 planned: review workflow with 9 tasks (preview/accept/reject/regenerate/save/cancel + template + tests)
 
 **Previous v1.1 milestone completed:**
 - Phase 1: URL Import & Validation ✓
@@ -82,6 +82,7 @@ Last activity: 2026-05-31 — Phase 2 delivered: AIService/ResponseParser/Genera
 
 - ✅ Phase 1 (Preferences) complete: MealPreferences model + preferences UI + 13 tests
 - ✅ Phase 2 (AI Service) complete: AIService, ResponseParser, GenerateAiPlanView + 33 tests
+- 📋 Phase 3 (Review & Acceptance) planned: 9 tasks covering preview/accept/reject/regenerate/save/cancel + template + tests
 - v1.2 milestone: AI Meal Suggestions
 - Weekly meal generation via opencode.ai free models
 - 1-2 person household preference
