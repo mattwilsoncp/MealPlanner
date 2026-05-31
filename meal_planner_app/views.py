@@ -2,6 +2,7 @@ import calendar
 from datetime import date, datetime, timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import IntegrityError
 from django.db.models import Q
 from django.views.generic import (
     TemplateView,
@@ -377,6 +378,50 @@ class RateMealView(LoginRequiredMixin, View):
         meal.save()
 
         return JsonResponse({"success": True, "rating": rating})
+
+
+class MoveMealView(LoginRequiredMixin, View):
+    """API view for moving a meal plan entry to another date or meal slot."""
+
+    def post(self, request, meal_id):
+        meal = get_object_or_404(MealPlan, pk=meal_id, household=request.user.household)
+        meal_date = request.POST.get("meal_date")
+        meal_type = request.POST.get("meal_type")
+
+        if not meal_date or not meal_type:
+            return JsonResponse(
+                {"error": "meal_date and meal_type are required"}, status=400
+            )
+
+        if meal_type not in MealType.values:
+            return JsonResponse({"error": "Invalid meal type"}, status=400)
+
+        try:
+            parsed_date = datetime.strptime(meal_date, "%Y-%m-%d").date()
+        except ValueError:
+            return JsonResponse({"error": "Invalid date format"}, status=400)
+
+        meal.meal_date = parsed_date
+        meal.meal_type = meal_type
+
+        try:
+            meal.save(update_fields=["meal_date", "meal_type", "updated_at"])
+        except IntegrityError:
+            return JsonResponse(
+                {
+                    "error": "That planner slot is already taken for this meal.",
+                },
+                status=409,
+            )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "meal_id": meal.id,
+                "meal_date": meal.meal_date.strftime("%Y-%m-%d"),
+                "meal_type": meal.meal_type,
+            }
+        )
 
 
 class RecipeSelectView(LoginRequiredMixin, View):

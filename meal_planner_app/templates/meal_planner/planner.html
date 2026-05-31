@@ -4,6 +4,18 @@
 {% block title %}Weekly Meal Planner{% endblock %}
 
 {% block content %}
+<style>
+    .planner-drop-zone.is-drag-over {
+        outline: 2px dashed var(--brand-primary);
+        outline-offset: 2px;
+        background: rgba(95, 157, 255, 0.08);
+    }
+
+    .planner-meal-card.is-dragging {
+        opacity: 0.5;
+    }
+</style>
+
 <div class="mb-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -80,10 +92,10 @@
         </div>
 
         {% for meal_type in planner_meal_types %}
-        <div class="mb-4">
+        <div class="mb-4 planner-drop-zone" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}">
             <div class="font-medium text-xs mb-2 uppercase tracking-wide" style="color: var(--text-muted); text-transform: capitalize;">{{ meal_type }}</div>
             {% for meal in day.meals|get_item:meal_type %}
-            <div class="p-2 mb-2 rounded-lg" style="background: var(--bg-page); border: 1px solid var(--border-subtle);">
+            <div class="p-2 mb-2 rounded-lg planner-meal-card" draggable="true" data-meal-id="{{ meal.pk }}" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="background: var(--bg-page); border: 1px solid var(--border-subtle); cursor: grab;">
                 {% if meal.recipe %}
                 <div class="flex items-center justify-between gap-1">
                     <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
@@ -129,6 +141,20 @@
 const modal = document.getElementById('recipe-modal');
 const recipeDetailApiTemplate = "{% url 'recipes:recipe_detail_api' 999999 %}";
 const recipeDetailPageTemplate = "{% url 'recipes:recipe_detail' 999999 %}";
+const moveMealUrlTemplate = "{% url 'meal_planner:move_meal' 999999 %}";
+let draggedMeal = null;
+
+function getCsrfToken() {
+    const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (csrfInput) {
+        return csrfInput.value;
+    }
+
+    const csrfCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='));
+    return csrfCookie ? csrfCookie.split('=')[1] : '';
+}
 
 function openRecipeModal(recipeId) {
     fetch(recipeDetailApiTemplate.replace('999999', recipeId))
@@ -155,10 +181,97 @@ function closeModal() {
     modal.classList.remove('flex');
 }
 
+function handleMealDragStart(event) {
+    draggedMeal = event.currentTarget;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggedMeal.dataset.mealId);
+    draggedMeal.classList.add('is-dragging');
+}
+
+function handleMealDragEnd(event) {
+    event.currentTarget.classList.remove('is-dragging');
+    draggedMeal = null;
+    document.querySelectorAll('.planner-drop-zone').forEach(zone => {
+        zone.classList.remove('is-drag-over');
+    });
+}
+
+function handleDropZoneDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    event.currentTarget.classList.add('is-drag-over');
+}
+
+function handleDropZoneDragLeave(event) {
+    event.currentTarget.classList.remove('is-drag-over');
+}
+
+function moveMeal(mealId, mealDate, mealType) {
+    const body = new URLSearchParams({
+        meal_date: mealDate,
+        meal_type: mealType,
+    });
+
+    return fetch(moveMealUrlTemplate.replace('999999', mealId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            'X-CSRFToken': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: body.toString(),
+    }).then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || 'Unable to move meal.');
+        }
+        return data;
+    });
+}
+
+function handleDropZoneDrop(event) {
+    event.preventDefault();
+    const dropZone = event.currentTarget;
+    dropZone.classList.remove('is-drag-over');
+
+    if (!draggedMeal) {
+        return;
+    }
+
+    const mealId = draggedMeal.dataset.mealId;
+    const sourceDate = draggedMeal.dataset.mealDate;
+    const sourceType = draggedMeal.dataset.mealType;
+    const targetDate = dropZone.dataset.mealDate;
+    const targetType = dropZone.dataset.mealType;
+
+    if (sourceDate === targetDate && sourceType === targetType) {
+        return;
+    }
+
+    moveMeal(mealId, targetDate, targetType)
+        .then(() => {
+            window.location.reload();
+        })
+        .catch(error => {
+            window.alert(error.message);
+        });
+}
+
 document.querySelectorAll('.js-open-recipe-modal').forEach(button => {
     button.addEventListener('click', function () {
         openRecipeModal(this.dataset.recipeId);
     });
+});
+
+document.querySelectorAll('.planner-meal-card').forEach(card => {
+    card.addEventListener('dragstart', handleMealDragStart);
+    card.addEventListener('dragend', handleMealDragEnd);
+});
+
+document.querySelectorAll('.planner-drop-zone').forEach(zone => {
+    zone.addEventListener('dragover', handleDropZoneDragOver);
+    zone.addEventListener('dragleave', handleDropZoneDragLeave);
+    zone.addEventListener('drop', handleDropZoneDrop);
 });
 
 document.getElementById('recipe-modal-close-icon').addEventListener('click', closeModal);

@@ -40,6 +40,7 @@ urlpatterns = [
         "meal/<int:meal_id>/delete/", views.DeleteMealView.as_view(), name="delete_meal"
     ),
     path("meal/<int:meal_id>/rate/", views.RateMealView.as_view(), name="rate_meal"),
+    path("meal/<int:meal_id>/move/", views.MoveMealView.as_view(), name="move_meal"),
     # On-Hand Ideas URLs
     path("on-hand/", views.OnHandIdeasView.as_view(), name="on_hand_ideas"),
     path(

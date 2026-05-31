@@ -840,6 +840,92 @@ class RateMealViewTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
+class MoveMealViewTests(TestCase):
+    """Tests for MoveMealView (drag-and-drop meal moves)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Test Household")
+        self.user = User.objects.create_user(
+            username="alice",
+            email="alice@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.recipe = Recipe.objects.create(
+            household=self.household,
+            title="Test Recipe",
+            needs_review=False,
+        )
+        self.meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=date.today(),
+            meal_type=MealType.DINNER,
+            recipe=self.recipe,
+        )
+
+    def test_move_meal_updates_date_and_type(self):
+        """POST moves the meal to a different planner slot."""
+        self.client.login(username="alice", password="pass1234")
+        new_date = date.today() + timedelta(days=2)
+
+        response = self.client.post(
+            reverse("meal_planner:move_meal", args=[self.meal.pk]),
+            {"meal_date": str(new_date), "meal_type": MealType.LUNCH},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.meal.refresh_from_db()
+        self.assertEqual(self.meal.meal_date, new_date)
+        self.assertEqual(self.meal.meal_type, MealType.LUNCH)
+
+    def test_move_meal_rejects_invalid_type(self):
+        """POST with invalid meal type returns 400."""
+        self.client.login(username="alice", password="pass1234")
+
+        response = self.client.post(
+            reverse("meal_planner:move_meal", args=[self.meal.pk]),
+            {"meal_date": str(date.today()), "meal_type": "brunch"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_move_meal_rejects_conflicting_slot(self):
+        """POST to an occupied slot returns conflict."""
+        self.client.login(username="alice", password="pass1234")
+        target_date = date.today() + timedelta(days=1)
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=target_date,
+            meal_type=MealType.DINNER,
+            recipe=self.recipe,
+        )
+
+        response = self.client.post(
+            reverse("meal_planner:move_meal", args=[self.meal.pk]),
+            {"meal_date": str(target_date), "meal_type": MealType.DINNER},
+        )
+
+        self.assertEqual(response.status_code, 409)
+
+    def test_move_other_household_meal_returns_404(self):
+        """Moving another household's meal returns 404."""
+        other_household = Household.objects.create(name="Other")
+        User.objects.create_user(
+            username="bob",
+            email="bob@example.com",
+            password="pass1234",
+            household=other_household,
+        )
+        self.client.login(username="bob", password="pass1234")
+
+        response = self.client.post(
+            reverse("meal_planner:move_meal", args=[self.meal.pk]),
+            {"meal_date": str(date.today()), "meal_type": MealType.LUNCH},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+
 # =============================================================================
 # Side Dish Tests (via AddMealView)
 # =============================================================================
