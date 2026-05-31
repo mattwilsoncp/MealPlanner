@@ -21,8 +21,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 
-from .models import MealPlan, MealType, SideDish
-from .forms import MealPlanForm, SideDishForm
+from .models import MealPlan, MealType, SideDish, MealPreferences
+from .forms import MealPlanForm, SideDishForm, MealPreferencesForm
 from recipes.models import Recipe
 from ingredients.models import IngredientLink
 from inventory.models import InventoryItem
@@ -937,3 +937,27 @@ class MarkIngredientUsedView(LoginRequiredMixin, View):
             return JsonResponse({"error": "Ingredient link not found"}, status=404)
 
         return JsonResponse({"success": True, "is_used": is_used})
+
+
+class MealPreferencesView(LoginRequiredMixin, UpdateView):
+    """View for editing meal planning preferences."""
+
+    model = MealPreferences
+    form_class = MealPreferencesForm
+    template_name = "meal_planner/preferences.html"
+    success_url = reverse_lazy("meal_planner:planner")
+
+    def get_object(self, queryset=None):
+        """Get existing preferences or create a new unsaved instance."""
+        household = self.request.user.household
+        obj, _ = MealPreferences.objects.get_or_create(household=household)
+        return obj
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, "Preferences saved")
+        return super().form_valid(form)

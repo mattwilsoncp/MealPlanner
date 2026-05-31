@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Defining v1.2 Requirements |
+| Status | Phase 1 Complete |
 | Mode | YOLO |
 | Granularity | Coarse |
-| Phase | Not Started (defining requirements) |
+| Phase | 01-preferences-configuration (Complete) |
 
 ---
 
@@ -45,10 +45,10 @@ Django-based meal planning web application with recipe management, weekly meal p
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-31 — Milestone v1.2 started
+Phase: 01-preferences-configuration (Plan 01-01)
+Plan: 01-01-PLAN.md (8 tasks, all complete)
+Status: Phase complete
+Last activity: 2026-05-31 — Phase 1 delivered: MealPreferences model + preferences UI
 
 **Previous v1.1 milestone completed:**
 - Phase 1: URL Import & Validation ✓
@@ -80,11 +80,7 @@ Last activity: 2026-05-31 — Milestone v1.2 started
 
 ## Notes
 
-- Research validated the user's spec as comprehensive
-- Key insight: normalize ingredient data from day one
-- 4 phases recommended (coarse granularity)
-- 63 requirements mapped across phases
-- v1.2 milestone now starting: AI Meal Suggestions
-- Weekly meal generation via opencode.ai free models (deepseek-v4-flash-free, mimo-v2.5-free, nemotron-3-super-free)
-- Novel AI-generated recipes based on inventory + preferences
+- ✅ Phase 1 (Preferences) complete: MealPreferences model + preferences UI + 13 tests
+- v1.2 milestone started: AI Meal Suggestions
+- Weekly meal generation via opencode.ai free models
 - 1-2 person household preference

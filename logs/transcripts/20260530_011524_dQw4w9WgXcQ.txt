@@ -1,0 +1,14 @@
+Source URL: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+Video ID: dQw4w9WgXcQ
+Metadata Status: ok
+Metadata Error: 
+Title: Test Recipe
+Thumbnail URL: https://example.com/thumb.jpg
+
+Description:
+Test description
+
+Full Transcript:
+Welcome to this recipe video. Today we're making chocolate chip cookies.
+We'll need 2 cups of flour, 1 cup of sugar, and 2 eggs.
+Mix the ingredients together and bake at 350 degrees for 20 minutes.

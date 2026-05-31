@@ -10,6 +10,7 @@ urlpatterns = [
         views.PlannerHomeView.as_view(),
         name="planner_week",
     ),
+    path("preferences/", views.MealPreferencesView.as_view(), name="preferences"),
     path("planner/navigate/", views.week_navigate, name="planner_navigate"),
     path("api/meals/", views.json_week_meals, name="api_meals"),
     # Recipe API endpoints

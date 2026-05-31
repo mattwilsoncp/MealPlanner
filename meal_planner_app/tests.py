@@ -8,8 +8,9 @@ from django.test import TestCase, RequestFactory
 from django.urls import reverse
 
 from household.models import Household
-from meal_planner_app.models import MealPlan, MealType, SideDish
+from meal_planner_app.models import MealPlan, MealType, SideDish, MealPreferences
 from meal_planner_app.forms import MealPlanForm
+from meal_planner_app.models import CookingEffort
 from recipes.models import Recipe
 
 
@@ -1031,3 +1032,203 @@ class RecipeSelectViewTests(TestCase):
         """RecipeSelectView unauthenticated returns 302."""
         response = self.client.get(reverse("meal_planner:api_recipe_select"))
         self.assertEqual(response.status_code, 302)
+
+
+# =============================================================================
+# MealPreferences Tests
+# =============================================================================
+
+
+class MealPreferencesModelTests(TestCase):
+    """Tests for MealPreferences model."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Pref Test Household")
+
+    def test_create_preferences_defaults(self):
+        """MealPreferences creates with sensible defaults."""
+        prefs = MealPreferences.objects.create(household=self.household)
+        self.assertEqual(prefs.servings_per_meal, 2)
+        self.assertEqual(prefs.cooking_effort, "moderate")
+        self.assertEqual(prefs.cuisine_preferences, [])
+        self.assertEqual(prefs.dietary_restrictions, [])
+        self.assertEqual(prefs.excluded_ingredients, [])
+
+    def test_preferences_one_to_one_household(self):
+        """Each household has exactly one MealPreferences."""
+        MealPreferences.objects.create(household=self.household)
+        with self.assertRaises(IntegrityError):
+            MealPreferences.objects.create(household=self.household)
+
+    def test_preferences_str(self):
+        """String representation includes household name."""
+        prefs = MealPreferences.objects.create(household=self.household)
+        self.assertIn(str(self.household), str(prefs))
+
+    def test_preferences_with_cuisines_and_restrictions(self):
+        """MealPreferences stores array fields correctly."""
+        prefs = MealPreferences.objects.create(
+            household=self.household,
+            cuisine_preferences=["italian", "mexican"],
+            dietary_restrictions=["vegetarian", "gluten-free"],
+            cooking_effort=CookingEffort.QUICK,
+            servings_per_meal=1,
+            excluded_ingredients=["cilantro", "mushrooms"],
+        )
+        prefs.refresh_from_db()
+        self.assertEqual(prefs.cuisine_preferences, ["italian", "mexican"])
+        self.assertEqual(prefs.dietary_restrictions, ["vegetarian", "gluten-free"])
+        self.assertEqual(prefs.cooking_effort, CookingEffort.QUICK)
+        self.assertEqual(prefs.servings_per_meal, 1)
+        self.assertEqual(prefs.excluded_ingredients, ["cilantro", "mushrooms"])
+
+
+class MealPreferencesViewTests(TestCase):
+    """Tests for MealPreferencesView."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Pref View Household")
+        self.user = User.objects.create_user(
+            username="prefuser",
+            email="prefuser@example.com",
+            password="pass1234",
+        )
+        self.user.household = self.household
+        self.user.save()
+
+    def test_view_requires_login(self):
+        """Unauthenticated users are redirected."""
+        response = self.client.get(reverse("meal_planner:preferences"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_view_creates_preferences_on_first_visit(self):
+        """GET creates MealPreferences if none exist."""
+        self.client.login(username="prefuser", password="pass1234")
+        response = self.client.get(reverse("meal_planner:preferences"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            MealPreferences.objects.filter(household=self.household).exists()
+        )
+
+    def test_view_loads_existing_preferences(self):
+        """GET loads existing MealPreferences."""
+        MealPreferences.objects.create(
+            household=self.household,
+            cuisine_preferences=["italian"],
+            cooking_effort="elaborate",
+            servings_per_meal=4,
+        )
+        self.client.login(username="prefuser", password="pass1234")
+        response = self.client.get(reverse("meal_planner:preferences"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_saves_new_preferences(self):
+        """POST saves preferences and redirects to planner."""
+        self.client.login(username="prefuser", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:preferences"),
+            {
+                "cuisine_preferences": ["italian", "mexican"],
+                "dietary_restrictions": ["vegetarian"],
+                "cooking_effort": "quick",
+                "servings_per_meal": 2,
+                "excluded_ingredients": "cilantro, mushrooms",
+            },
+        )
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+        prefs = MealPreferences.objects.get(household=self.household)
+        self.assertEqual(prefs.cuisine_preferences, ["italian", "mexican"])
+        self.assertEqual(prefs.dietary_restrictions, ["vegetarian"])
+        self.assertEqual(prefs.cooking_effort, "quick")
+        self.assertEqual(prefs.excluded_ingredients, ["cilantro", "mushrooms"])
+
+    def test_view_defaults_to_two_servings(self):
+        """Unspecified servings_per_meal defaults to 2."""
+        self.client.login(username="prefuser", password="pass1234")
+        self.client.post(
+            reverse("meal_planner:preferences"),
+            {
+                "cuisine_preferences": [],
+                "dietary_restrictions": [],
+                "cooking_effort": "moderate",
+                "servings_per_meal": 2,
+                "excluded_ingredients": "",
+            },
+        )
+        prefs = MealPreferences.objects.get(household=self.household)
+        self.assertEqual(prefs.servings_per_meal, 2)
+
+
+class MealPreferencesFormTests(TestCase):
+    """Tests for MealPreferencesForm."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Form Test Household")
+
+    def test_form_empty_excluded_ingredients(self):
+        """Empty excluded_ingredients returns empty list."""
+        from meal_planner_app.forms import MealPreferencesForm
+
+        data = {
+            "cuisine_preferences": [],
+            "dietary_restrictions": [],
+            "cooking_effort": "moderate",
+            "servings_per_meal": 2,
+            "excluded_ingredients": "",
+        }
+        form = MealPreferencesForm(data=data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["excluded_ingredients"], [])
+
+    def test_form_parses_excluded_ingredients(self):
+        """Comma-separated excluded_ingredients parsed correctly."""
+        from meal_planner_app.forms import MealPreferencesForm
+
+        data = {
+            "cuisine_preferences": [],
+            "dietary_restrictions": [],
+            "cooking_effort": "moderate",
+            "servings_per_meal": 2,
+            "excluded_ingredients": "cilantro, mushrooms,  anchovies ",
+        }
+        form = MealPreferencesForm(data=data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(
+            form.cleaned_data["excluded_ingredients"],
+            ["cilantro", "mushrooms", "anchovies"],
+        )
+
+    def test_form_requires_cooking_effort(self):
+        """cooking_effort is required."""
+        from meal_planner_app.forms import MealPreferencesForm
+
+        data = {
+            "cuisine_preferences": [],
+            "dietary_restrictions": [],
+            "cooking_effort": "",
+            "servings_per_meal": 2,
+            "excluded_ingredients": "",
+        }
+        form = MealPreferencesForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("cooking_effort", form.errors)
+
+    def test_form_servings_within_range(self):
+        """servings_per_meal must be between 1 and 8."""
+        from meal_planner_app.forms import MealPreferencesForm
+
+        data = {
+            "cuisine_preferences": [],
+            "dietary_restrictions": [],
+            "cooking_effort": "moderate",
+            "servings_per_meal": 0,
+            "excluded_ingredients": "",
+        }
+        form = MealPreferencesForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("servings_per_meal", form.errors)
+
+        data["servings_per_meal"] = 9
+        form = MealPreferencesForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("servings_per_meal", form.errors)
