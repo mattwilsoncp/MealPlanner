@@ -1,5 +1,9 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from json import dumps as json_dumps, loads as json_loads
+from unittest.mock import MagicMock, patch
+
+import httpx
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -1232,3 +1236,496 @@ class MealPreferencesFormTests(TestCase):
         form = MealPreferencesForm(data=data)
         self.assertFalse(form.is_valid())
         self.assertIn("servings_per_meal", form.errors)
+
+
+# =============================================================================
+# AI Service Tests
+# =============================================================================
+
+
+class AIServiceTests(TestCase):
+    """Tests for AIService prompt construction, retry logic, and error handling."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="AI Test Household")
+        self.start_date = date(2026, 6, 1)
+        self.end_date = date(2026, 6, 7)
+        self.prefs = MealPreferences.objects.create(
+            household=self.household,
+            cuisine_preferences=["italian", "mexican"],
+            dietary_restrictions=["vegetarian"],
+            cooking_effort="quick",
+            servings_per_meal=2,
+            excluded_ingredients=["cilantro"],
+        )
+        self.valid_ai_response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "breakfast",
+                        "title": "Veggie Scramble",
+                        "description": "Quick veggie eggs",
+                        "cook_time_minutes": 15,
+                        "ingredients": ["eggs", "bell peppers"],
+                    },
+                    {
+                        "meal_type": "dinner",
+                        "title": "Pasta Primavera",
+                        "description": "Light pasta with veggies",
+                        "cook_time_minutes": 30,
+                        "ingredients": ["pasta", "zucchini", "tomatoes"],
+                    },
+                ],
+            },
+        ]
+
+    @patch("httpx.Client.post")
+    def test_prompt_includes_preferences(self, mock_post):
+        """The prompt sent to AI includes user's cuisine and dietary preferences."""
+        from meal_planner_app.services.ai_service import AIService
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": json_dumps(self.valid_ai_response)}}]
+        }
+        mock_post.return_value = mock_response
+        mock_response.raise_for_status = lambda: None
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(len(result.meals), 1)
+        self.assertEqual(result.meals[0]["date"], "2026-06-01")
+        self.assertEqual(len(result.meals[0]["meals"]), 2)
+
+        # Verify the prompt included preference info
+        call_args = mock_post.call_args
+        payload = call_args[1]["json"]
+        user_msg = payload["messages"][1]["content"]
+        self.assertIn("italian", user_msg)
+        self.assertIn("vegetarian", user_msg)
+        self.assertIn("Quick", user_msg)  # cooking effort
+        self.assertIn("cilantro", user_msg)  # excluded
+
+    @patch("httpx.Client.post")
+    def test_retry_on_transient_error(self, mock_post):
+        """AIService retries on HTTP 503, succeeds on third attempt."""
+        from meal_planner_app.services.ai_service import AIService
+
+        call_count = 0
+
+        def side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                resp = MagicMock()
+                resp.status_code = 503
+                resp.raise_for_status.side_effect = httpx.HTTPStatusError(
+                    "Server Error", request=MagicMock(), response=resp
+                )
+                return resp
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json.return_value = {
+                "choices": [{"message": {"content": json_dumps(self.valid_ai_response)}}]
+            }
+            resp.raise_for_status = lambda: None
+            return resp
+
+        mock_post.side_effect = side_effect
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(call_count, 3)
+
+    @patch("httpx.Client.post")
+    def test_fails_after_max_retries(self, mock_post):
+        """AIService returns error when all retries are exhausted."""
+        from meal_planner_app.services.ai_service import AIService
+
+        mock_response = MagicMock()
+        mock_response.status_code = 503
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "Server Error", request=MagicMock(), response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertFalse(result.success)
+        self.assertIn("3 attempts", result.error.lower())
+
+    @patch("httpx.Client.post")
+    def test_client_error_not_retried(self, mock_post):
+        """AIService does not retry on 4xx client errors."""
+        from meal_planner_app.services.ai_service import AIService
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "Bad Request", request=MagicMock(), response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertFalse(result.success)
+        self.assertIn("400", result.error)
+
+    @patch("httpx.Client.post")
+    def test_generates_without_preferences(self, mock_post):
+        """AIService works when no MealPreferences exist yet (falls back to defaults)."""
+        from meal_planner_app.services.ai_service import AIService
+
+        # Delete the preferences created in setUp
+        self.prefs.delete()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": json_dumps(self.valid_ai_response)}}]
+        }
+        mock_post.return_value = mock_response
+        mock_response.raise_for_status = lambda: None
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(len(result.meals), 1)
+
+
+# =============================================================================
+# Response Parser Tests
+# =============================================================================
+
+
+class ResponseParserTests(TestCase):
+    """Tests for the AI response parser."""
+
+    def test_parse_valid_json(self):
+        """Parse a valid JSON array of daily meals."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "breakfast",
+                        "title": "Oatmeal",
+                        "description": "Warm oats",
+                        "cook_time_minutes": 10,
+                        "ingredients": ["oats", "milk"],
+                    },
+                ],
+            },
+        ]
+        result = parse_weekly_plan(response)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["date"], "2026-06-01")
+        self.assertEqual(result[0]["meals"][0]["title"], "Oatmeal")
+
+    def test_parse_nested_in_dict(self):
+        """Parse response wrapped in a 'days' key."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = {
+            "days": [
+                {
+                    "date": "2026-06-01",
+                    "meals": [
+                        {
+                            "meal_type": "lunch",
+                            "title": "Salad",
+                            "description": "Green salad",
+                            "cook_time_minutes": 15,
+                            "ingredients": ["lettuce", "tomato"],
+                        },
+                    ],
+                },
+            ],
+        }
+        result = parse_weekly_plan(response)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["meals"][0]["title"], "Salad")
+
+    def test_parse_empty_list_raises(self):
+        """Empty array raises ValueError."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        with self.assertRaises(ValueError):
+            parse_weekly_plan([])
+
+    def test_parse_non_list_raises(self):
+        """Non-list response raises ValueError."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        with self.assertRaises(ValueError):
+            parse_weekly_plan({"not": "a list"})
+
+    def test_parse_missing_date_skips_day(self):
+        """Day entry without a date is skipped."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = [
+            {"meals": [{"meal_type": "dinner", "title": "Pizza"}]},
+            {
+                "date": "2026-06-02",
+                "meals": [{"meal_type": "dinner", "title": "Pasta"}],
+            },
+        ]
+        result = parse_weekly_plan(response)
+        self.assertEqual(len(result), 1)
+
+    def test_parse_invalid_date_format_skips_day(self):
+        """Day entry with bad date format is skipped."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = [
+            {
+                "date": "not-a-date",
+                "meals": [{"meal_type": "breakfast", "title": "Eggs"}],
+            },
+        ]
+        with self.assertRaises(ValueError):
+            parse_weekly_plan(response)
+
+    def test_parse_missing_title_skips_meal(self):
+        """Meal entry without a title is skipped within a day."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {},
+                    {
+                        "meal_type": "dinner",
+                        "title": "Tacos",
+                        "cook_time_minutes": 25,
+                    },
+                ],
+            },
+        ]
+        result = parse_weekly_plan(response)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result[0]["meals"]), 1)
+        self.assertEqual(result[0]["meals"][0]["title"], "Tacos")
+
+    def test_parse_cook_time_defaults(self):
+        """Missing or invalid cook_time defaults to 30."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "breakfast",
+                        "title": "Toast",
+                        "cook_time_minutes": "invalid",
+                    },
+                    {
+                        "meal_type": "lunch",
+                        "title": "Soup",
+                    },
+                ],
+            },
+        ]
+        result = parse_weekly_plan(response)
+        for meal in result[0]["meals"]:
+            self.assertEqual(meal["cook_time_minutes"], 30)
+
+    def test_parse_ingredients_as_string(self):
+        """Comma-separated ingredient string is parsed correctly."""
+        from meal_planner_app.services.response_parser import parse_weekly_plan
+
+        response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "dinner",
+                        "title": "Pasta",
+                        "ingredients": "pasta,  tomatoes,  basil ",
+                    },
+                ],
+            },
+        ]
+        result = parse_weekly_plan(response)
+        self.assertEqual(
+            result[0]["meals"][0]["ingredients"],
+            ["pasta", "tomatoes", "basil"],
+        )
+
+
+# =============================================================================
+# GenerateAiPlanView Tests
+# =============================================================================
+
+
+class GenerateAiPlanViewTests(TestCase):
+    """Tests for GenerateAiPlanView."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="AI View Test Household")
+        self.user = User.objects.create_user(
+            username="aiview",
+            email="aiview@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.prefs = MealPreferences.objects.create(
+            household=self.household,
+            cuisine_preferences=["italian"],
+            cooking_effort="moderate",
+        )
+        self.week_start = date(2026, 6, 1)
+        self.valid_ai_response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "breakfast",
+                        "title": "Oatmeal",
+                        "description": "Warm oats",
+                        "cook_time_minutes": 10,
+                        "ingredients": ["oats", "milk"],
+                    },
+                    {
+                        "meal_type": "dinner",
+                        "title": "Pasta",
+                        "description": "Pasta with sauce",
+                        "cook_time_minutes": 25,
+                        "ingredients": ["pasta", "tomato sauce"],
+                    },
+                ],
+            },
+            {
+                "date": "2026-06-02",
+                "meals": [
+                    {
+                        "meal_type": "lunch",
+                        "title": "Salad",
+                        "description": "Fresh salad",
+                        "cook_time_minutes": 10,
+                        "ingredients": ["lettuce", "tomato"],
+                    },
+                ],
+            },
+        ]
+
+    def test_requires_login(self):
+        """Unauthenticated POST redirects to login."""
+        response = self.client.post(reverse("meal_planner:generate_ai_plan"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_post_missing_week_start(self):
+        """POST without week_start shows error and redirects."""
+        self.client.login(username="aiview", password="pass1234")
+        response = self.client.post(reverse("meal_planner:generate_ai_plan"))
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_post_requires_preferences_first(self):
+        """Redirects to preferences page if no MealPreferences exists."""
+        self.prefs.delete()
+        self.client.login(username="aiview", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(response, reverse("meal_planner:preferences"))
+
+    @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
+    def test_post_creates_meals_on_success(self, mock_api_call):
+        """Successful AI generation creates MealPlan entries."""
+        mock_api_call.return_value = self.valid_ai_response
+
+        self.client.login(username="aiview", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+
+        # Should create 3 meals (2 on day 1, 1 on day 2)
+        meals = MealPlan.objects.filter(household=self.household)
+        self.assertEqual(meals.count(), 3)
+        self.assertRedirects(
+            response,
+            reverse(
+                "meal_planner:planner_week",
+                args=[self.week_start.year, self.week_start.isocalendar()[1]],
+            ),
+        )
+
+    @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
+    def test_post_handles_api_error(self, mock_api_call):
+        """API error shows message and redirects."""
+        mock_api_call.side_effect = ValueError("API connection failed")
+
+        self.client.login(username="aiview", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+
+        meals = MealPlan.objects.filter(household=self.household)
+        self.assertEqual(meals.count(), 0)
+        self.assertEqual(response.status_code, 302)
+
+    @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
+    def test_skips_existing_slots(self, mock_api_call):
+        """Existing meals in a slot are preserved (IntegrityError caught)."""
+        mock_api_call.return_value = self.valid_ai_response
+
+        # Pre-fill one slot
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.week_start,
+            meal_type="breakfast",
+            custom_meal="Existing Meal",
+        )
+
+        self.client.login(username="aiview", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+
+        # Existing meal preserved + 2 new meals created for other slots
+        meals = MealPlan.objects.filter(household=self.household)
+        self.assertEqual(meals.count(), 3)  # 1 existing + 2 new

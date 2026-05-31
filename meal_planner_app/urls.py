@@ -92,4 +92,10 @@ urlpatterns = [
         views.MarkIngredientUsedView.as_view(),
         name="toggle_ingredient_used",
     ),
+    # AI Meal Generation
+    path(
+        "generate-ai-plan/",
+        views.GenerateAiPlanView.as_view(),
+        name="generate_ai_plan",
+    ),
 ]
