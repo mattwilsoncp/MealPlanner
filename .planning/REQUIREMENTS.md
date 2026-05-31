@@ -1,87 +1,132 @@
-# v1.1 Requirements — YouTube Recipe Import
+# Requirements: Meal Planner v1.2 — AI Meal Suggestions
 
-## Active Requirements
+**Defined:** 2026-05-31
+**Core Value:** Help users plan their weekly meals with AI-generated suggestions that use available inventory and match their preferences.
 
-### IMP-01: YouTube URL Import
-- [ ] **IMP-01**: User can paste a YouTube video URL into a field and initiate import
-- [ ] **IMP-02**: YouTube URL is validated before processing (must be valid youtube.com or youtu.be URL)
-- [ ] **IMP-03**: Import shows loading state while fetching video data
-- [ ] **IMP-04**: Invalid URL shows clear error message
+## v1.2 Requirements
 
-### IMP-02: Metadata Fetch
-- [ ] **IMP-05**: Video title is fetched and pre-populated in recipe form
-- [ ] **IMP-06**: Video description is fetched and used for parsing
-- [ ] **IMP-07**: Thumbnail URL is captured for recipe photo
+### Preferences Configuration
 
-### IMP-03: Ingredient Parsing
-- [ ] **IMP-08**: Ingredients are parsed from video description using NLP/entity recognition
-- [ ] **IMP-09**: Parsed ingredients are pre-populated in ingredient form rows
-- [ ] **IMP-10**: User can edit/delete parsed ingredients before saving
-- [ ] **IMP-11**: Unparseable ingredients are noted for user to add manually
+- [ ] **PREF-01**: User can set cuisine preferences (multi-select: Italian, Mexican, Asian, American, Mediterranean, etc.)
+- [ ] **PREF-02**: User can set dietary restrictions (checkboxes: vegetarian, vegan, gluten-free, dairy-free, low-carb, keto)
+- [ ] **PREF-03**: User can set cooking effort preference (quick <30min, moderate 30-60min, elaborate >60min)
+- [ ] **PREF-04**: User can set servings per meal (1-8, default 2)
+- [ ] **PREF-05**: User can add excluded ingredients (free-text tags)
+- [ ] **PREF-06**: User can view and edit their current preferences on a dedicated page
+- [ ] **PREF-07**: Preferences persist per household and are restored on return
 
-### IMP-04: Instruction Parsing
-- [ ] **IMP-12**: Instructions/steps are parsed from description or timestamps
-- [ ] **IMP-13**: Parsed instructions are pre-populated in instruction form rows
-- [ ] **IMP-14**: User can edit/delete parsed instructions before saving
-- [ ] **IMP-15**: User can add additional steps manually
+### AI Meal Generation
 
-### IMP-05: Pre-populated Form
-- [ ] **IMP-16**: Recipe form is opened pre-filled with imported data
-- [ ] **IMP-17**: User can modify any field before saving recipe
-- [ ] **IMP-18**: User can add photo if none was imported (user upload)
+- [ ] **GENR-01**: User can click "Generate AI Plan" on the weekly planner page
+- [ ] **GENR-02**: System collects preferences, available inventory, and date range before generating
+- [ ] **GENR-03**: System sends a structured prompt to opencode.ai/zen/v1 (OpenAI-compatible API)
+- [ ] **GENR-04**: System uses a free model (deepseek-v4-flash-free, mimo-v2.5-free, or nemotron-3-super-free)
+- [ ] **GENR-05**: System handles API errors gracefully with a user-friendly error message
+- [ ] **GENR-06**: System retries on transient API failures with exponential backoff (max 3 attempts)
+- [ ] **GENR-07**: System parses AI response as structured JSON (title, meal_type, description, cook_time, ingredients per day)
+- [ ] **GENR-08**: Generated plan covers all days in the selected date range
+- [ ] **GENR-09**: System prefers using available inventory items (especially near-expiry perishables) in suggestions
+- [ ] **GENR-10**: System generates unique, varied meals (no repeating similar dishes in the same week)
+- [ ] **GENR-11**: Generated meals respect dietary restrictions (validated in prompt AND output)
 
-### IMP-06: Photo Handling
-- [ ] **IMP-19**: YouTube thumbnail is used as default recipe photo
-- [ ] **IMP-20**: User can replace thumbnail with their own uploaded photo
-- [ ] **IMP-21**: User can remove photo entirely if desired
+### AI Plan Review & Acceptance
 
----
+- [ ] **REVW-01**: User can preview the full AI-generated week before saving
+- [ ] **REVW-02**: User can accept an individual day's meal suggestion
+- [ ] **REVW-03**: User can regenerate an individual day's meal suggestion
+- [ ] **REVW-04**: User can reject an individual day's meal suggestion (removes from preview)
+- [ ] **REVW-05**: User can accept all remaining suggestions at once ("Save Plan")
+- [ ] **REVW-06**: Accepting a suggestion saves it as a MealPlan record with custom_meal text
+- [ ] **REVW-07**: Saving a plan does not overwrite existing meal entries (skips populated slots)
+- [ ] **REVW-08**: User can cancel the AI plan generation mid-process
 
-## Future Requirements
+### Shopping List Integration
 
-These are out of scope for v1.1 but noted for future milestones:
+- [ ] **SHOP-01**: System calculates missing ingredients between AI-generated meals and current inventory
+- [ ] **SHOP-02**: Missing ingredients are added to the shopping list upon plan acceptance
+- [ ] **SHOP-03**: Items already in inventory are noted and not duplicated in shopping list
 
-- URL import from other recipe sites (Allrecipes, NYT Cooking, etc.)
-- Bulk import (multiple URLs at once)
-- Import history/duplicate detection
-- Collaborative household import sharing
-- Import from PDF recipe files
+### Testing
 
----
+- [ ] **TEST-01**: AI service unit tests cover prompt construction, response parsing, error handling
+- [ ] **TEST-02**: Preference model and views have full test coverage
+- [ ] **TEST-03**: AI plan review workflow is tested (accept/regenerate/reject/save combinations)
+- [ ] **TEST-04**: Overall test coverage stays at or above 94%
+
+## v2 Requirements (Deferred)
+
+### Enhanced Preferences
+
+- **PREF-08**: User can set calorie/nutritional targets
+- **PREF-09**: User can set budget per meal/per week
+- **PREF-10**: User can rate past AI-generated meals to improve future suggestions
+
+### Advanced AI Features
+
+- **GENR-12**: AI suggests meal prep timings (what to cook when)
+- **GENR-13**: AI generates step-by-step cooking instructions
+- **GENR-14**: System learns from user's accept/reject patterns over time
+- **GENR-15**: User can generate plans for specific occasions (e.g., "dinner party for 6")
+
+### Export & Printing
+
+- **SHOP-04**: User can print/export the weekly menu
+- **SHOP-05**: User can print a consolidated grocery list
 
 ## Out of Scope
 
-Explicitly excluded from v1.1:
-
-- **Other recipe sites**: Only YouTube for v1.1 (simpler validation)
-- **Video transcript parsing**: Requires YouTube API key for captions; use description only for v1.1
-- **Batch import**: Single URL at a time in v1.1
-- **OCR from video frames**: Too complex for initial release
-
----
+| Feature | Reason |
+|---------|--------|
+| Nutritional / calorie calculation | High complexity, requires food database. Defer to v2+ |
+| AI image generation for recipes | Would require separate model/workflow. Not core to planning |
+| Multi-user collaborative planning | Beyond hh scope for v1.2 |
+| Offline/Air-gapped mode | Requires local model serving. Focus on API-based for now |
+| Meal prep timeline scheduler | Adds scheduling complexity. Defer to future release |
+| Integration with external meal delivery | Business logic outside current scope |
 
 ## Traceability
 
 | Requirement | Phase | Status |
-|--------------|-------|--------|
-| IMP-01 | Phase 1 | Complete |
-| IMP-02 | Phase 1 | Complete |
-| IMP-03 | Phase 1 | Complete |
-| IMP-04 | Phase 1 | Complete |
-| IMP-05 | Phase 2 | Ready |
-| IMP-06 | Phase 2 | Ready |
-| IMP-07 | Phase 2 | Ready |
-| IMP-08 | Phase 3 | Pending |
-| IMP-09 | Phase 3 | Pending |
-| IMP-10 | Phase 3 | Pending |
-| IMP-11 | Phase 3 | Pending |
-| IMP-12 | Phase 3 | Pending |
-| IMP-13 | Phase 3 | Pending |
-| IMP-14 | Phase 3 | Pending |
-| IMP-15 | Phase 3 | Pending |
-| IMP-16 | Phase 4 | Pending |
-| IMP-17 | Phase 4 | Pending |
-| IMP-18 | Phase 4 | Pending |
-| IMP-19 | Phase 4 | Pending |
-| IMP-20 | Phase 4 | Pending |
-| IMP-21 | Phase 4 | Pending |
+|-------------|-------|--------|
+| PREF-01 | Phase 1 | Pending |
+| PREF-02 | Phase 1 | Pending |
+| PREF-03 | Phase 1 | Pending |
+| PREF-04 | Phase 1 | Pending |
+| PREF-05 | Phase 1 | Pending |
+| PREF-06 | Phase 1 | Pending |
+| PREF-07 | Phase 1 | Pending |
+| GENR-01 | Phase 2 | Pending |
+| GENR-02 | Phase 2 | Pending |
+| GENR-03 | Phase 2 | Pending |
+| GENR-04 | Phase 2 | Pending |
+| GENR-05 | Phase 2 | Pending |
+| GENR-06 | Phase 2 | Pending |
+| GENR-07 | Phase 2 | Pending |
+| GENR-08 | Phase 2 | Pending |
+| GENR-09 | Phase 2 | Pending |
+| GENR-10 | Phase 2 | Pending |
+| GENR-11 | Phase 2 | Pending |
+| REVW-01 | Phase 3 | Pending |
+| REVW-02 | Phase 3 | Pending |
+| REVW-03 | Phase 3 | Pending |
+| REVW-04 | Phase 3 | Pending |
+| REVW-05 | Phase 3 | Pending |
+| REVW-06 | Phase 3 | Pending |
+| REVW-07 | Phase 3 | Pending |
+| REVW-08 | Phase 3 | Pending |
+| SHOP-01 | Phase 4 | Pending |
+| SHOP-02 | Phase 4 | Pending |
+| SHOP-03 | Phase 4 | Pending |
+| TEST-01 | Phase 2 | Pending |
+| TEST-02 | Phase 1 | Pending |
+| TEST-03 | Phase 3 | Pending |
+| TEST-04 | Phase 4 | Pending |
+
+**Coverage:**
+- v1.2 requirements: 30 total
+- Mapped to phases: 30
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-05-31*
+*Last updated: 2026-05-31 after initial definition*

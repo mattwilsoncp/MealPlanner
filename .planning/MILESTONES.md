@@ -1,6 +1,17 @@
 # Milestones
 
-## v1 — Shipped 2026-04-19
+## v1.1 — YouTube Recipe Import — Shipped 2026-05-??
+- **Phases:** 4
+- **Requirements:** 21
+- **Features:** URL import & validation, metadata fetch, content parsing, form population & photo
+- **Key outcome:** Users can import recipes from YouTube URLs with automatic metadata, ingredient, and instruction extraction.
+
+## v1.2 — AI Meal Suggestions (Current)
+
+- **Status:** Requirements defined
+- **Phases:** 4
+- **Requirements:** 30
+- **Goal:** Generate creative weekly meal plans using free models from opencode.ai based on user preferences and available inventory.
 
 - **Phases:** 6
 - **Plans:** 21
