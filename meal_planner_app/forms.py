@@ -165,6 +165,32 @@ class MealPlanForm(forms.ModelForm):
                 "Please select a recipe or enter a custom meal name."
             )
 
+        # Check for duplicate meal in same slot
+        household = getattr(self.request, "user", None)
+        if household and hasattr(household, "household"):
+            household = household.household
+        else:
+            return cleaned_data
+
+        meal_date = cleaned_data.get("meal_date")
+        meal_type = cleaned_data.get("meal_type")
+
+        if recipe and meal_date and meal_type:
+            qs = MealPlan.objects.filter(
+                household=household,
+                meal_date=meal_date,
+                meal_type=meal_type,
+                recipe=recipe,
+            )
+            # Exclude current instance on edit
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise forms.ValidationError(
+                    f"This recipe is already planned for {meal_type} on {meal_date}."
+                )
+
         return cleaned_data
 
 

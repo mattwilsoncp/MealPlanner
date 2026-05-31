@@ -12,6 +12,8 @@ from django.test import TestCase, RequestFactory
 from django.urls import reverse
 
 from household.models import Household
+from ingredients.models import Ingredient, IngredientLink
+from instructions.models import Instruction
 from meal_planner_app.models import MealPlan, MealType, SideDish, MealPreferences
 from meal_planner_app.forms import MealPlanForm
 from meal_planner_app.models import CookingEffort
@@ -1671,8 +1673,8 @@ class GenerateAiPlanViewTests(TestCase):
         self.assertRedirects(response, reverse("meal_planner:preferences"))
 
     @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
-    def test_post_creates_meals_on_success(self, mock_api_call):
-        """Successful AI generation creates MealPlan entries."""
+    def test_post_redirects_to_review_on_success(self, mock_api_call):
+        """Successful AI generation redirects to review page and stores in session."""
         mock_api_call.return_value = self.valid_ai_response
 
         self.client.login(username="aiview", password="pass1234")
@@ -1681,16 +1683,20 @@ class GenerateAiPlanViewTests(TestCase):
             {"week_start": str(self.week_start)},
         )
 
-        # Should create 3 meals (2 on day 1, 1 on day 2)
+        # Should redirect to review page (not directly create meals)
         meals = MealPlan.objects.filter(household=self.household)
-        self.assertEqual(meals.count(), 3)
+        self.assertEqual(meals.count(), 0)
         self.assertRedirects(
             response,
-            reverse(
-                "meal_planner:planner_week",
-                args=[self.week_start.year, self.week_start.isocalendar()[1]],
-            ),
+            f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
+            fetch_redirect_response=False,
         )
+
+        # Session data should exist
+        session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+        self.assertIn(session_key, self.client.session)
+        plan_data = self.client.session[session_key]
+        self.assertEqual(plan_data["week_start"], str(self.week_start))
 
     @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
     def test_post_handles_api_error(self, mock_api_call):
@@ -1708,17 +1714,18 @@ class GenerateAiPlanViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
     @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
-    def test_skips_existing_slots(self, mock_api_call):
-        """Existing meals in a slot are preserved (IntegrityError caught)."""
+    def test_marks_skipped_for_filled_days(self, mock_api_call):
+        """Pre-filled slots cause day to be marked 'skipped' in session."""
         mock_api_call.return_value = self.valid_ai_response
 
-        # Pre-fill one slot
-        MealPlan.objects.create(
-            household=self.household,
-            meal_date=self.week_start,
-            meal_type="breakfast",
-            custom_meal="Existing Meal",
-        )
+        # Pre-fill all slots for day 1
+        for mt in [t[0] for t in MealType.choices]:
+            MealPlan.objects.create(
+                household=self.household,
+                meal_date=self.week_start,
+                meal_type=mt,
+                custom_meal="Existing Meal",
+            )
 
         self.client.login(username="aiview", password="pass1234")
         response = self.client.post(
@@ -1726,6 +1733,1133 @@ class GenerateAiPlanViewTests(TestCase):
             {"week_start": str(self.week_start)},
         )
 
-        # Existing meal preserved + 2 new meals created for other slots
+        self.assertRedirects(
+            response,
+            f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
+            fetch_redirect_response=False,
+        )
+
+        # Check session: day 0 should be skipped, day 1 should be pending
+        session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+        plan_data = self.client.session[session_key]
+        self.assertEqual(plan_data["days"][0]["status"], "skipped")
+        self.assertEqual(plan_data["days"][1]["status"], "pending")
+
+
+class AiPlanReviewViewTests(TestCase):
+    """Tests for AiPlanReviewView (GET /ai-plan/review/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Review Test Household")
+        self.user = User.objects.create_user(
+            username="reviewuser",
+            email="review@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.week_start = date(2026, 6, 1)
+        self.review_url = reverse("meal_planner:ai_plan_review")
+        self.session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+        self.valid_session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "pending",
+                    "day_name": "Monday",
+                    "formatted_date": "Jun 1",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "Oatmeal",
+                            "description": "Warm oats",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["oats", "milk"],
+                        },
+                    ],
+                },
+                {
+                    "index": 1,
+                    "date": "2026-06-02",
+                    "status": "accepted",
+                    "day_name": "Tuesday",
+                    "formatted_date": "Jun 2",
+                    "meals": [
+                        {
+                            "meal_type": "dinner",
+                            "title": "Pasta",
+                            "description": "Pasta with sauce",
+                            "cook_time_minutes": 25,
+                            "ingredients": ["pasta", "tomato sauce"],
+                        },
+                    ],
+                },
+            ],
+        }
+
+    def test_requires_login(self):
+        """Unauthenticated GET redirects to login."""
+        response = self.client.get(self.review_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_no_week_start(self):
+        """GET without week_start shows error and redirects to planner."""
+        self.client.login(username="reviewuser", password="pass1234")
+        response = self.client.get(self.review_url)
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_no_session_data(self):
+        """GET with week_start but no session data redirects with info message."""
+        self.client.login(username="reviewuser", password="pass1234")
+        response = self.client.get(
+            self.review_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_renders_review_page(self):
+        """GET with session data renders review template with day cards."""
+        self.client.login(username="reviewuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = self.valid_session_data
+        session.save()
+
+        response = self.client.get(
+            self.review_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "meal_planner/ai_plan_review.html")
+        self.assertContains(response, "Monday")
+        self.assertContains(response, "Tuesday")
+        self.assertContains(response, "Oatmeal")
+        self.assertContains(response, "Pasta")
+
+    def test_display_counts(self):
+        """Review page shows correct accepted/pending/rejected counts."""
+        data = self.valid_session_data.copy()
+        data["days"] = [
+            {"index": 0, "date": "2026-06-01", "status": "pending", "meals": []},
+            {"index": 1, "date": "2026-06-02", "status": "accepted", "meals": []},
+            {"index": 2, "date": "2026-06-03", "status": "rejected", "meals": []},
+        ]
+        self.client.login(username="reviewuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = data
+        session.save()
+
+        response = self.client.get(
+            self.review_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1 accepted")
+        self.assertContains(response, "1 pending")
+        self.assertContains(response, "1 rejected")
+
+    def test_empty_plan_shows_info(self):
+        """Review page with empty days redirects with info."""
+        data = self.valid_session_data.copy()
+        data["days"] = []
+        self.client.login(username="reviewuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = data
+        session.save()
+
+        response = self.client.get(
+            self.review_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+
+class AiPlanDayActionViewTests(TestCase):
+    """Tests for AiPlanDayActionView (POST /ai-plan/day-action/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Day Action Test Household")
+        self.user = User.objects.create_user(
+            username="dayaction",
+            email="dayaction@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.week_start = date(2026, 6, 1)
+        self.action_url = reverse("meal_planner:ai_plan_day_action")
+        self.review_url = reverse("meal_planner:ai_plan_review")
+        self.session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+
+        self.session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "pending",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "Oatmeal",
+                            "description": "Warm oats",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["oats", "milk"],
+                        },
+                    ],
+                },
+                {
+                    "index": 1,
+                    "date": "2026-06-02",
+                    "status": "pending",
+                    "meals": [],
+                },
+            ],
+        }
+
+    def _init_session(self):
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+    def test_requires_login(self):
+        """Unauthenticated POST redirects to login."""
+        response = self.client.post(self.action_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_missing_params(self):
+        """POST with missing params shows error and redirects."""
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_invalid_day_index(self):
+        """POST with invalid day index shows error and stays on review."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "accept",
+                "day_index": "99",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+    def test_accept_day(self):
+        """POST with action=accept updates day status to accepted."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "accept",
+                "day_index": "0",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+        session = self.client.session
+        plan_data = session[self.session_key]
+        self.assertEqual(plan_data["days"][0]["status"], "accepted")
+
+    def test_reject_day(self):
+        """POST with action=reject updates day status to rejected."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject",
+                "day_index": "0",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+        session = self.client.session
+        plan_data = session[self.session_key]
+        self.assertEqual(plan_data["days"][0]["status"], "rejected")
+
+    def test_unknown_action(self):
+        """POST with unknown action stays on review with error."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "unknown",
+                "day_index": "0",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+        session = self.client.session
+        plan_data = session[self.session_key]
+        self.assertEqual(plan_data["days"][0]["status"], "pending")
+
+    def test_missing_action(self):
+        """POST without action redirects to planner with error."""
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "day_index": "0",
+            },
+        )
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+
+class AiPlanSaveViewTests(TestCase):
+    """Tests for AiPlanSaveView (POST /ai-plan/save/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Save Test Household")
+        self.user = User.objects.create_user(
+            username="saveuser",
+            email="save@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.week_start = date(2026, 6, 1)
+        self.save_url = reverse("meal_planner:ai_plan_save")
+        self.review_url = reverse("meal_planner:ai_plan_review")
+        self.session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+
+    def test_requires_login(self):
+        """Unauthenticated POST redirects to login."""
+        response = self.client.post(self.save_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_no_accepted_days(self):
+        """POST with no accepted days redirects to review with info."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "pending",
+                    "meals": [
+                        {
+                            "meal_type": "dinner",
+                            "title": "Test Meal",
+                            "description": "Desc",
+                            "cook_time_minutes": 20,
+                            "ingredients": ["x"],
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        response = self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+        self.assertEqual(MealPlan.objects.filter(household=self.household).count(), 0)
+
+    def test_saves_accepted_days(self):
+        """POST with accepted days creates MealPlan entries."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "Oatmeal",
+                            "description": "Warm oats",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["oats", "milk"],
+                        },
+                        {
+                            "meal_type": "dinner",
+                            "title": "Pasta",
+                            "description": "Pasta with sauce",
+                            "cook_time_minutes": 25,
+                            "ingredients": ["pasta", "tomato"],
+                        },
+                    ],
+                },
+                {
+                    "index": 1,
+                    "date": "2026-06-02",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "lunch",
+                            "title": "Salad",
+                            "description": "Fresh salad",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["lettuce"],
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        response = self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+
         meals = MealPlan.objects.filter(household=self.household)
-        self.assertEqual(meals.count(), 3)  # 1 existing + 2 new
+        self.assertEqual(meals.count(), 3)
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn(self.session_key, self.client.session)
+
+    def test_skips_filled_slots(self):
+        """Pre-existing meals in a slot are not overwritten."""
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.week_start,
+            meal_type="breakfast",
+            custom_meal="Existing Meal",
+        )
+
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "AI Oatmeal",
+                            "description": "AI version",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["oats"],
+                        },
+                        {
+                            "meal_type": "dinner",
+                            "title": "Pasta",
+                            "description": "AI version",
+                            "cook_time_minutes": 25,
+                            "ingredients": ["pasta"],
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+
+        meals = MealPlan.objects.filter(household=self.household)
+        self.assertEqual(meals.count(), 2)
+
+    def test_missing_week_start(self):
+        """POST without week_start redirects to planner."""
+        self.client.login(username="saveuser", password="pass1234")
+        response = self.client.post(self.save_url)
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_no_session_data(self):
+        """POST with no session data redirects to planner."""
+        self.client.login(username="saveuser", password="pass1234")
+        response = self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_saves_ingredients_from_session(self):
+        """Accepted meals persist their ingredients list to MealPlan."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "Oatmeal",
+                            "description": "Warm oats",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["oats", "milk", "banana"],
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+
+        meal = MealPlan.objects.get(
+            household=self.household,
+            meal_date=date(2026, 6, 1),
+            meal_type="breakfast",
+        )
+        self.assertEqual(meal.ingredients, ["oats", "milk", "banana"])
+
+    def test_saves_without_ingredients_defaults_to_empty(self):
+        """Accepted meals without ingredients field default to empty list."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "dinner",
+                            "title": "Pasta",
+                            "description": "Pasta with sauce",
+                            "cook_time_minutes": 25,
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+
+        meal = MealPlan.objects.get(
+            household=self.household,
+            meal_date=date(2026, 6, 1),
+            meal_type="dinner",
+        )
+        self.assertEqual(meal.ingredients, [])
+
+    def test_saves_with_empty_ingredients(self):
+        """Accepted meals with empty ingredients list saved as empty."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "snack",
+                            "title": "Fruit",
+                            "description": "Fresh fruit",
+                            "cook_time_minutes": 5,
+                            "ingredients": [],
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+
+        meal = MealPlan.objects.get(
+            household=self.household,
+            meal_date=date(2026, 6, 1),
+            meal_type="snack",
+        )
+        self.assertEqual(meal.ingredients, [])
+
+
+class AiPlanCancelViewTests(TestCase):
+    """Tests for AiPlanCancelView (POST /ai-plan/cancel/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Cancel Test Household")
+        self.user = User.objects.create_user(
+            username="canceluser",
+            email="cancel@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.week_start = date(2026, 6, 1)
+        self.cancel_url = reverse("meal_planner:ai_plan_cancel")
+        self.session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+
+    def test_requires_login(self):
+        """Unauthenticated POST redirects to login."""
+        response = self.client.post(self.cancel_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_cancels_session(self):
+        """POST with week_start clears session and redirects."""
+        self.client.login(username="canceluser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = {"week_start": str(self.week_start), "days": []}
+        session.save()
+
+        self.assertIn(self.session_key, self.client.session)
+
+        response = self.client.post(
+            self.cancel_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertNotIn(self.session_key, self.client.session)
+        self.assertEqual(response.status_code, 302)
+
+    def test_cancel_without_week_start(self):
+        """POST without week_start redirects to planner."""
+        self.client.login(username="canceluser", password="pass1234")
+        response = self.client.post(self.cancel_url)
+        self.assertRedirects(response, reverse("meal_planner:planner"))
+
+    def test_cancel_creates_no_meals(self):
+        """Cancelling the plan creates no MealPlan entries."""
+        self.client.login(username="canceluser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = {"week_start": str(self.week_start), "days": []}
+        session.save()
+
+        self.client.post(
+            self.cancel_url,
+            {"week_start": str(self.week_start)},
+        )
+        self.assertEqual(MealPlan.objects.filter(household=self.household).count(), 0)
+
+
+class AiPlanWorkflowIntegrationTests(TestCase):
+    """Integration tests for the complete AI plan workflow end-to-end."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Workflow Test Household")
+        self.user = User.objects.create_user(
+            username="workflow",
+            email="workflow@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.prefs = MealPreferences.objects.create(
+            household=self.household,
+            cuisine_preferences=["italian"],
+            cooking_effort="moderate",
+        )
+        self.week_start = date(2026, 6, 1)
+        self.valid_ai_response = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "dinner",
+                        "title": "Pasta",
+                        "description": "Pasta with sauce",
+                        "cook_time_minutes": 25,
+                        "ingredients": ["pasta", "tomato"],
+                    },
+                ],
+            },
+        ]
+
+    @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
+    def test_full_generate_accept_save_flow(self, mock_api_call):
+        """Complete flow: generate - review - accept - save."""
+        mock_api_call.return_value = self.valid_ai_response
+
+        self.client.login(username="workflow", password="pass1234")
+
+        response = self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+        self.assertRedirects(
+            response,
+            f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
+            fetch_redirect_response=False,
+        )
+
+        response = self.client.post(
+            reverse("meal_planner:ai_plan_day_action"),
+            {
+                "week_start": str(self.week_start),
+                "action": "accept",
+                "day_index": "0",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
+        )
+
+        response = self.client.post(
+            reverse("meal_planner:ai_plan_save"),
+            {"week_start": str(self.week_start)},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        meals = MealPlan.objects.filter(household=self.household)
+        self.assertEqual(meals.count(), 1)
+        self.assertIn("Pasta", meals[0].custom_meal)
+
+    @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
+    def test_generate_reject_flow(self, mock_api_call):
+        """Flow: generate - reject - verify status updated."""
+        mock_api_call.return_value = self.valid_ai_response
+
+        self.client.login(username="workflow", password="pass1234")
+
+        self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+
+        self.client.post(
+            reverse("meal_planner:ai_plan_day_action"),
+            {
+                "week_start": str(self.week_start),
+                "action": "reject",
+                "day_index": "0",
+            },
+        )
+
+        session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+        plan_data = self.client.session[session_key]
+        self.assertEqual(plan_data["days"][0]["status"], "rejected")
+
+
+# =============================================================================
+# Tests for On-Hand Ideas Views
+# =============================================================================
+
+
+class OnHandIdeasViewTests(TestCase):
+    """Tests for OnHandIdeasView (GET /on-hand/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="OnHand Test")
+        self.user = User.objects.create_user(
+            username="onhanduser",
+            email="onhand@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.url = reverse("meal_planner:on_hand_ideas")
+
+        # Create some recipes — one on-hand, one not
+        self.recipe_on_hand = Recipe.objects.create(
+            household=self.household,
+            title="On Hand Recipe",
+            on_hand_idea=True,
+            needs_review=False,
+        )
+        self.recipe_normal = Recipe.objects.create(
+            household=self.household,
+            title="Normal Recipe",
+            on_hand_idea=False,
+            needs_review=False,
+        )
+
+    def test_requires_login(self):
+        """Unauthenticated GET redirects to login."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_returns_on_hand_recipes_in_context(self):
+        """GET returns only recipes with on_hand_idea=True."""
+        self.client.login(username="onhanduser", password="pass1234")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "meal_planner/on_hand_ideas.html")
+        recipes = response.context["on_hand_recipes"]
+        self.assertEqual(len(recipes), 1)
+        self.assertEqual(recipes[0].title, "On Hand Recipe")
+
+    def test_rating_zero_when_no_rating_exists(self):
+        """Recipe rating is 0 when no Rating records exist."""
+        self.client.login(username="onhanduser", password="pass1234")
+        response = self.client.get(self.url)
+        recipes = response.context["on_hand_recipes"]
+        self.assertEqual(recipes[0].rating, 0)
+
+    def test_other_household_not_shown(self):
+        """Recipes from other households are excluded."""
+        other_household = Household.objects.create(name="Other")
+        other_recipe = Recipe.objects.create(
+            household=other_household,
+            title="Other's On Hand",
+            on_hand_idea=True,
+            needs_review=False,
+        )
+        self.client.login(username="onhanduser", password="pass1234")
+        response = self.client.get(self.url)
+        recipes = response.context["on_hand_recipes"]
+        self.assertEqual(len(recipes), 1)
+        self.assertNotIn(other_recipe, recipes)
+
+
+class ToggleOnHandIdeaViewTests(TestCase):
+    """Tests for ToggleOnHandIdeaView (POST /api/recipe/<id>/toggle-on-hand/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="ToggleOnHand Test")
+        self.user = User.objects.create_user(
+            username="toggleonuser",
+            email="toggleon@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.recipe = Recipe.objects.create(
+            household=self.household,
+            title="Toggle Recipe",
+            on_hand_idea=False,
+            needs_review=False,
+        )
+
+    def _url(self):
+        return reverse("meal_planner:toggle_on_hand", args=[self.recipe.pk])
+
+    def test_requires_login(self):
+        """Unauthenticated POST returns 302."""
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 302)
+
+    def test_toggles_on_hand_flag_on(self):
+        """POST toggles on_hand_idea from False to True."""
+        self.client.login(username="toggleonuser", password="pass1234")
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertTrue(data["on_hand_idea"])
+        self.recipe.refresh_from_db()
+        self.assertTrue(self.recipe.on_hand_idea)
+
+    def test_toggles_on_hand_flag_off(self):
+        """POST toggles on_hand_idea from True to False."""
+        self.recipe.on_hand_idea = True
+        self.recipe.save()
+        self.client.login(username="toggleonuser", password="pass1234")
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["on_hand_idea"])
+        self.recipe.refresh_from_db()
+        self.assertFalse(self.recipe.on_hand_idea)
+
+    def test_other_household_returns_404(self):
+        """Toggling another household's recipe returns 404."""
+        other_household = Household.objects.create(name="Other")
+        other_recipe = Recipe.objects.create(
+            household=other_household,
+            title="Other's Recipe",
+            needs_review=False,
+        )
+        self.client.login(username="toggleonuser", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:toggle_on_hand", args=[other_recipe.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+class ToggleLeftoverWorthyViewTests(TestCase):
+    """Tests for ToggleLeftoverWorthyView (POST /api/recipe/<id>/toggle-leftover/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="ToggleLeftover Test")
+        self.user = User.objects.create_user(
+            username="toggleleftuser",
+            email="toggleleft@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.recipe = Recipe.objects.create(
+            household=self.household,
+            title="Leftover Recipe",
+            leftover_worthy=False,
+            needs_review=False,
+        )
+
+    def _url(self):
+        return reverse("meal_planner:toggle_leftover", args=[self.recipe.pk])
+
+    def test_requires_login(self):
+        """Unauthenticated POST returns 302."""
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 302)
+
+    def test_toggles_leftover_flag_on(self):
+        """POST toggles leftover_worthy from False to True."""
+        self.client.login(username="toggleleftuser", password="pass1234")
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertTrue(data["leftover_worthy"])
+        self.recipe.refresh_from_db()
+        self.assertTrue(self.recipe.leftover_worthy)
+
+    def test_toggles_leftover_flag_off(self):
+        """POST toggles leftover_worthy from True to False."""
+        self.recipe.leftover_worthy = True
+        self.recipe.save()
+        self.client.login(username="toggleleftuser", password="pass1234")
+        response = self.client.post(self._url())
+        data = response.json()
+        self.assertFalse(data["leftover_worthy"])
+        self.recipe.refresh_from_db()
+        self.assertFalse(self.recipe.leftover_worthy)
+
+    def test_other_household_returns_404(self):
+        """Toggling another household's recipe returns 404."""
+        other_household = Household.objects.create(name="Other")
+        other_recipe = Recipe.objects.create(
+            household=other_household,
+            title="Other's Recipe",
+            needs_review=False,
+        )
+        self.client.login(username="toggleleftuser", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:toggle_leftover", args=[other_recipe.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+class JsonOnHandRecipesViewTests(TestCase):
+    """Tests for JsonOnHandRecipesView (GET /api/on-hand/recipes/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="JsonOnHand Test")
+        self.user = User.objects.create_user(
+            username="jsononuser",
+            email="jsonon@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.url = reverse("meal_planner:api_on_hand_recipes")
+
+        # Create recipes with ingredients
+        self.on_hand_recipe = Recipe.objects.create(
+            household=self.household,
+            title="On Hand Pasta",
+            on_hand_idea=True,
+            needs_review=False,
+        )
+        ingredient = Ingredient.objects.create(
+            household=self.household, name="pasta"
+        )
+        IngredientLink.objects.create(
+            recipe=self.on_hand_recipe,
+            ingredient=ingredient,
+            quantity=Decimal("1.00"),
+            unit="cup",
+            order=0,
+        )
+
+        self.normal_recipe = Recipe.objects.create(
+            household=self.household,
+            title="Normal Pizza",
+            on_hand_idea=False,
+            needs_review=False,
+        )
+
+    def test_requires_login(self):
+        """Unauthenticated GET returns 302."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_returns_json_with_on_hand_recipes(self):
+        """GET returns JSON with only on_hand_idea=True recipes."""
+        self.client.login(username="jsononuser", password="pass1234")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("recipes", data)
+        self.assertIsInstance(data["recipes"], list)
+        self.assertEqual(len(data["recipes"]), 1)
+        self.assertEqual(data["recipes"][0]["title"], "On Hand Pasta")
+
+    def test_json_includes_recipe_fields(self):
+        """JSON response includes id, title, on_hand_idea fields."""
+        self.client.login(username="jsononuser", password="pass1234")
+        response = self.client.get(self.url)
+        data = response.json()
+        recipe = data["recipes"][0]
+        self.assertIn("id", recipe)
+        self.assertIn("title", recipe)
+        self.assertIn("on_hand_idea", recipe)
+        self.assertTrue(recipe["on_hand_idea"])
+
+    def test_excludes_other_household_recipes(self):
+        """Recipes from other households are excluded."""
+        other_household = Household.objects.create(name="Other")
+        other_recipe = Recipe.objects.create(
+            household=other_household,
+            title="Other's On Hand",
+            on_hand_idea=True,
+            needs_review=False,
+        )
+        self.client.login(username="jsononuser", password="pass1234")
+        response = self.client.get(self.url)
+        data = response.json()
+        titles = [r["title"] for r in data["recipes"]]
+        self.assertNotIn("Other's On Hand", titles)
+
+
+class JsonLeftoverRecipesViewTests(TestCase):
+    """Tests for JsonLeftoverRecipesView (GET /api/leftover/recipes/)."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="JsonLeftover Test")
+        self.user = User.objects.create_user(
+            username="jsonleftuser",
+            email="jsonleft@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.url = reverse("meal_planner:api_leftover_recipes")
+
+        self.leftover_recipe = Recipe.objects.create(
+            household=self.household,
+            title="Leftover Soup",
+            leftover_worthy=True,
+            needs_review=False,
+        )
+        self.normal_recipe = Recipe.objects.create(
+            household=self.household,
+            title="Normal Salad",
+            leftover_worthy=False,
+            needs_review=False,
+        )
+
+    def test_requires_login(self):
+        """Unauthenticated GET returns 302."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_returns_json_with_leftover_recipes(self):
+        """GET returns JSON with only leftover_worthy=True recipes."""
+        self.client.login(username="jsonleftuser", password="pass1234")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("recipes", data)
+        self.assertEqual(len(data["recipes"]), 1)
+        self.assertEqual(data["recipes"][0]["title"], "Leftover Soup")
+
+    def test_excludes_other_household(self):
+        """Other household's leftover recipes are excluded."""
+        other = Household.objects.create(name="Other")
+        Recipe.objects.create(
+            household=other,
+            title="Other's Leftover",
+            leftover_worthy=True,
+            needs_review=False,
+        )
+        self.client.login(username="jsonleftuser", password="pass1234")
+        response = self.client.get(self.url)
+        data = response.json()
+        titles = [r["title"] for r in data["recipes"]]
+        self.assertNotIn("Other's Leftover", titles)
+
+
+class AiPlanSaveSuccessMessageTests(TestCase):
+    """Tests for success message content in AiPlanSaveView."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Msg Test")
+        self.user = User.objects.create_user(
+            username="msguser",
+            email="msg@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.week_start = date(2026, 6, 1)
+        self.save_url = reverse("meal_planner:ai_plan_save")
+        self.session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
+
+    def test_success_message_mentions_shopping_list(self):
+        """Success message includes 'Shopping List' text."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": "2026-06-01",
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "dinner",
+                            "title": "Test Meal",
+                            "description": "Desc",
+                            "cook_time_minutes": 20,
+                            "ingredients": [],
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="msguser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        response = self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+
+        messages_list = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages_list), 1)
+        self.assertIn("Shopping List", str(messages_list[0]))
+        self.assertIn("1", str(messages_list[0]))

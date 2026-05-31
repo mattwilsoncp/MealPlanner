@@ -56,7 +56,7 @@
             </a>
 
             <form method="post" action="{% url 'meal_planner:generate_ai_plan' %}" 
-                  onsubmit="return confirm('Generate AI meal suggestions for this week? Existing meals in empty slots will be kept.');"
+                  onsubmit="return confirm('Generate AI meal suggestions for this week? You will be able to review, accept, or reject each day before saving.');"
                   style="display: inline;">
                 {% csrf_token %}
                 <input type="hidden" name="week_start" value="{{ start_date|date:'Y-m-d' }}">

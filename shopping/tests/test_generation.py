@@ -215,3 +215,110 @@ class ShoppingWeekViewTests(TestCase):
             reverse("shopping:week"), {"week_start": "not-a-date"}
         )
         self.assertEqual(response.status_code, 200)
+
+
+class AIShoppingListGenerationTests(TestCase):
+    """Tests for generate_week_shopping_list with AI-generated meals."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="AI Shopping Test")
+        self.week_start = date(2026, 6, 1)
+
+    def test_generate_shopping_list_includes_ai_meals(self):
+        """AI MealPlan with ingredients creates shopping list items."""
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=date(2026, 6, 1),
+            meal_type="breakfast",
+            recipe=None,
+            custom_meal="Oatmeal: Warm oats",
+            ingredients=["oats", "milk", "banana"],
+        )
+
+        shopping_week = generate_week_shopping_list(self.household, self.week_start)
+
+        items = {item.name: item for item in shopping_week.items.all()}
+        self.assertEqual(set(items.keys()), {"oats", "milk", "banana"})
+
+    def test_ai_meals_dedup_with_inventory(self):
+        """AI meal ingredients already in inventory are not added to shopping list."""
+        InventoryItem.objects.create(
+            household=self.household,
+            name="milk",
+            quantity=Decimal("1.00"),
+            unit="cup",
+            category="dairy",
+            location="refrigerator",
+        )
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=date(2026, 6, 1),
+            meal_type="breakfast",
+            recipe=None,
+            custom_meal="Oatmeal",
+            ingredients=["oats", "milk", "banana"],
+        )
+
+        shopping_week = generate_week_shopping_list(self.household, self.week_start)
+
+        items = {item.name: item for item in shopping_week.items.all()}
+        self.assertIn("oats", items)
+        self.assertNotIn("milk", items)
+        self.assertIn("banana", items)
+
+    def test_ai_meals_empty_ingredients_skipped(self):
+        """AI MealPlan with empty ingredients list produces no items."""
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=date(2026, 6, 2),
+            meal_type="lunch",
+            recipe=None,
+            custom_meal="Nothing",
+            ingredients=[],
+        )
+
+        shopping_week = generate_week_shopping_list(self.household, self.week_start)
+
+        self.assertEqual(shopping_week.items.count(), 0)
+
+    def test_ai_meals_mixed_with_recipe_meals(self):
+        """Both recipe-based and AI meals contribute to shopping list."""
+        recipe = Recipe.objects.create(
+            household=self.household,
+            title="Pasta",
+            needs_review=False,
+        )
+        ingredient = Ingredient.objects.create(
+            household=self.household, name="tomato"
+        )
+        IngredientLink.objects.create(
+            recipe=recipe,
+            ingredient=ingredient,
+            quantity=Decimal("2.00"),
+            unit="piece",
+            order=0,
+        )
+
+        # Recipe-based meal
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=date(2026, 6, 1),
+            meal_type="dinner",
+            recipe=recipe,
+        )
+        # AI meal
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=date(2026, 6, 2),
+            meal_type="breakfast",
+            recipe=None,
+            custom_meal="Oatmeal",
+            ingredients=["oats", "milk"],
+        )
+
+        shopping_week = generate_week_shopping_list(self.household, self.week_start)
+
+        items = {item.name: item for item in shopping_week.items.all()}
+        self.assertIn("tomato", items)
+        self.assertIn("oats", items)
+        self.assertIn("milk", items)
