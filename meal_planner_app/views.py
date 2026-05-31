@@ -65,6 +65,7 @@ class PlannerHomeView(LoginRequiredMixin, TemplateView):
         context["week_year"] = year
         context["week_number"] = week
         context["meal_types"] = ["breakfast", "lunch", "dinner", "snack"]
+        context["planner_meal_types"] = ["breakfast", "lunch", "dinner"]
 
         # Get meals for this week
         meals = MealPlan.objects.filter(
