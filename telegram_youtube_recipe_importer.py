@@ -35,6 +35,10 @@ YOUTUBE_URL_PATTERN = re.compile(
 )
 
 
+def log_progress(message: str) -> None:
+    print(f"[telegram-importer] {message}")
+
+
 class TelegramRecipeImporter:
     def __init__(
         self,
@@ -55,14 +59,19 @@ class TelegramRecipeImporter:
         self.offset = None
 
     def run(self) -> int:
-        print("Telegram importer started")
+        chat_scope = ", ".join(sorted(self.allowed_chat_names)) if self.allowed_chat_names else "all chats"
+        log_progress(
+            f"Telegram importer started | household_id={self.household_id} | default_model={self.default_model} | chats={chat_scope}"
+        )
         while True:
             try:
                 updates = self._get_updates()
+                if updates:
+                    log_progress(f"Received {len(updates)} Telegram update(s)")
                 for update in updates:
                     self._handle_update(update)
             except KeyboardInterrupt:
-                print("Stopping Telegram importer")
+                log_progress("Stopping Telegram importer")
                 return 0
             except Exception as exc:
                 print(f"Telegram polling error: {exc}", file=sys.stderr)
@@ -72,6 +81,7 @@ class TelegramRecipeImporter:
         params = {"timeout": 30}
         if self.offset is not None:
             params["offset"] = self.offset
+        log_progress(f"Polling Telegram updates with offset={self.offset}")
         response = requests.get(f"{self.base_url}/getUpdates", params=params, timeout=45)
         response.raise_for_status()
         payload = response.json()
@@ -86,39 +96,50 @@ class TelegramRecipeImporter:
 
         message = update.get("message") or update.get("channel_post") or {}
         if not message:
+            log_progress(f"Skipping update {update_id}: no message payload")
             return
 
         chat = message.get("chat") or {}
         chat_id = chat.get("id")
         chat_title = str(chat.get("title") or chat.get("username") or "").strip()
         if self.allowed_chat_names and chat_title not in self.allowed_chat_names:
+            log_progress(f"Skipping update {update_id}: chat '{chat_title or chat_id}' not in allowed list")
             return
+
+        message_id = message.get("message_id")
+        log_progress(f"Processing update {update_id} | chat={chat_title or chat_id} | message_id={message_id}")
 
         text = self._extract_message_text(message)
         if not text:
+            log_progress(f"Skipping update {update_id}: message has no text or caption")
             return
 
         urls = list(self._extract_youtube_urls(text))
         if not urls:
+            log_progress(f"Skipping update {update_id}: no YouTube URLs found")
             return
 
         requested_model = self._extract_model_override(text) or self.default_model
         title_override = self._extract_title_override(text)
+        log_progress(f"Found {len(urls)} YouTube URL(s) | model={requested_model} | title_override={'yes' if title_override else 'no'}")
 
         for url in urls:
             try:
+                log_progress(f"Starting import for URL: {url}")
                 recipe = import_recipe_from_url(
                     url=url,
                     model=requested_model,
                     household_id=self.household_id,
                     title_override=title_override,
                 )
+                log_progress(f"Completed import for URL: {url} | recipe_id={recipe.pk} | title={recipe.title}")
                 self._send_message(
                     chat_id,
                     f"Imported recipe #{recipe.pk}: {recipe.title}",
                     reply_to_message_id=message.get("message_id"),
                 )
             except Exception as exc:
+                log_progress(f"Import failed for URL: {url} | error={exc}")
                 self._send_message(
                     chat_id,
                     f"Import failed for {url}: {exc}",
@@ -155,6 +176,7 @@ class TelegramRecipeImporter:
         payload = {"chat_id": chat_id, "text": text}
         if isinstance(reply_to_message_id, int):
             payload["reply_to_message_id"] = reply_to_message_id
+        log_progress(f"Sending Telegram reply to chat={chat_id} | reply_to={reply_to_message_id}")
         response = requests.post(f"{self.base_url}/sendMessage", json=payload, timeout=30)
         response.raise_for_status()
         body = response.json()
@@ -168,18 +190,35 @@ def import_recipe_from_url(
     household_id: int | None,
     title_override: str = "",
 ):
+    log_progress(f"Starting URL import | url={url} | model={model} | household_id={household_id}")
+    log_progress("Resolving household")
     household = get_household(household_id)
+    log_progress(f"Using household #{household.id}: {household.name}")
+    log_progress("Creating OpenRouter client")
     client = get_openrouter_client()
+    log_progress("Extracting YouTube video ID")
     video_id = extract_video_id(url)
+    log_progress(f"Video ID: {video_id}")
+    log_progress("Fetching video metadata")
     metadata = get_video_metadata(url, video_id)
+    log_progress(f"Metadata status: {metadata.get('metadata_status')} | title={metadata.get('title', '')}")
+    log_progress("Fetching transcript")
     transcript = transcribe_youtube(url)
+    log_progress(f"Transcript fetched | length={len(transcript)} characters")
+    log_progress("Writing transcript log")
     transcript_log = write_transcript_log(metadata, transcript)
+    log_progress(f"Transcript log written: {transcript_log}")
+    log_progress("Sending transcript to AI for recipe extraction")
     parsed = parse_recipe_with_llm(client, model, metadata, transcript)
+    log_progress(f"AI extraction complete | title={parsed.get('title', '')} | ingredients={len(parsed.get('ingredients') or [])} | steps={len(parsed.get('instructions') or [])}")
     if title_override.strip():
+        log_progress(f"Applying title override: {title_override.strip()}")
         parsed["title"] = title_override.strip()
+    log_progress("Creating or updating recipe in database")
     recipe = upsert_recipe(parsed, household, url, transcript_log, video_id)
-    print(f"Transcript saved to {transcript_log}")
-    print(f"Recipe marked for review: {recipe.needs_review}")
+    log_progress(f"Transcript saved to {transcript_log}")
+    log_progress(f"Recipe marked for review: {recipe.needs_review}")
+    log_progress(f"Import complete | recipe_id={recipe.pk} | title={recipe.title}")
     return recipe
 
 
@@ -235,6 +274,7 @@ def main() -> int:
 
     try:
         if args.telegram:
+            log_progress("Launching in Telegram polling mode")
             allowed_chat_names = set(args.telegram_chat_name)
             importer = TelegramRecipeImporter(
                 bot_token=args.telegram_bot_token,
@@ -248,6 +288,7 @@ def main() -> int:
         if not args.url:
             parser.error("a YouTube URL is required unless --telegram is used")
 
+        log_progress("Launching in single URL mode")
         import_recipe_from_url(
             url=args.url,
             model=args.model,
