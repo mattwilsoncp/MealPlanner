@@ -3,6 +3,7 @@
 {% block title %}What Can I Make?{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="space-y-6">
     <div class="card-dark">
         <div class="p-6">
@@ -22,7 +23,7 @@
     {% if matches %}
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {% for match in matches %}
-        <article class="card-dark">
+        <article class="card-dark" data-recipe-id="{{ match.recipe.pk }}">
             <div class="p-6 space-y-4">
                 <div class="flex items-start justify-between gap-2">
                     <h2 class="text-lg font-medium">{{ match.recipe.title }}</h2>
@@ -43,7 +44,14 @@
                     <p class="code-label">Missing ingredients</p>
                     <div class="flex flex-wrap gap-1">
                         {% for ingredient_name in match.missing_ingredients %}
-                        <span class="badge-dark">{{ ingredient_name }}</span>
+                        <button type="button"
+                            class="badge-dark discovery-quick-add"
+                            style="cursor: pointer; transition: all 0.2s ease;"
+                            data-ingredient="{{ ingredient_name }}"
+                            data-recipe-id="{{ match.recipe.pk }}"
+                            title="Click to add '{{ ingredient_name }}' to inventory">
+                            {{ ingredient_name }}
+                        </button>
                         {% empty %}
                         <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green); border-color: var(--green-border);">No missing ingredients</span>
                         {% endfor %}
@@ -96,5 +104,102 @@
     border-radius: 4px;
     transition: width 0.3s ease;
 }
+
+.discovery-quick-add:hover {
+    background: rgba(62, 207, 142, 0.15) !important;
+    border-color: var(--green-border) !important;
+    color: var(--brand-green) !important;
+}
+
+.discovery-quick-add.added {
+    background: rgba(62, 207, 142, 0.15) !important;
+    border-color: var(--green-border) !important;
+    color: var(--brand-green) !important;
+    pointer-events: none;
+}
 </style>
+
+<script>
+(function() {
+    function getCsrfToken() {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+        if (cookie) return cookie.split('=')[1];
+        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        return input ? input.value : '';
+    }
+
+    async function quickAddIngredient(button) {
+        const ingredientName = button.dataset.ingredient;
+        const recipeId = button.dataset.recipeId;
+
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.textContent = '...';
+
+        try {
+            const response = await fetch('{% url "inventory:inventory_quick_add" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+                body: JSON.stringify({
+                    name: ingredientName,
+                    quantity: '1',
+                    unit: 'piece',
+                    category: 'other',
+                    location: 'pantry',
+                }),
+            });
+
+            if (response.ok) {
+                button.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>&nbsp;' + ingredientName;
+                button.classList.add('added');
+                refreshRecipeCard(recipeId);
+            } else {
+                const data = await response.json();
+                button.textContent = ingredientName;
+                button.style.opacity = '1';
+                button.disabled = false;
+                console.error('Quick add failed:', data);
+            }
+        } catch (err) {
+            button.textContent = ingredientName;
+            button.style.opacity = '1';
+            button.disabled = false;
+            console.error('Quick add error:', err);
+        }
+    }
+
+    async function refreshRecipeCard(recipeId) {
+        try {
+            const response = await fetch('{% url "shopping:discovery" %}', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!response.ok) return;
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const freshCard = doc.querySelector('[data-recipe-id="' + recipeId + '"]');
+            const currentCard = document.querySelector('[data-recipe-id="' + recipeId + '"]');
+            if (freshCard && currentCard) {
+                currentCard.innerHTML = freshCard.innerHTML;
+                attachQuickAddListeners(currentCard);
+            }
+        } catch (err) {
+            console.error('Card refresh error:', err);
+        }
+    }
+
+    function attachQuickAddListeners(root) {
+        root.querySelectorAll('.discovery-quick-add:not(.added)').forEach(function(btn) {
+            btn.addEventListener('click', function() { quickAddIngredient(this); });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        attachQuickAddListeners(document);
+    });
+})();
+</script>
 {% endblock %}
