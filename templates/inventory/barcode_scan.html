@@ -7,7 +7,7 @@
     <div class="flex flex-wrap justify-between items-center gap-2">
         <div>
             <h1 class="text-2xl font-medium">Barcode Scan</h1>
-            <p class="text-sm" style="color: var(--text-light-gray);">Look up a barcode in your household inventory first, then fall back to UPC data.</p>
+            <p class="text-sm" style="color: var(--text-light-gray);">Scan a barcode using your camera or enter it manually.</p>
         </div>
         <div class="flex gap-2">
             <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Items</a>
@@ -21,22 +21,35 @@
                 {% csrf_token %}
                 <label class="block">
                     <span class="label-dark">Barcode</span>
-                    <input
-                        type="text"
-                        x-model="barcode"
-                        class="input-dark"
-                        inputmode="numeric"
-                        pattern="[0-9]{8,14}"
-                        maxlength="14"
-                        placeholder="Enter 8-14 digit barcode"
-                        required
-                    >
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            x-model="barcode"
+                            class="input-dark flex-1"
+                            inputmode="numeric"
+                            pattern="[0-9]{8,14}"
+                            maxlength="14"
+                            placeholder="Enter 8-14 digit barcode"
+                            required
+                        >
+                        <button type="button" @click="toggleScanner" class="btn-pill" :disabled="scannerActive">
+                            <span x-show="!scannerActive">Start Scanner</span>
+                            <span x-show="scannerActive">Stop Scanner</span>
+                        </button>
+                    </div>
                 </label>
                 <button type="submit" class="btn-pill" :disabled="isLoading">
                     <span x-show="!isLoading">Lookup Barcode</span>
                     <span x-show="isLoading">Looking up...</span>
                 </button>
             </form>
+        </div>
+    </div>
+
+    <div x-show="scannerActive" x-cloak class="card-dark" style="border: 2px solid var(--brand-green);">
+        <div class="p-4">
+            <div id="reader" class="w-full max-w-md mx-auto"></div>
+            <p class="text-center text-sm mt-2 text-gray-400">Align the barcode within the frame.</p>
         </div>
     </div>
 
@@ -86,23 +99,60 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 function barcodeScan() {
     return {
         barcode: "",
         isLoading: false,
         isCreating: false,
+        scannerActive: false,
         resultType: null,
         result: {},
         errorMessage: "",
         createdName: "",
+        scanner: null,
 
         get csrfToken() {
             const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
             return tokenInput ? tokenInput.value : "";
         },
 
+        async toggleScanner() {
+            this.scannerActive = !this.scannerActive;
+            if (this.scannerActive) {
+                this.scanner = new Html5Qrcode("reader");
+                this.scanner.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 150 },
+                    },
+                    (decodedText) => {
+                        this.barcode = decodedText;
+                        this.lookupBarcode();
+                    },
+                    (errorMessage) => {
+                        // Silent error logging for scanner
+                    }
+                ).catch(err => {
+                    this.errorMessage = "Camera error: " + err.message;
+                    this.resultType = "error";
+                    this.scannerActive = false;
+                });
+            } else {
+                if (this.scanner) {
+                    this.scanner.stop().then(() => {
+                        this.scanner = null;
+                    }).catch(err => {
+                        console.error(err);
+                    });
+                }
+            }
+        },
+
         async lookupBarcode() {
+            if (!this.barcode) return;
             this.isLoading = true;
             this.resultType = null;
             this.errorMessage = "";
@@ -128,6 +178,11 @@ function barcodeScan() {
             this.result = payload;
             this.resultType = payload.source;
             this.isLoading = false;
+            
+            // Stop scanner after successful lookup
+            if (this.scannerActive) {
+                this.toggleScanner();
+            }
         },
 
         async createItem() {
