@@ -26,6 +26,7 @@ import argparse
 import json
 import os
 import re
+import ssl
 import sys
 import urllib.request
 from datetime import datetime
@@ -46,9 +47,12 @@ try:
 except ImportError:
     YouTubeTranscriptApi = None
 
+import certifi
 from markitdown import MarkItDown
 from openai import OpenAI
 from meal_planner import settings
+
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 from household.models import Household
 from ingredients.models import Ingredient, IngredientLink
@@ -296,16 +300,15 @@ def download_thumbnail(video_id: str, household_id: int) -> Path | None:
     )
     output_path = recipe_photos_dir / filename
 
-    try:
-        urllib.request.urlretrieve(thumbnail_url, output_path)
-        return output_path
-    except Exception as exc:
-        fallback_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+    for url in (thumbnail_url, f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"):
         try:
-            urllib.request.urlretrieve(fallback_url, output_path)
-            return output_path
+            with urllib.request.urlopen(url, context=_SSL_CONTEXT) as resp:
+                output_path.write_bytes(resp.read())
+            if output_path.stat().st_size > 0:
+                return output_path
         except Exception:
-            return None
+            continue
+    return None
 
 
 def get_video_metadata(url: str, video_id: str) -> dict[str, str]:
