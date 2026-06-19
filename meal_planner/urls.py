@@ -4,6 +4,8 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 
+from .backup import BackupPageView, ExportBackupView, ImportBackupView
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -22,6 +24,10 @@ urlpatterns = [
         TemplateView.as_view(template_name="registration/logged_out.html"),
         name="logged_out",
     ),
+    # Backup & Restore
+    path("tools/backup/", BackupPageView.as_view(), name="backup_page"),
+    path("tools/backup/export/", ExportBackupView.as_view(), name="backup_export"),
+    path("tools/backup/import/", ImportBackupView.as_view(), name="backup_import"),
 ]
 
 if settings.DEBUG:

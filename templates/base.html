@@ -888,7 +888,7 @@
     </head>
     <body class="min-h-screen flex flex-col">
         <!-- Navigation -->
-        <nav class="nav" x-data="{ menuOpen: false, userMenuOpen: false }">
+        <nav class="nav" x-data="{ menuOpen: false, userMenuOpen: false, toolsMenuOpen: false }">
             <div class="max-w-[1600px] mx-auto flex items-center justify-between">
                 <div>
                     <a href="{% url 'home' %}" class="flex items-center gap-2 text-xl font-semibold" style="color: var(--text-primary); text-decoration: none;">
@@ -913,6 +913,20 @@
                     {% endif %}
                     <a href="{% url 'recipes:recipe_list' %}" class="nav-link">Recipes</a>
                     {% if user.is_authenticated %}
+                    <div class="relative">
+                        <button @click="toolsMenuOpen = !toolsMenuOpen" class="nav-link flex items-center gap-1" title="Tools">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
+                        <div x-show="toolsMenuOpen" @click.away="toolsMenuOpen = false"
+                             class="dropdown absolute right-0 mt-2 w-48"
+                             style="display: none;">
+                            <a href="{% url 'backup_page' %}" class="dropdown-item block">Backup & Restore</a>
+                            <a href="{% url 'inventory:barcode_scan' %}" class="dropdown-item block">Barcode Scanner</a>
+                        </div>
+                    </div>
                     <div class="relative">
                         <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 ml-2">
                             <div class="avatar">{{ user.username|slice:":1"|upper }}</div>
@@ -974,6 +988,11 @@
                     <a href="{% url 'shopping:discovery' %}" class="nav-link">What Can I Make</a>
                     {% endif %}
                     <a href="{% url 'recipes:recipe_list' %}" class="nav-link">Recipes</a>
+                    {% if user.is_authenticated %}
+                    <hr class="my-2" style="border-color: var(--border-subtle);">
+                    <a href="{% url 'backup_page' %}" class="nav-link">Backup & Restore</a>
+                    <a href="{% url 'inventory:barcode_scan' %}" class="nav-link">Barcode Scanner</a>
+                    {% endif %}
                     <hr class="my-2" style="border-color: var(--border-subtle);">
                     {% if user.is_authenticated %}
                     <div class="px-3 py-2 rounded-lg" style="background: var(--surface-secondary); color: var(--text-secondary);">

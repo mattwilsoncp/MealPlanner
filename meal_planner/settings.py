@@ -191,3 +191,19 @@ AI_API_BASE_URL = os.environ.get(
 AI_MODEL = os.environ.get("AI_MODEL", "deepseek-v4-flash-free")
 AI_REQUEST_TIMEOUT = int(os.environ.get("AI_REQUEST_TIMEOUT", "60"))
 AI_MAX_RETRIES = int(os.environ.get("AI_MAX_RETRIES", "3"))
+
+# Email backend — writes reset emails to logs/ in dev, configure SMTP for production
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+    EMAIL_FILE_PATH = BASE_DIR / "logs"
+else:
+    EMAIL_BACKEND = os.environ.get(
+        "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+    )
+    EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Meal Planner <noreply@localhost>")
