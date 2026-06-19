@@ -13,7 +13,8 @@ A comprehensive guide to managing your household's meals, recipes, shopping list
 5. [Inventory](#5-inventory)
 6. [Ingredient Discovery](#6-ingredient-discovery)
 7. [AI-Assisted Meal Planning](#7-ai-assisted-meal-planning)
-8. [Account & Settings](#8-account--settings)
+8. [Backup & Restore](#8-backup--restore)
+9. [Account & Settings](#9-account--settings)
 
 ---
 
@@ -179,6 +180,26 @@ Negative quantities are rejected; zero quantities are allowed (to track depleted
 
 > The inventory add form collects name, quantity, unit, category, location, and optional expiration date.
 
+### Barcode Scanning
+
+The barcode scanner (`/inventory/barcode/`) lets you quickly add items by scanning a product barcode.
+
+**Two ways to scan:**
+- **Manual entry** — type the 8-14 digit barcode number and click **Lookup Barcode**
+- **Camera scan** — click **Start Scanner** to use your device's camera to scan a physical barcode
+
+**How it works:**
+1. The app first checks if the barcode already exists in your household's inventory
+2. If not found locally, it looks up the product on **Open Food Facts** (free, open-source food database)
+3. If still not found, it falls back to **UPC Item DB**
+4. When a match is found, you'll see the product name, brand, size, and category
+5. Click **Create Item** to add it to your inventory
+
+**Tips:**
+- Works best with standard UPC (US) and EAN (international) barcodes
+- The camera scanner works on phones and laptops with a webcam
+- Products not in either database can still be added manually via the regular inventory form
+
 ### Expiring & Expired Items
 
 - **Expiring Soon** (`/inventory/expiring/`) — items within your household's threshold (default configurable)
@@ -217,7 +238,38 @@ AI-generated meals contribute to shopping lists like regular recipe-based meals.
 
 ---
 
-## 8. Account & Settings
+## 8. Backup & Restore
+
+Access via the **⚙️ gear icon** in the top-right nav bar → **Backup & Restore**, or navigate directly to `/tools/backup/`.
+
+### Exporting a Backup
+
+Click **Download Backup** to save a JSON file containing:
+- All recipes (with ingredients, step-by-step instructions, and tags)
+- All inventory items (with quantities, categories, locations, and barcodes)
+
+The file is named `meal_planner_backup_YYYYMMDD_HHMMSS.json` and can be stored anywhere for safekeeping.
+
+### Restoring from a Backup
+
+1. Click **Choose File** and select a previously exported `.json` backup
+2. Click **Restore Backup**
+3. The app imports the data and shows a summary of what was added
+
+**Duplicate handling:**
+- Recipes with the same title as an existing recipe are skipped
+- Inventory items with the same barcode as an existing item are skipped
+- New items are added alongside your current data (nothing is deleted)
+
+### Use Cases
+
+- **Moving to a new machine** — export on the old machine, set up the app on the new one, then import
+- **Regular backups** — periodically download a backup for peace of mind
+- **Sharing with household members** — export your recipes and import on another account
+
+---
+
+## 9. Account & Settings
 
 ### Profile & Household
 
