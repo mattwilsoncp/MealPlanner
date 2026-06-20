@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Import Recipe from Image{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card-dark">
+        <div class="p-8">
+            <h1 class="text-2xl font-medium mb-2">Import from Photo</h1>
+            <p class="text-sm mb-6" style="color: var(--text-light-gray);">
+                Take a picture of a recipe book page or upload an image. AI will extract the recipe title, ingredients, and instructions automatically.
+            </p>
+
+            <form method="post" action="{% url 'recipes:image_recipe_import' %}" enctype="multipart/form-data" id="image-import-form">
+                {% csrf_token %}
+                
+                <div class="mb-6">
+                    <label class="label-dark" for="id_image">Recipe Photo</label>
+                    <div class="mt-2 flex flex-col gap-3">
+                        <input type="file" 
+                               name="image" 
+                               id="id_image" 
+                               class="input-dark"
+                               accept="image/*"
+                               capture="environment"
+                               required
+                               style="padding: 8px;">
+                        <p class="text-xs" style="color: var(--text-light-gray);">
+                            On mobile, this will open your camera. On desktop, select an image file.
+                        </p>
+                    </div>
+                    {% if form.image.errors %}
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.image.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Image preview -->
+                <div id="image-preview" class="mb-6 hidden">
+                    <img id="preview-img" class="w-full max-h-80 object-contain rounded-lg" style="border: 1px solid var(--border-subtle);">
+                </div>
+
+                <div class="mb-6">
+                    <label class="label-dark" for="id_title">Recipe Title (optional)</label>
+                    <input type="text" 
+                           name="title" 
+                           id="id_title" 
+                           class="input-dark"
+                           placeholder="Override AI-generated title"
+                           {% if form.title.value %}value="{{ form.title.value }}"{% endif %}>
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
+                        Leave blank to use the AI-generated title. Only applies for single-recipe images.
+                    </p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="label-dark" for="id_model">AI Model</label>
+                    <select name="model" id="id_model" class="input-dark">
+                        {% for value, label in form.fields.model.choices %}
+                        <option value="{{ value }}" {% if form.model.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
+                        Choose a vision-capable model for image analysis
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button type="submit" class="btn-primary inline-flex items-center gap-2" id="submit-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span id="btn-text">Extract Recipe</span>
+                    </button>
+                    <a href="{% url 'recipes:recipe_list' %}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('id_image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('image-preview');
+    const img = document.getElementById('preview-img');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('hidden');
+    }
+});
+
+document.getElementById('image-import-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    btn.disabled = true;
+    btnText.textContent = 'Extracting recipe...';
+});
+</script>
+{% endblock %}

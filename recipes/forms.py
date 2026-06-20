@@ -51,6 +51,9 @@ class LLMImportForm(forms.Form):
     model = forms.ChoiceField(
         label="AI Model",
         choices=[
+            ("google/gemini-2.0-flash-001", "Gemini 2.0 Flash (Paid, Fast)"),
+            ("anthropic/claude-sonnet-4", "Claude Sonnet 4 (Paid, Best)"),
+            ("google/gemini-2.5-pro-preview-06-05", "Gemini 2.5 Pro (Paid, Premium)"),
             ("openrouter/free", "Auto (Best Free Model, Fallback)"),
             ("deepseek/deepseek-v4-flash:free", "DeepSeek V4 Flash (Free)"),
             ("google/gemma-4-31b-it:free", "Gemma 4 31B (Free)"),
@@ -58,7 +61,7 @@ class LLMImportForm(forms.Form):
             ("qwen/qwen3-coder:free", "Qwen3 Coder (Free)"),
             ("nousresearch/hermes-3-llama-3.1-405b:free", "Hermes 3 405B (Free)"),
         ],
-        initial="openrouter/free",
+        initial="google/gemini-2.0-flash-001",
         required=False,
         widget=forms.Select(attrs={"class": "input-dark"}),
     )
@@ -73,6 +76,40 @@ class LLMImportForm(forms.Form):
 
     def _is_youtube_url(self, url):
         return "youtube.com" in url or "youtu.be" in url
+
+
+class ImageImportForm(forms.Form):
+    image = forms.ImageField(
+        label="Recipe Photo",
+        widget=forms.FileInput(
+            attrs={
+                "class": "input-dark",
+                "accept": "image/*",
+                "capture": "environment",
+            }
+        ),
+    )
+    title = forms.CharField(
+        label="Recipe Title (optional)",
+        required=False,
+        max_length=255,
+        widget=forms.TextInput(attrs={"class": "input-dark", "placeholder": "Override AI-generated title"}),
+    )
+    model = forms.ChoiceField(
+        label="AI Model",
+        choices=[
+            ("google/gemini-2.0-flash-001", "Gemini 2.0 Flash (Paid, Fast)"),
+            ("anthropic/claude-sonnet-4", "Claude Sonnet 4 (Paid, Best)"),
+            ("google/gemini-2.5-pro-preview-06-05", "Gemini 2.5 Pro (Paid, Premium)"),
+            ("openrouter/free", "Auto (Best Free Model, Fallback)"),
+            ("google/gemma-4-31b-it:free", "Gemma 4 31B (Free)"),
+            ("qwen/qwen3-coder:free", "Qwen3 Coder (Free)"),
+            ("meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B (Free)"),
+        ],
+        initial="google/gemini-2.0-flash-001",
+        required=False,
+        widget=forms.Select(attrs={"class": "input-dark"}),
+    )
 
 
 class RecipeForm(forms.ModelForm):

@@ -923,6 +923,7 @@
                         <div x-show="toolsMenuOpen" @click.away="toolsMenuOpen = false"
                              class="dropdown absolute right-0 mt-2 w-48"
                              style="display: none;">
+                            <a href="{% url 'recipes:image_recipe_import' %}" class="dropdown-item block">Import from Photo</a>
                             <a href="{% url 'backup_page' %}" class="dropdown-item block">Backup & Restore</a>
                             <a href="{% url 'inventory:barcode_scan' %}" class="dropdown-item block">Barcode Scanner</a>
                         </div>
