@@ -109,26 +109,32 @@ UNIT_MAP = {
 
 
 PROMPT_TEMPLATE = """You are extracting structured recipe data from a YouTube recipe video transcript.
+The video may contain one or more recipes. Return a JSON array of recipe objects.
+Even if there is only one recipe, wrap it in an array.
+
 Return only valid JSON with this exact shape:
-{{
-  "title": "string",
-  "description": "string",
-  "ingredients": [
-    {{
-      "name": "string",
-      "quantity": "string",
-      "unit": "string"
-    }}
-  ],
-  "instructions": [
-    {{
-      "step_number": 1,
-      "text": "string"
-    }}
-  ]
-}}
+[
+  {{
+    "title": "string",
+    "description": "string",
+    "ingredients": [
+      {{
+        "name": "string",
+        "quantity": "string",
+        "unit": "string"
+      }}
+    ],
+    "instructions": [
+      {{
+        "step_number": 1,
+        "text": "string"
+      }}
+    ]
+  }}
+]
 
 Rules:
+- Each recipe in the video should be a separate object in the array.
 - The recipe title should be concise and human readable.
 - The description should summarize the dish in 1-3 sentences.
 - Include only actual ingredients used in the recipe.
@@ -368,7 +374,7 @@ def write_transcript_log(metadata: dict[str, str], transcript: str) -> Path:
     return output_path
 
 
-def extract_json_payload(raw_text: str) -> dict[str, Any]:
+def extract_json_payload(raw_text: str) -> list[dict[str, Any]]:
     text = raw_text.strip()
     if text.startswith("```"):
         lines = text.splitlines()
@@ -378,14 +384,26 @@ def extract_json_payload(raw_text: str) -> dict[str, Any]:
             lines = lines[:-1]
         text = "\n".join(lines).strip()
 
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        text = match.group(0)
+    # Try to find a JSON array first, then fall back to a single object
+    array_match = re.search(r"\[.*\]", text, re.DOTALL)
+    if array_match:
+        try:
+            payload = json.loads(array_match.group(0))
+            if isinstance(payload, list):
+                return payload
+        except json.JSONDecodeError:
+            pass
+
+    obj_match = re.search(r"\{.*\}", text, re.DOTALL)
+    if obj_match:
+        text = obj_match.group(0)
 
     payload = json.loads(text)
-    if not isinstance(payload, dict):
-        raise RuntimeError("Model response was not a JSON object")
-    return payload
+    if isinstance(payload, dict):
+        return [payload]
+    if isinstance(payload, list):
+        return payload
+    raise RuntimeError("Model response was not a JSON object or array")
 
 
 def build_source_context(metadata: dict[str, str], transcript: str) -> str:
@@ -405,7 +423,7 @@ def build_source_context(metadata: dict[str, str], transcript: str) -> str:
 
 def parse_recipe_with_llm(
     client: OpenAI, model: str, metadata: dict[str, str], transcript: str
-) -> dict[str, Any]:
+) -> list[dict[str, Any]]:
     prompt = PROMPT_TEMPLATE.format(
         source_context=build_source_context(metadata, transcript)
     )
@@ -419,7 +437,7 @@ def parse_recipe_with_llm(
             {"role": "user", "content": prompt},
         ],
         temperature=0.1,
-        max_tokens=4000,
+        max_tokens=8000,
     )
 
     content = response.choices[0].message.content or ""
@@ -617,7 +635,7 @@ def create_summary_document(
 
 
 def run_recipe_import(args) -> int:
-    """Import a YouTube video as a recipe into the database."""
+    """Import a YouTube video as one or more recipes into the database."""
     try:
         household = get_household(args.household_id)
         print(f"Using household #{household.id}: {household.name}")
@@ -626,14 +644,18 @@ def run_recipe_import(args) -> int:
         metadata = get_video_metadata(args.url, video_id)
         transcript = transcribe_youtube(args.url)
         transcript_log = write_transcript_log(metadata, transcript)
-        parsed = parse_recipe_with_llm(client, args.model, metadata, transcript)
+        recipes_data = parse_recipe_with_llm(client, args.model, metadata, transcript)
 
-        if args.title.strip():
-            parsed["title"] = args.title.strip()
+        print(f"Found {len(recipes_data)} recipe(s) in video")
 
-        recipe = upsert_recipe(parsed, household, args.url, transcript_log, video_id)
+        if args.title.strip() and len(recipes_data) == 1:
+            recipes_data[0]["title"] = args.title.strip()
+
+        for parsed in recipes_data:
+            recipe = upsert_recipe(parsed, household, args.url, transcript_log, video_id)
+            print(f"Recipe marked for review: {recipe.needs_review}")
+
         print(f"Transcript saved to {transcript_log}")
-        print(f"Recipe marked for review: {recipe.needs_review}")
         return 0
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
