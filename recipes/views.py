@@ -21,7 +21,7 @@ from django.views.decorators.http import require_POST
 from django.db.models import Avg, Q
 from .models import Recipe
 from django.core.files.base import File
-from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm
+from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm, ImageImportForm
 from .youtube import YouTubeService, InvalidVideoError, APIError
 from .parsing import RecipeParsingService
 from ingredients.models import IngredientLink, Ingredient
@@ -732,6 +732,289 @@ Source Context:
             recipe.description = f"{recipe.description}{suffix}".strip()
             recipe.save(update_fields=["description", "updated_at"])
 
+        return recipe
+
+
+class ImageRecipeImportView(LoginRequiredMixin, FormView):
+    form_class = ImageImportForm
+    template_name = "recipes/image_import.html"
+    success_url = reverse_lazy("recipes:recipe_list")
+
+    UNIT_MAP = LLMRecipeImportView.UNIT_MAP
+    VALID_UNITS = LLMRecipeImportView.VALID_UNITS
+
+    IMAGE_PROMPT = """You are extracting structured recipe data from a photo of a recipe book page or recipe card.
+The image may contain one or more recipes. Return a JSON array of recipe objects.
+Even if there is only one recipe, wrap it in an array.
+
+Return only valid JSON with this exact shape:
+[
+  {{
+    "title": "string",
+    "description": "string",
+    "ingredients": [
+      {{
+        "name": "string",
+        "quantity": "string",
+        "unit": "string"
+      }}
+    ],
+    "instructions": [
+      {{
+        "step_number": 1,
+        "text": "string"
+      }}
+    ]
+  }}
+]
+
+Rules:
+- Each recipe visible in the image should be a separate object in the array.
+- The recipe title should be concise and human readable.
+- The description should summarize the dish in 1-3 sentences.
+- Include all ingredients visible in the image.
+- Preserve ingredient quantities exactly as written.
+- Use singular common cooking units when possible.
+- For ingredients without a clear quantity, leave quantity as an empty string.
+- For ingredients without a clear unit, leave unit as an empty string.
+- Instructions should be clean, imperative cooking steps.
+- Instructions must be ordered and start at step_number 1.
+- Do not include markdown, explanation, or code fences.
+- If text is partially obscured, make your best interpretation.
+"""
+
+    def form_valid(self, form):
+        import os
+        import base64
+
+        household = self.request.user.household
+        if not household:
+            form.add_error("image", "No household associated with your account.")
+            return self.form_invalid(form)
+
+        OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+        if not OPENROUTER_API_KEY:
+            form.add_error(
+                "image",
+                "OPENROUTER_API_KEY is not configured. Please set it in your environment.",
+            )
+            return self.form_invalid(form)
+
+        try:
+            from io import BytesIO
+            from PIL import Image as PILImage
+
+            uploaded_image = form.cleaned_data["image"]
+            model = form.cleaned_data.get("model") or "openrouter/free"
+
+            # Convert image to JPEG to ensure compatible content type
+            image_data = uploaded_image.read()
+            try:
+                img = PILImage.open(BytesIO(image_data))
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG", quality=90)
+                image_data = buffer.getvalue()
+                content_type = "image/jpeg"
+            except Exception:
+                content_type = uploaded_image.content_type or "image/jpeg"
+
+            image_b64 = base64.b64encode(image_data).decode("utf-8")
+
+            client = OpenAI(
+                api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1"
+            )
+
+            # Call vision model
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a precise recipe extraction engine that returns strict JSON only.",
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": self.IMAGE_PROMPT},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{content_type};base64,{image_b64}"
+                                },
+                            },
+                        ],
+                    },
+                ],
+                temperature=0.1,
+                max_tokens=8000,
+            )
+
+            content = response.choices[0].message.content or ""
+            if not content.strip():
+                raise RuntimeError("AI model returned an empty response")
+
+            recipes_data = self._extract_json_payload(content)
+
+            if form.cleaned_data.get("title") and len(recipes_data) == 1:
+                recipes_data[0]["title"] = form.cleaned_data["title"]
+
+            # Save the uploaded image for use as recipe photo
+            uploaded_image.seek(0)
+
+            created_recipes = []
+            for parsed in recipes_data:
+                recipe = self._create_recipe(parsed, household, uploaded_image)
+                created_recipes.append(recipe)
+
+            if len(created_recipes) == 1:
+                messages.success(
+                    self.request,
+                    f"Imported recipe: {created_recipes[0].title}",
+                )
+                return redirect("recipes:recipe_detail", pk=created_recipes[0].pk)
+            else:
+                messages.success(
+                    self.request,
+                    f"Imported {len(created_recipes)} recipes from image.",
+                )
+                return redirect("recipes:recipe_list")
+
+        except Exception as e:
+            form.add_error("image", f"Import failed: {str(e)}")
+            return self.form_invalid(form)
+
+    def _extract_json_payload(self, raw_text: str) -> list:
+        text = raw_text.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
+
+        # Try array first
+        array_match = re.search(r"\[.*\]", text, re.DOTALL)
+        if array_match:
+            try:
+                payload = json.loads(array_match.group(0))
+                if isinstance(payload, list):
+                    return payload
+            except json.JSONDecodeError:
+                pass
+
+        # Fall back to single object
+        obj_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if obj_match:
+            text = obj_match.group(0)
+
+        payload = json.loads(text)
+        if isinstance(payload, dict):
+            return [payload]
+        if isinstance(payload, list):
+            return payload
+        raise RuntimeError("AI response was not valid JSON")
+
+    def _normalize_quantity(self, raw_quantity) -> Decimal:
+        if raw_quantity is None:
+            return Decimal("1")
+        quantity_text = str(raw_quantity).strip()
+        if not quantity_text:
+            return Decimal("1")
+
+        fraction_match = re.fullmatch(r"(\d+)\s*/\s*(\d+)", quantity_text)
+        mixed_match = re.fullmatch(r"(\d+)\s+(\d+)\s*/\s*(\d+)", quantity_text)
+        range_match = re.fullmatch(r"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)", quantity_text)
+
+        try:
+            if mixed_match:
+                whole = Decimal(mixed_match.group(1))
+                numerator = Decimal(mixed_match.group(2))
+                denominator = Decimal(mixed_match.group(3))
+                return whole + (numerator / denominator)
+            if fraction_match:
+                numerator = Decimal(fraction_match.group(1))
+                denominator = Decimal(fraction_match.group(2))
+                return numerator / denominator
+            if range_match:
+                low = Decimal(range_match.group(1))
+                high = Decimal(range_match.group(2))
+                return (low + high) / 2
+            return Decimal(quantity_text)
+        except (InvalidOperation, ZeroDivisionError):
+            return Decimal("1")
+
+    def _normalize_unit(self, raw_unit) -> str:
+        unit = str(raw_unit or "").strip().lower()
+        normalized = self.UNIT_MAP.get(unit, unit)
+        if normalized in self.VALID_UNITS:
+            return normalized
+        return "piece"
+
+    def _create_recipe(self, data: dict, household, uploaded_image) -> Recipe:
+        title = str(data.get("title") or "").strip() or "Imported Recipe"
+        description = str(data.get("description") or "").strip()
+        ingredients = data.get("ingredients") or []
+        instructions = data.get("instructions") or []
+
+        recipe, created = Recipe.objects.get_or_create(
+            household=household,
+            title=title,
+            defaults={
+                "description": description,
+                "needs_review": True,
+            },
+        )
+
+        recipe.description = description or recipe.description
+        recipe.needs_review = True
+
+        # Attach the uploaded image as the recipe photo
+        if not recipe.photo and uploaded_image:
+            try:
+                uploaded_image.seek(0)
+                recipe.photo.save(uploaded_image.name, File(uploaded_image), save=False)
+            except Exception:
+                pass
+
+        recipe.save()
+
+        # Clear and re-create ingredients and instructions
+        recipe.ingredients.all().delete()
+        Instruction.objects.filter(recipe=recipe).delete()
+
+        for index, item in enumerate(ingredients, start=1):
+            name = str(item.get("name") or "").strip()
+            if not name:
+                continue
+            ingredient, _ = Ingredient.objects.get_or_create(
+                household=household,
+                name=name,
+            )
+            IngredientLink.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                quantity=self._normalize_quantity(item.get("quantity")),
+                unit=self._normalize_unit(item.get("unit")),
+                order=index,
+            )
+
+        for index, item in enumerate(instructions, start=1):
+            text = str(item.get("text") or "").strip()
+            if not text:
+                continue
+            step_number = item.get("step_number")
+            if not isinstance(step_number, int) or step_number < 1:
+                step_number = index
+            Instruction.objects.create(
+                recipe=recipe,
+                step_number=step_number,
+                text=text,
+            )
+
+        action = "Created" if created else "Updated"
         return recipe
 
 

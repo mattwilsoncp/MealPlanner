@@ -10,6 +10,7 @@ urlpatterns = [
     path("", views.RecipeListView.as_view(), name="recipe_list"),
     path("import/", views.LLMRecipeImportView.as_view(), name="recipe_import"),
     path("import/llm/", views.LLMRecipeImportView.as_view(), name="llm_recipe_import"),
+    path("import/image/", views.ImageRecipeImportView.as_view(), name="image_recipe_import"),
     path("<int:pk>/", views.RecipeDetailView.as_view(), name="recipe_detail"),
     path("new/", views.RecipeCreateView.as_view(), name="recipe_create"),
     path("<int:pk>/edit/", views.RecipeUpdateView.as_view(), name="recipe_update"),
