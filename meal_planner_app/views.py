@@ -73,7 +73,7 @@ class PlannerHomeView(LoginRequiredMixin, TemplateView):
             household=self.request.user.household,
             meal_date__gte=start_date,
             meal_date__lte=end_date,
-        ).select_related("recipe")
+        ).select_related("recipe").prefetch_related("side_dishes", "side_dishes__recipe")
 
         # Organize meals by date and meal type
         meals_by_day = {}
@@ -81,7 +81,9 @@ class PlannerHomeView(LoginRequiredMixin, TemplateView):
             date_str = meal.meal_date.strftime("%Y-%m-%d")
             if date_str not in meals_by_day:
                 meals_by_day[date_str] = {}
-            meals_by_day[date_str][meal.meal_type] = [meal]
+            if meal.meal_type not in meals_by_day[date_str]:
+                meals_by_day[date_str][meal.meal_type] = []
+            meals_by_day[date_str][meal.meal_type].append(meal)
 
         # Build week_days with meals
         for day in week_days:
