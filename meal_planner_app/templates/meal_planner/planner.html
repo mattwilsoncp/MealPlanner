@@ -128,7 +128,7 @@
                 </div>
                 {% else %}
                 <div class="flex items-center justify-between gap-1">
-                    <div class="text-sm" style="color: var(--text-muted);">{{ meal.notes|truncatechars:30 }}</div>
+                    <div class="text-sm" style="color: var(--text-muted);">{{ meal.custom_meal|default:meal.notes|truncatechars:30 }}</div>
                     <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
                         {% csrf_token %}
                         <button type="submit" class="btn-ghost" style="padding: 2px; color: var(--text-muted);" title="Delete meal">
@@ -137,6 +137,13 @@
                             </svg>
                         </button>
                     </form>
+                </div>
+                {% endif %}
+                {% if meal.side_dishes.all %}
+                <div class="mt-1 pl-2" style="border-left: 2px solid var(--border-subtle);">
+                    {% for side in meal.side_dishes.all %}
+                    <div class="text-xs" style="color: var(--text-muted);">+ {{ side.recipe.title|default:side.custom_side }}</div>
+                    {% endfor %}
                 </div>
                 {% endif %}
             </div>

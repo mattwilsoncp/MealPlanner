@@ -1,7 +1,11 @@
+import io
 import json
+import os
+import zipfile
 from datetime import datetime
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.files.base import ContentFile
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views import View
@@ -13,7 +17,7 @@ from inventory.models import InventoryItem
 from recipes.models import Recipe
 from tags.models import RecipeTag, Tag
 
-BACKUP_VERSION = 1
+BACKUP_VERSION = 2
 
 
 class BackupPageView(LoginRequiredMixin, TemplateView):
@@ -39,31 +43,51 @@ class ExportBackupView(LoginRequiredMixin, View):
                 {"ok": False, "message": "No household assigned to your account."},
                 status=400,
             )
+
+        recipes_data, photo_files = self._export_recipes(household)
         data = {
             "version": BACKUP_VERSION,
             "exported_at": timezone.now().isoformat(),
             "household_name": household.name,
-            "recipes": self._export_recipes(household),
+            "recipes": recipes_data,
             "inventory": self._export_inventory(household),
         }
 
-        filename = f"meal_planner_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        response = HttpResponse(
-            json.dumps(data, indent=2, ensure_ascii=False),
-            content_type="application/json",
-        )
+        # Build a ZIP containing backup.json + photos/
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("backup.json", json.dumps(data, indent=2, ensure_ascii=False))
+            for photo_path, photo_bytes in photo_files:
+                zf.writestr(f"photos/{photo_path}", photo_bytes)
+
+        buffer.seek(0)
+        filename = f"meal_planner_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        response = HttpResponse(buffer.getvalue(), content_type="application/zip")
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
     def _export_recipes(self, household):
         recipes = Recipe.objects.filter(household=household)
         result = []
+        photo_files = []  # list of (filename, bytes)
         for recipe in recipes:
             ingredients = IngredientLink.objects.filter(recipe=recipe).select_related(
                 "ingredient"
             )
             instructions = Instruction.objects.filter(recipe=recipe)
             recipe_tags = RecipeTag.objects.filter(recipe=recipe).select_related("tag")
+
+            # Export photo if present
+            photo_filename = None
+            if recipe.photo:
+                try:
+                    ext = os.path.splitext(recipe.photo.name)[1] or ".jpg"
+                    photo_filename = f"recipe_{recipe.pk}{ext}"
+                    recipe.photo.open("rb")
+                    photo_files.append((photo_filename, recipe.photo.read()))
+                    recipe.photo.close()
+                except Exception:
+                    photo_filename = None
 
             result.append(
                 {
@@ -73,6 +97,7 @@ class ExportBackupView(LoginRequiredMixin, View):
                     "on_hand_idea": recipe.on_hand_idea,
                     "leftover_worthy": recipe.leftover_worthy,
                     "needs_review": recipe.needs_review,
+                    "photo_filename": photo_filename,
                     "created_at": recipe.created_at.isoformat() if recipe.created_at else None,
                     "ingredients": [
                         {
@@ -93,7 +118,7 @@ class ExportBackupView(LoginRequiredMixin, View):
                     "tags": [rt.tag.name for rt in recipe_tags],
                 }
             )
-        return result
+        return result, photo_files
 
     def _export_inventory(self, household):
         items = InventoryItem.objects.filter(household=household)
@@ -122,18 +147,30 @@ class ImportBackupView(LoginRequiredMixin, View):
                 {"ok": False, "message": "No file uploaded."}, status=400
             )
 
-        try:
-            data = json.loads(uploaded.read().decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            return JsonResponse(
-                {"ok": False, "message": "Invalid JSON file."}, status=400
-            )
+        # Detect format: ZIP or legacy JSON
+        file_bytes = uploaded.read()
+        photos_archive = None
 
-        if data.get("version") != BACKUP_VERSION:
+        try:
+            zf = zipfile.ZipFile(io.BytesIO(file_bytes))
+            json_data = zf.read("backup.json").decode("utf-8")
+            data = json.loads(json_data)
+            photos_archive = zf
+        except (zipfile.BadZipFile, KeyError):
+            # Fall back to plain JSON (v1 format)
+            try:
+                data = json.loads(file_bytes.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return JsonResponse(
+                    {"ok": False, "message": "Invalid backup file. Expected ZIP or JSON."}, status=400
+                )
+
+        version = data.get("version")
+        if version not in (1, 2, BACKUP_VERSION):
             return JsonResponse(
                 {
                     "ok": False,
-                    "message": f"Unsupported backup version: {data.get('version')}",
+                    "message": f"Unsupported backup version: {version}",
                 },
                 status=400,
             )
@@ -162,6 +199,17 @@ class ImportBackupView(LoginRequiredMixin, View):
                 leftover_worthy=recipe_data.get("leftover_worthy", False),
                 needs_review=recipe_data.get("needs_review", True),
             )
+
+            # Restore photo from ZIP archive
+            photo_filename = recipe_data.get("photo_filename")
+            if photo_filename and photos_archive:
+                try:
+                    photo_bytes = photos_archive.read(f"photos/{photo_filename}")
+                    recipe.photo.save(
+                        photo_filename, ContentFile(photo_bytes), save=True
+                    )
+                except (KeyError, Exception):
+                    pass
 
             # Import ingredients
             for ing_data in recipe_data.get("ingredients", []):
@@ -230,5 +278,8 @@ class ImportBackupView(LoginRequiredMixin, View):
                 barcode=barcode,
             )
             stats["inventory_imported"] += 1
+
+        if photos_archive:
+            photos_archive.close()
 
         return JsonResponse({"ok": True, "stats": stats})

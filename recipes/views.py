@@ -752,6 +752,7 @@ Return only valid JSON with this exact shape:
   {{
     "title": "string",
     "description": "string",
+    "photo_bbox": [x_percent, y_percent, width_percent, height_percent],
     "ingredients": [
       {{
         "name": "string",
@@ -772,6 +773,7 @@ Rules:
 - Each recipe visible in the image should be a separate object in the array.
 - The recipe title should be concise and human readable.
 - The description should summarize the dish in 1-3 sentences.
+- photo_bbox: If there is a photo of the finished dish visible in the image, provide its bounding box as [x_percent, y_percent, width_percent, height_percent] where all values are percentages (0-100) of the full image dimensions. x_percent and y_percent are the top-left corner. If there is no food photo visible, set photo_bbox to null.
 - Include all ingredients visible in the image.
 - Preserve ingredient quantities exactly as written.
 - Use singular common cooking units when possible.
@@ -807,18 +809,31 @@ Rules:
             uploaded_image = form.cleaned_data["image"]
             model = form.cleaned_data.get("model") or "openrouter/free"
 
-            # Convert image to JPEG to ensure compatible content type
+            # Convert image to JPEG and resize to stay under API limit (5MB)
+            MAX_BYTES = 3_500_000  # conservative limit (base64 adds ~33%)
+            MAX_DIMENSION = 2048
             image_data = uploaded_image.read()
-            try:
-                img = PILImage.open(BytesIO(image_data))
-                if img.mode in ("RGBA", "P"):
-                    img = img.convert("RGB")
+            img = PILImage.open(BytesIO(image_data))
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            # Resize to max dimension first
+            w, h = img.size
+            if max(w, h) > MAX_DIMENSION:
+                scale = MAX_DIMENSION / max(w, h)
+                img = img.resize((int(w * scale), int(h * scale)), PILImage.LANCZOS)
+
+            # Save as JPEG, reduce quality until under size limit
+            quality = 85
+            while quality >= 20:
                 buffer = BytesIO()
-                img.save(buffer, format="JPEG", quality=90)
-                image_data = buffer.getvalue()
-                content_type = "image/jpeg"
-            except Exception:
-                content_type = uploaded_image.content_type or "image/jpeg"
+                img.save(buffer, format="JPEG", quality=quality)
+                if buffer.tell() <= MAX_BYTES:
+                    break
+                quality -= 10
+
+            image_data = buffer.getvalue()
+            content_type = "image/jpeg"
 
             image_b64 = base64.b64encode(image_data).decode("utf-8")
 
@@ -860,12 +875,11 @@ Rules:
             if form.cleaned_data.get("title") and len(recipes_data) == 1:
                 recipes_data[0]["title"] = form.cleaned_data["title"]
 
-            # Save the uploaded image for use as recipe photo
-            uploaded_image.seek(0)
-
+            # Crop food photos from the uploaded image using bounding boxes
             created_recipes = []
             for parsed in recipes_data:
-                recipe = self._create_recipe(parsed, household, uploaded_image)
+                photo_file = self._crop_food_photo(img, parsed.get("photo_bbox"), uploaded_image)
+                recipe = self._create_recipe(parsed, household, photo_file)
                 created_recipes.append(recipe)
 
             if len(created_recipes) == 1:
@@ -952,6 +966,44 @@ Rules:
         if normalized in self.VALID_UNITS:
             return normalized
         return "piece"
+
+    def _crop_food_photo(self, full_img, bbox, uploaded_image):
+        """Crop the food photo from the image using bbox, or fall back to full image."""
+        from io import BytesIO
+
+        if bbox and isinstance(bbox, (list, tuple)) and len(bbox) == 4:
+            try:
+                x_pct, y_pct, w_pct, h_pct = [float(v) for v in bbox]
+                img_w, img_h = full_img.size
+                left = int(img_w * x_pct / 100)
+                top = int(img_h * y_pct / 100)
+                right = int(img_w * (x_pct + w_pct) / 100)
+                bottom = int(img_h * (y_pct + h_pct) / 100)
+                # Clamp to image bounds
+                left = max(0, min(left, img_w))
+                top = max(0, min(top, img_h))
+                right = max(left + 1, min(right, img_w))
+                bottom = max(top + 1, min(bottom, img_h))
+                cropped = full_img.crop((left, top, right, bottom))
+                buffer = BytesIO()
+                cropped.save(buffer, format="JPEG", quality=90)
+                size = buffer.tell()
+                buffer.seek(0)
+                from django.core.files.uploadedfile import InMemoryUploadedFile
+                return InMemoryUploadedFile(
+                    file=buffer,
+                    field_name="photo",
+                    name="recipe_photo.jpg",
+                    content_type="image/jpeg",
+                    size=size,
+                    charset=None,
+                )
+            except (ValueError, TypeError):
+                pass
+
+        # Fall back to original uploaded image
+        uploaded_image.seek(0)
+        return uploaded_image
 
     def _create_recipe(self, data: dict, household, uploaded_image) -> Recipe:
         title = str(data.get("title") or "").strip() or "Imported Recipe"
