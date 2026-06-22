@@ -7,6 +7,8 @@ app_name = "inventory"
 urlpatterns = [
     path("", views.InventoryListView.as_view(), name="inventory_list"),
     path("barcode/", views.BarcodeScanPageView.as_view(), name="barcode_scan"),
+    path("receipt/import/", views.ReceiptImportView.as_view(), name="receipt_import"),
+    path("receipt/review/", views.ReceiptImportReviewView.as_view(), name="receipt_import_review"),
     path("add/", views.InventoryCreateView.as_view(), name="inventory_add"),
     path(
         "<int:item_id>/edit/",

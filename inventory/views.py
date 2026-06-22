@@ -1,16 +1,22 @@
+import base64
 import json
+import os
 import re
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View, FormView
 from django.views.generic.base import TemplateView
+from openai import OpenAI
 
-from .forms import InventoryItemForm, InventoryQuickAddForm
+from .forms import InventoryItemForm, InventoryQuickAddForm, ReceiptImportForm
 from .models import InventoryItem
 from .services.upc_lookup import lookup_upc
 
@@ -328,3 +334,245 @@ class BarcodeCreateView(LoginRequiredMixin, View):
             },
             status=201,
         )
+
+
+class ReceiptImportView(LoginRequiredMixin, FormView):
+    form_class = ReceiptImportForm
+    template_name = "inventory/receipt_import.html"
+
+    RECEIPT_PROMPT = """Extract grocery inventory items from this receipt image.
+Return only valid JSON with this exact shape:
+{
+  "store": "string",
+  "purchased_at": "YYYY-MM-DD or empty string",
+  "items": [
+    {
+      "receipt_description": "string exactly as shown or best reading",
+      "name": "clean pantry inventory name, or empty string if unclear",
+      "quantity": "number as string, default 1",
+      "unit": "piece|oz|lb|cup|tbsp|tsp|g|kg|ml|l|dozen|pack|box|can|bottle|bag",
+      "category": "produce|dairy|meat|frozen|pantry|beverages|condiments|snacks|bakery|other",
+      "location": "pantry|refrigerator|freezer|counter|cabinet",
+      "price": "item price as string without currency symbol, or empty string",
+      "barcode": "8-14 digit barcode if visible, else empty string",
+      "confidence": "high|medium|low"
+    }
+  ]
+}
+Rules:
+- Include groceries and household food items only.
+- Exclude taxes, totals, payment lines, coupons, and fees.
+- If an abbreviated receipt description is unclear, keep receipt_description, leave name empty, and set confidence to low.
+- Use category/location based on food storage common sense.
+- If quantity is not clear, use 1 and unit piece.
+"""
+
+    def form_valid(self, form):
+        api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+        if not api_key:
+            form.add_error("image", "OPENROUTER_API_KEY is not configured.")
+            return self.form_invalid(form)
+
+        try:
+            image_b64, content_type = self._prepare_image(form.cleaned_data["image"])
+            client = OpenAI(api_key=api_key, base_url="https://openrouter.ai/api/v1")
+            response = client.chat.completions.create(
+                model=form.cleaned_data.get("model") or "google/gemini-2.0-flash-001",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You extract structured grocery receipt data and return strict JSON only.",
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": self.RECEIPT_PROMPT},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:{content_type};base64,{image_b64}"},
+                            },
+                        ],
+                    },
+                ],
+                temperature=0.1,
+                max_tokens=6000,
+            )
+            parsed = self._extract_json_payload(response.choices[0].message.content or "")
+            items = self._normalize_items(parsed.get("items", []))
+            self.request.session["receipt_import"] = {
+                "store": parsed.get("store", ""),
+                "purchased_at": parsed.get("purchased_at", ""),
+                "items": items,
+            }
+            self.request.session.modified = True
+            return redirect("inventory:receipt_import_review")
+        except Exception as exc:
+            form.add_error("image", f"Import failed: {exc}")
+            return self.form_invalid(form)
+
+    def _prepare_image(self, uploaded_image):
+        from io import BytesIO
+        from PIL import Image as PILImage
+
+        max_bytes = 3_500_000
+        max_dimension = 2048
+        img = PILImage.open(uploaded_image)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        w, h = img.size
+        if max(w, h) > max_dimension:
+            scale = max_dimension / max(w, h)
+            img = img.resize((int(w * scale), int(h * scale)), PILImage.LANCZOS)
+        quality = 85
+        while quality >= 20:
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG", quality=quality)
+            if buffer.tell() <= max_bytes:
+                break
+            quality -= 10
+        return base64.b64encode(buffer.getvalue()).decode("utf-8"), "image/jpeg"
+
+    def _extract_json_payload(self, raw_text):
+        text = raw_text.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            text = match.group(0)
+        payload = json.loads(text)
+        if not isinstance(payload, dict):
+            raise RuntimeError("AI response was not a JSON object")
+        return payload
+
+    def _normalize_items(self, items):
+        category_values = {value for value, _ in InventoryItem.CATEGORY_CHOICES}
+        location_values = {value for value, _ in InventoryItem.LOCATION_CHOICES}
+        unit_values = {value for value, _ in InventoryItem.UNIT_CHOICES}
+        normalized = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            receipt_description = str(item.get("receipt_description") or "").strip()
+            name = str(item.get("name") or "").strip()
+            if not receipt_description and not name:
+                continue
+            normalized.append(
+                {
+                    "receipt_description": receipt_description,
+                    "name": name,
+                    "quantity": str(item.get("quantity") or "1").strip() or "1",
+                    "unit": item.get("unit") if item.get("unit") in unit_values else "piece",
+                    "category": item.get("category") if item.get("category") in category_values else "other",
+                    "location": item.get("location") if item.get("location") in location_values else "pantry",
+                    "price": str(item.get("price") or "").strip(),
+                    "barcode": str(item.get("barcode") or "").strip(),
+                    "confidence": item.get("confidence") if item.get("confidence") in {"high", "medium", "low"} else "low",
+                }
+            )
+        return normalized
+
+
+class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
+    template_name = "inventory/receipt_import_review.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        receipt_import = self.request.session.get("receipt_import") or {}
+        context["receipt"] = receipt_import
+        context["items"] = receipt_import.get("items", [])
+        context["category_choices"] = InventoryItem.CATEGORY_CHOICES
+        context["location_choices"] = InventoryItem.LOCATION_CHOICES
+        context["unit_choices"] = InventoryItem.UNIT_CHOICES
+        context["existing_items"] = InventoryItem.objects.filter(
+            household=self.request.user.household
+        ).order_by("name")
+        return context
+
+    def post(self, request, *args, **kwargs):
+        receipt_import = request.session.get("receipt_import") or {}
+        source_items = receipt_import.get("items", [])
+        created_count = 0
+        updated_count = 0
+        skipped_count = 0
+
+        for index, _source_item in enumerate(source_items):
+            if not request.POST.get(f"items-{index}-include"):
+                skipped_count += 1
+                continue
+
+            existing_id = request.POST.get(f"items-{index}-existing_item", "").strip()
+            name = request.POST.get(f"items-{index}-name", "").strip()
+            quantity = self._parse_decimal(request.POST.get(f"items-{index}-quantity"), Decimal("1"))
+            unit = request.POST.get(f"items-{index}-unit") or "piece"
+            category = request.POST.get(f"items-{index}-category") or "other"
+            location = request.POST.get(f"items-{index}-location") or "pantry"
+            barcode = request.POST.get(f"items-{index}-barcode", "").strip()
+            price = request.POST.get(f"items-{index}-price", "").strip()
+            receipt_description = request.POST.get(f"items-{index}-receipt_description", "").strip()
+
+            if existing_id:
+                item = InventoryItem.objects.filter(
+                    household=request.user.household,
+                    pk=existing_id,
+                ).first()
+                if not item:
+                    skipped_count += 1
+                    continue
+                item.quantity = item.quantity + quantity
+                item.unit = unit or item.unit
+                item.category = category or item.category
+                item.location = location or item.location
+                if barcode:
+                    item.barcode = barcode
+                item.notes = self._merge_notes(item.notes, receipt_description, price)
+                item.save()
+                updated_count += 1
+                continue
+
+            if not name:
+                skipped_count += 1
+                continue
+
+            InventoryItem.objects.create(
+                household=request.user.household,
+                name=name,
+                quantity=quantity,
+                unit=unit,
+                category=category,
+                location=location,
+                barcode=barcode,
+                notes=self._build_notes(receipt_description, price),
+            )
+            created_count += 1
+
+        request.session.pop("receipt_import", None)
+        messages.success(
+            request,
+            f"Receipt import complete: {created_count} created, {updated_count} updated, {skipped_count} skipped.",
+        )
+        return redirect("inventory:inventory_list")
+
+    def _parse_decimal(self, raw_value, default):
+        try:
+            return Decimal(str(raw_value or "").strip())
+        except (InvalidOperation, ValueError):
+            return default
+
+    def _build_notes(self, receipt_description, price):
+        notes = []
+        if receipt_description:
+            notes.append(f"Receipt description: {receipt_description}")
+        if price:
+            notes.append(f"Receipt price: ${price}")
+        return "\n".join(notes)
+
+    def _merge_notes(self, existing_notes, receipt_description, price):
+        receipt_notes = self._build_notes(receipt_description, price)
+        if existing_notes and receipt_notes:
+            return f"{existing_notes}\n{receipt_notes}"
+        return existing_notes or receipt_notes

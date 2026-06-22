@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Import Receipt{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card-dark">
+        <div class="p-8">
+            <h1 class="text-2xl font-medium mb-2">Import Receipt</h1>
+            <p class="text-sm mb-6" style="color: var(--text-light-gray);">
+                Take a photo or upload a grocery receipt. AI will extract grocery items, prices, descriptions, and visible barcodes for review before adding them to inventory.
+            </p>
+
+            <form method="post" enctype="multipart/form-data" id="receipt-import-form">
+                {% csrf_token %}
+
+                <div class="mb-6">
+                    <label class="label-dark" for="id_image">Receipt Photo</label>
+                    {{ form.image }}
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
+                        On mobile, this opens your camera. On desktop, select an image file.
+                    </p>
+                    {% if form.image.errors %}
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.image.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div id="image-preview" class="mb-6 hidden">
+                    <img id="preview-img" class="w-full max-h-80 object-contain rounded-lg" style="border: 1px solid var(--border-subtle);">
+                </div>
+
+                <div class="mb-6">
+                    <label class="label-dark" for="id_model">AI Model</label>
+                    {{ form.model }}
+                    {% if form.model.errors %}
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.model.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert-dark mb-4">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="flex items-center gap-4">
+                    <button type="submit" class="btn-primary" id="submit-btn">Extract Receipt Items</button>
+                    <a href="{% url 'inventory:inventory_list' %}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('id_image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('image-preview');
+    const img = document.getElementById('preview-img');
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('hidden');
+    }
+});
+
+document.getElementById('receipt-import-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Extracting receipt...';
+});
+</script>
+{% endblock %}

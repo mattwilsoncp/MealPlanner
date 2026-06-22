@@ -10,6 +10,7 @@
             <p style="color: var(--text-light-gray);">Browse by category, filter quickly, and maintain household stock.</p>
         </div>
         <div class="flex gap-2">
+            <a href="{% url 'inventory:receipt_import' %}" class="btn-ghost">Import Receipt</a>
             <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Soon</a>
             <a href="{% url 'inventory:inventory_expired' %}" class="btn-ghost">Expired</a>
             <a href="{% url 'inventory:inventory_add' %}" class="btn-pill">+ Add Item</a>
