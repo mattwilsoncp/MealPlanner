@@ -1468,5 +1468,1555 @@
     "mtime": 1779839534.6269343,
     "ast_hash": "dedd8680261a5cbd68245a7401cf8581",
     "semantic_hash": "dedd8680261a5cbd68245a7401cf8581"
+  },
+  "/Users/mwilson/source/MealPlanner/start_meal_planner.sh": {
+    "mtime": 1781657257.2290044,
+    "ast_hash": "d5eb79c7db5431b628e2a00af247a487",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/telegram_youtube_recipe_importer.py": {
+    "mtime": 1781657257.2305167,
+    "ast_hash": "c6d18456a7dbb269b184e921d51c7e9d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/test_delete_endpoint.py": {
+    "mtime": 1781657257.2325208,
+    "ast_hash": "3a5ec927faa468c55ea8fcca8194f9ee",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/test-import.py": {
+    "mtime": 1781657257.232468,
+    "ast_hash": "f654959257d44502494065b59416313b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/manage.py": {
+    "mtime": 1781657257.21687,
+    "ast_hash": "92836f3a508bd8923a7c68526448129c",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/seed_data.py": {
+    "mtime": 1781657257.226931,
+    "ast_hash": "e7997e76f49488b9395ac512032914c1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/youtube_importer.py": {
+    "mtime": 1781913468.6267383,
+    "ast_hash": "dbc38e6bed04b687576ccf72d5dd3663",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/models.py": {
+    "mtime": 1781657257.2116587,
+    "ast_hash": "701aafa28656d86e0277220ea46f7dc3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/__init__.py": {
+    "mtime": 1781657257.2113068,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/apps.py": {
+    "mtime": 1781657257.2114468,
+    "ast_hash": "4de857e83559e051dc2796d357e665d0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/admin.py": {
+    "mtime": 1781657257.2113874,
+    "ast_hash": "243a49a650ecdcc9c99f97f5bca31c7e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/views.py": {
+    "mtime": 1781657257.2119637,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/migrations/__init__.py": {
+    "mtime": 1781657257.211581,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/migrations/0001_initial.py": {
+    "mtime": 1781657257.2115552,
+    "ast_hash": "9dab31f13f82cfc6246bca3c1a139651",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/tests/__init__.py": {
+    "mtime": 1781657257.2117152,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/tests/test_models.py": {
+    "mtime": 1781657257.211895,
+    "ast_hash": "d04cdfa00fb315193f371c93dafba94e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/instructions/tests/test_main.py": {
+    "mtime": 1781657257.2117863,
+    "ast_hash": "465b7e9f69bfd158c850cdfbc7306818",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/services.py": {
+    "mtime": 1781657257.2275357,
+    "ast_hash": "f0c87165556514130c46fe6e978b5b8e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/models.py": {
+    "mtime": 1781657257.2274082,
+    "ast_hash": "115a7f40bd59c71270f4c6a680c8d071",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/__init__.py": {
+    "mtime": 1781657257.2270272,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/apps.py": {
+    "mtime": 1781657257.2271476,
+    "ast_hash": "cac1c4f1ba343dcab409fe507cc84e02",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/urls.py": {
+    "mtime": 1781657257.2287908,
+    "ast_hash": "1b1bf07e7ad07d6c16c4dea6f7bc9cf3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/views.py": {
+    "mtime": 1781657257.228927,
+    "ast_hash": "1609cc0de275fc7cef4f780116755f99",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/migrations/__init__.py": {
+    "mtime": 1781657257.2273238,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/migrations/0001_initial.py": {
+    "mtime": 1781657257.2272956,
+    "ast_hash": "7baf50eb565c461d8ff900ed53fbb1f9",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/tests/__init__.py": {
+    "mtime": 1781657257.2278242,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/tests/test_discovery_view.py": {
+    "mtime": 1781657257.2279742,
+    "ast_hash": "da13d27cca0bd70178f2a24203a50c9b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/tests/test_shopping_actions.py": {
+    "mtime": 1781657257.228681,
+    "ast_hash": "50330e2bd3ded27fc39ff83627229b50",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/tests/test_models.py": {
+    "mtime": 1781657257.2284446,
+    "ast_hash": "c7be8883e0fcc58bab43269857b43a35",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/tests/test_matching.py": {
+    "mtime": 1781657257.2283437,
+    "ast_hash": "805c05714577c4949662696c1ed63871",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/tests/test_generation.py": {
+    "mtime": 1781657257.2281473,
+    "ast_hash": "46c3da458d68d55ede92c0e6e62d6421",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/models.py": {
+    "mtime": 1781740555.53893,
+    "ast_hash": "0960be76fc74ba38cf7a731a9afb8c2f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/__init__.py": {
+    "mtime": 1781657257.2174764,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/apps.py": {
+    "mtime": 1781657257.2175944,
+    "ast_hash": "cdc0fb6250be4f51eba0bc9d5a0bc49e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/forms.py": {
+    "mtime": 1781657257.2177267,
+    "ast_hash": "6453ac637d7e51b964a8820345c26387",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/admin.py": {
+    "mtime": 1781657257.2175446,
+    "ast_hash": "94d5ae9758683abb3e60ef4dc8b9bc31",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/tests.py": {
+    "mtime": 1781657257.219928,
+    "ast_hash": "e89a4e65d91b81e4d035d269361d8807",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/urls.py": {
+    "mtime": 1781657257.2201831,
+    "ast_hash": "f42ea603f6d4d23f8b322f2404c22dc2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/views.py": {
+    "mtime": 1781999012.0086477,
+    "ast_hash": "42743d060f1d5330036bb0a75a36af31",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templatetags/__init__.py": {
+    "mtime": 1781657257.2197106,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templatetags/meal_planner_tags.py": {
+    "mtime": 1781657257.21978,
+    "ast_hash": "f4de82a7aa4279733906359a63887318",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/migrations/0002_mealplan_cooked_at_sidedish.py": {
+    "mtime": 1781657257.2179105,
+    "ast_hash": "c26f901f5427b43a937d175fbd18d5ac",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/migrations/0003_mealpreferences.py": {
+    "mtime": 1781740563.4244332,
+    "ast_hash": "b6d0b3ff3d7c456ed72b21ca2cd0d10f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/migrations/__init__.py": {
+    "mtime": 1781657257.2180886,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/migrations/0001_initial.py": {
+    "mtime": 1781657257.2178411,
+    "ast_hash": "dd9d89f5a2be37a637ecee2c17b95fe2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/migrations/0004_mealplan_ingredients.py": {
+    "mtime": 1781657257.2180598,
+    "ast_hash": "5dcd925621e8bca98a02a56c50a1fa22",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/tests/test_views.py": {
+    "mtime": 1781657257.2201188,
+    "ast_hash": "05e3f1c782daa273c7f4889ec8bdba4b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/services/ai_service.py": {
+    "mtime": 1781657257.2183664,
+    "ast_hash": "5f8728f3a1d92d6b203e22a32fab05b6",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/services/__init__.py": {
+    "mtime": 1781657257.2182298,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/services/response_parser.py": {
+    "mtime": 1781657257.2184703,
+    "ast_hash": "b5581b173daab876261f361fff48d6e9",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/opencode.json": {
+    "mtime": 1781657257.1673305,
+    "ast_hash": "e5f74d14a81702b55bdf53b33ec991d7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/plugins/graphify.js": {
+    "mtime": 1781657257.1674497,
+    "ast_hash": "64ccd3c03dbfe0980b6095766f5c4e52",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/skills/ui-ux-pro-max/scripts/design_system.py": {
+    "mtime": 1781657257.1716087,
+    "ast_hash": "08f84d04608a19049c90fc2b1ef314f9",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/skills/ui-ux-pro-max/scripts/core.py": {
+    "mtime": 1781657257.1715014,
+    "ast_hash": "3df4734a785963a8242a56c1b926adfd",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/skills/ui-ux-pro-max/scripts/search.py": {
+    "mtime": 1781657257.1717327,
+    "ast_hash": "8c7e35426fe8f6f3ed91e9dce0ed7af1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/skills/youtube-recipe-importer/__init__.py": {
+    "mtime": 1781657257.171996,
+    "ast_hash": "c15685866d16027a742e55d3237af2bd",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/models.py": {
+    "mtime": 1781657257.2228708,
+    "ast_hash": "703441a6aed0e888f5490f858ae4231f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/__init__.py": {
+    "mtime": 1781657257.2224014,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/apps.py": {
+    "mtime": 1781657257.222661,
+    "ast_hash": "9e5be75ab046c49ebcfe3e50a8f2f324",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/api.py": {
+    "mtime": 1781657257.2225895,
+    "ast_hash": "6004223b6e7df3f305873d58c6438392",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/admin.py": {
+    "mtime": 1781657257.2225168,
+    "ast_hash": "f66bffcb50f58392e5b4b8712ac91cf3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/tests.py": {
+    "mtime": 1781657257.2229407,
+    "ast_hash": "465b7e9f69bfd158c850cdfbc7306818",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/urls.py": {
+    "mtime": 1781657257.2232573,
+    "ast_hash": "5f13b2316ecead46fd1a83e80dcbbf38",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/views.py": {
+    "mtime": 1781657257.2233305,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/migrations/__init__.py": {
+    "mtime": 1781657257.2227921,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/migrations/0001_initial.py": {
+    "mtime": 1781657257.2227664,
+    "ast_hash": "771cadd28dfe8aae395384705eb34e97",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ratings/tests/test_api.py": {
+    "mtime": 1781657257.2231753,
+    "ast_hash": "7822e09f4554caeecbc7d91706c265cb",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/models.py": {
+    "mtime": 1781657257.2299066,
+    "ast_hash": "e230d1fc7a91d040a8fc5bebf7618be1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/__init__.py": {
+    "mtime": 1781657257.2292776,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/apps.py": {
+    "mtime": 1781657257.22948,
+    "ast_hash": "2f62b68946db51430341d5aadf8b72dc",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/api.py": {
+    "mtime": 1781657257.2294233,
+    "ast_hash": "1be8ca58651edb911bebb8e643e806eb",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/admin.py": {
+    "mtime": 1781657257.2293668,
+    "ast_hash": "162e9175dc668c9d670aecb2a513bdb9",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/tests.py": {
+    "mtime": 1781657257.2299762,
+    "ast_hash": "465b7e9f69bfd158c850cdfbc7306818",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/urls.py": {
+    "mtime": 1781657257.2302752,
+    "ast_hash": "cfa3ab691b96b2ba849fb72ad6c9f79b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/views.py": {
+    "mtime": 1781657257.2303836,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/migrations/__init__.py": {
+    "mtime": 1781657257.2296073,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/migrations/0001_initial.py": {
+    "mtime": 1781657257.229579,
+    "ast_hash": "f222672fa6ee933ddef0607fc517b052",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/tests/__init__.py": {
+    "mtime": 1781657257.23004,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/tags/tests/test_api.py": {
+    "mtime": 1781657257.2301981,
+    "ast_hash": "3e799b870f77738061dac4d87a7b46c4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/backup.py": {
+    "mtime": 1782054859.003629,
+    "ast_hash": "c5faf2ce3bff588ebfe409ad74314a1f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/asgi.py": {
+    "mtime": 1781657257.2170618,
+    "ast_hash": "c53dd9c430166c2d71152339c890241f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/__init__.py": {
+    "mtime": 1781657257.2169845,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/settings.py": {
+    "mtime": 1781827062.5953748,
+    "ast_hash": "8acee5b88da104cdec0bec4fa0d80945",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/urls.py": {
+    "mtime": 1781909791.0590827,
+    "ast_hash": "170aeff085aad6c502fe3e281b18eae3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/wsgi.py": {
+    "mtime": 1781657257.2174137,
+    "ast_hash": "209f5080d40da344ad950437e08c866c",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/models.py": {
+    "mtime": 1781657257.1812022,
+    "ast_hash": "603b930a67da0cde16f409ff71914fc5",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/__init__.py": {
+    "mtime": 1781657257.180678,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/apps.py": {
+    "mtime": 1781657257.1808197,
+    "ast_hash": "c5d664e94cff62cf1ba50dcf76ec3f57",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/forms.py": {
+    "mtime": 1781657257.1809425,
+    "ast_hash": "518a3367baa0090a89ec7ebd9db5cc31",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/backends.py": {
+    "mtime": 1781657257.180874,
+    "ast_hash": "663b4abed98a0421b12a56eb4f3337f3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/admin.py": {
+    "mtime": 1781657257.1807582,
+    "ast_hash": "abc91c399ed36df3db0521f37861d4ed",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/tests.py": {
+    "mtime": 1781657257.1816134,
+    "ast_hash": "97998ddf5ac66eec4ad1c082e81856da",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/urls.py": {
+    "mtime": 1781827326.4876337,
+    "ast_hash": "446c3aaaa1e55bf648b870e4ae807233",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/views.py": {
+    "mtime": 1781827313.8862996,
+    "ast_hash": "4890c3c0a5a65a391de9a00a670cf382",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/migrations/0002_enforce_email_unique.py": {
+    "mtime": 1781657257.181101,
+    "ast_hash": "ad87f1751959b36d20378e7df8bf0fa0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/migrations/__init__.py": {
+    "mtime": 1781657257.1811254,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/migrations/0001_initial.py": {
+    "mtime": 1781657257.1810396,
+    "ast_hash": "b4ff5bacf52e96b9408d843bbeca5419",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/youtube.py": {
+    "mtime": 1781657257.2260911,
+    "ast_hash": "ead2b0a487c264471bbf50f56913d9a6",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/parsing.py": {
+    "mtime": 1781657257.2241976,
+    "ast_hash": "ec6f63bfbe432da7ce34fded2d14c0e8",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/models.py": {
+    "mtime": 1781657257.2240772,
+    "ast_hash": "e1624471ef8a5abb396de3d60b05e751",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/__init__.py": {
+    "mtime": 1781657257.2234318,
+    "ast_hash": "e34160323033a4e402a70c57b1aca294",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/apps.py": {
+    "mtime": 1781657257.2236955,
+    "ast_hash": "93ea91943a2d3456ee87b8f838206584",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/forms.py": {
+    "mtime": 1781920300.5989661,
+    "ast_hash": "f075fd79757a91a7c0cd8b0f07569670",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/api.py": {
+    "mtime": 1781657257.223618,
+    "ast_hash": "3029d31d9eea7e7b366db9ce618404a2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/admin.py": {
+    "mtime": 1781657257.2234926,
+    "ast_hash": "fefc5ec4078022538cf6fcb581aa038c",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/urls.py": {
+    "mtime": 1781919343.1855576,
+    "ast_hash": "ab8157a15454ab312f58a56f1fa8d7b2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/views.py": {
+    "mtime": 1782057176.866273,
+    "ast_hash": "94fd0f8d27cfc0e709ab466e93d15e44",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/migrations/__init__.py": {
+    "mtime": 1781657257.2239714,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/migrations/0001_initial.py": {
+    "mtime": 1781657257.223943,
+    "ast_hash": "d12da840a649055016414fa976682bbc",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_forms.py": {
+    "mtime": 1781657257.2247028,
+    "ast_hash": "2843d1fe3e3b7df25bbb41078dd27c77",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_recipe_editing.py": {
+    "mtime": 1781657257.2251673,
+    "ast_hash": "94570d701828ab42c9212404cb0de0fe",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_parsing.py": {
+    "mtime": 1781657257.2250364,
+    "ast_hash": "1e90c836facb716e46f35aafda0c2011",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_youtube.py": {
+    "mtime": 1781657257.2257588,
+    "ast_hash": "ed54df40f293cb2d2813a62aee03fe6d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_llm_import.py": {
+    "mtime": 1781657257.224902,
+    "ast_hash": "36fde8f495c1bf8b931fec915759f7cb",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/__init__.py": {
+    "mtime": 1781657257.2242725,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_views.py": {
+    "mtime": 1781657257.2255821,
+    "ast_hash": "a447dc60fb5e61858eb5dbddc2ec4548",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/recipes/tests/test_api.py": {
+    "mtime": 1781657257.2244556,
+    "ast_hash": "0bc79927387e25b32d77c4808fd545f1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/models.py": {
+    "mtime": 1781657257.212528,
+    "ast_hash": "544a40dfd50ec84895a9e567465ef0b7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/__init__.py": {
+    "mtime": 1781657257.2120495,
+    "ast_hash": "09791ba278470c850aa08a424d6bb5b8",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/apps.py": {
+    "mtime": 1781657257.2121553,
+    "ast_hash": "af4bd81a4804c5ab2c615803133b00a1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/forms.py": {
+    "mtime": 1782086879.3932962,
+    "ast_hash": "07955bc2e49c7f8afc09bb80c043e437",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/admin.py": {
+    "mtime": 1781657257.2121053,
+    "ast_hash": "9019b168d18613d5d63a2efc1fc056d2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/tests_barcode_scan.py": {
+    "mtime": 1781657257.2133482,
+    "ast_hash": "42d2f6c297207eb3733ff13d3e7aa654",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/urls.py": {
+    "mtime": 1782086927.987584,
+    "ast_hash": "efaf2b980e6ed877ee8414f38fbbb8c1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/views.py": {
+    "mtime": 1782086920.6993968,
+    "ast_hash": "bbd4d8576257030a7f59ceb48eb810d2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/migrations/__init__.py": {
+    "mtime": 1781657257.2124376,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/migrations/0002_inventoryitem_image_and_more.py": {
+    "mtime": 1781657257.2124152,
+    "ast_hash": "09685b100abd56a7ae09204e7c5a601e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/migrations/0001_initial.py": {
+    "mtime": 1781657257.2123427,
+    "ast_hash": "04a098b6771bf396f3ad3f98cd4c0bb6",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/tests/__init__.py": {
+    "mtime": 1781657257.2127726,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/tests/test_upc_lookup.py": {
+    "mtime": 1781657257.2132306,
+    "ast_hash": "dfb99b6d8c1792a72d7f91643735caf4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/tests/test_forms_and_views.py": {
+    "mtime": 1781657257.212965,
+    "ast_hash": "0f28ca70483c501808e14590c17e7f55",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/tests/test_main.py": {
+    "mtime": 1781657257.2131078,
+    "ast_hash": "bfe378606dc9b29e148c851ea908ed62",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/services/__init__.py": {
+    "mtime": 1781657257.212607,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/inventory/services/upc_lookup.py": {
+    "mtime": 1781905944.385773,
+    "ast_hash": "8975805c017b6c65fb684188f4837c0d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/models.py": {
+    "mtime": 1781657257.2104638,
+    "ast_hash": "2cc0f309211f5b8734135f86a996cf93",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/__init__.py": {
+    "mtime": 1781657257.2098916,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/apps.py": {
+    "mtime": 1781657257.2100992,
+    "ast_hash": "95c5e1c31a8cc3f710e9dff7c7494b81",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/forms.py": {
+    "mtime": 1781657257.2101521,
+    "ast_hash": "e36a76c4f996ae3d624095e58687f094",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/api.py": {
+    "mtime": 1781657257.210039,
+    "ast_hash": "d2a6e089668a7b9e648f71a244d54dcf",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/admin.py": {
+    "mtime": 1781657257.2099717,
+    "ast_hash": "8aa367f816ef4bd3cbf80c74b0481c16",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/utils.py": {
+    "mtime": 1781657257.2111943,
+    "ast_hash": "87f8e618c6c64cb68aced75ba89d4bc4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/urls.py": {
+    "mtime": 1781657257.2111394,
+    "ast_hash": "26a3e1de608147f7522559049658e689",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/views.py": {
+    "mtime": 1781657257.2112486,
+    "ast_hash": "f467fa232324ad139aaecd0df7698f3f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/migrations/0002_ingredientlink_inventory_item.py": {
+    "mtime": 1781657257.2103002,
+    "ast_hash": "053341a4440b874cae7c63c2785e0337",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/migrations/0003_ingredient_nutrition_fields.py": {
+    "mtime": 1781657257.2103646,
+    "ast_hash": "75e21e86e627655e1a67d93e0c219348",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/migrations/__init__.py": {
+    "mtime": 1781657257.2103899,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/migrations/0001_initial.py": {
+    "mtime": 1781657257.2102437,
+    "ast_hash": "04a8b2bc806b60869a960333c957e067",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/tests/test_links_and_nutrition.py": {
+    "mtime": 1781657257.2108371,
+    "ast_hash": "5c60ae91c4c4e08e1daa3177a9dd2ab0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/tests/test_unit_conversion.py": {
+    "mtime": 1781657257.211077,
+    "ast_hash": "9cf8887fe1bbeed2b1cccd97d5547f3f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/tests/__init__.py": {
+    "mtime": 1781657257.2105236,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/tests/test_models_and_forms.py": {
+    "mtime": 1781657257.2109606,
+    "ast_hash": "cf50063d33c464d4a0e32305739384aa",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/ingredients/tests/test_api.py": {
+    "mtime": 1781657257.210721,
+    "ast_hash": "1e182c57031251b6f58f5d935919705e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/models.py": {
+    "mtime": 1781657257.2097564,
+    "ast_hash": "35620b66b263e4eb59d250ac54dec969",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/__init__.py": {
+    "mtime": 1781657257.2093298,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/apps.py": {
+    "mtime": 1781657257.2094326,
+    "ast_hash": "c4137675e0affd98c24df0741350b954",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/tests.py": {
+    "mtime": 1781657257.2098224,
+    "ast_hash": "747b2e3b892f82ae585e122889acb7c0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/migrations/__init__.py": {
+    "mtime": 1781657257.2096734,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/migrations/0002_household_expiring_threshold_days.py": {
+    "mtime": 1781657257.2096474,
+    "ast_hash": "fa0049b6cf5a0621ccee4af2b0d675b3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/household/migrations/0001_initial.py": {
+    "mtime": 1781657257.209558,
+    "ast_hash": "0c698ca36e4bb4658097faa75595fba0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/config.json": {
+    "mtime": 1781657257.172676,
+    "ast_hash": "6332cbe43283adc02b3cf0fbf709a5fa",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/reviews/__init__.py": {
+    "mtime": 1781657257.2263148,
+    "ast_hash": "f59c76f8a95bb6e903a202c8c6fa5f23",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/reviews/apps.py": {
+    "mtime": 1781657257.2263873,
+    "ast_hash": "ed698c7cbf17ef447f7826ee4f07ec3c",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/reviews/urls.py": {
+    "mtime": 1781657257.2267148,
+    "ast_hash": "2c31347c1cafd6938f51dc4f2a9d4cca",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/reviews/views.py": {
+    "mtime": 1781657257.2268326,
+    "ast_hash": "ac03dd85742eab5acf9bea2270d616d4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/reviews/tests/__init__.py": {
+    "mtime": 1781657257.2264678,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/reviews/tests/test_review_queue.py": {
+    "mtime": 1781657257.2265806,
+    "ast_hash": "020e60aea3dee9b2eeb107e2006b1d8f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/TEST_GUIDE.md": {
+    "mtime": 1781657257.1806188,
+    "ast_hash": "18c24ce9c1749a30092efcf8e390a5ca",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/requirements.txt": {
+    "mtime": 1781657257.2261999,
+    "ast_hash": "609f38e53090dd866e39cf6411ced084",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/README.md": {
+    "mtime": 1781657257.1804821,
+    "ast_hash": "1194161315956cd7cb0d9ed6c2c3df07",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docker-compose.yml": {
+    "mtime": 1781657257.1818085,
+    "ast_hash": "80f981a4820979cec4460347bd534241",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/DESIGN.md": {
+    "mtime": 1781657257.1803036,
+    "ast_hash": "c9ba6ea806e1b7f818b93b4734e8a325",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/AGENTS.md": {
+    "mtime": 1781657257.1801023,
+    "ast_hash": "00748725adebb624a4ef2609fe2afbc1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/CLAUDE.md": {
+    "mtime": 1781657257.1801567,
+    "ast_hash": "62425d81f31595529a0ebd37b33fee0d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.config/opencode/skills/graphify/SKILL.md": {
+    "mtime": 1781657257.1671247,
+    "ast_hash": "a40b1bdf74ba936cb110d0d8226a4661",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/shopping/templates/shopping/week.html": {
+    "mtime": 1781657257.2277248,
+    "ast_hash": "b184fcff55fa341422559affb4d1dd7f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/meal_form.html": {
+    "mtime": 1781657257.2191784,
+    "ast_hash": "9e11db32b592a491ecf6e0df75bf2c68",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/preferences.html": {
+    "mtime": 1781657257.2196515,
+    "ast_hash": "40fc4c10c354b5d43e3d059e1385e570",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/planner.html": {
+    "mtime": 1782055124.359535,
+    "ast_hash": "1e88fac02e2cd292a64cff656fe85c12",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/on_hand_ideas.html": {
+    "mtime": 1781657257.219304,
+    "ast_hash": "f574df0283a4c12ed554e385a3f2eca2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/ai_plan_review.html": {
+    "mtime": 1781657257.2188365,
+    "ast_hash": "70da748d82eab64a7cbc6769239985b0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/cooking_home.html": {
+    "mtime": 1781657257.2190526,
+    "ast_hash": "adbb902bfb4fc72c1136cd050b261cfc",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/templates/meal_planner/cooking.html": {
+    "mtime": 1781657257.218985,
+    "ast_hash": "d52afd8efcb95a63e89bfed15e2e910a",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/skills/ui-ux-pro-max/SKILL.md": {
+    "mtime": 1781657257.1676893,
+    "ast_hash": "e745b5a6c71379800b232a1ba32d16ec",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.opencode/skills/youtube-recipe-importer/SKILL.md": {
+    "mtime": 1781657257.1718433,
+    "ast_hash": "600ad4551b8cc039fee2a97863b8c3fc",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md": {
+    "mtime": 1781657257.1664984,
+    "ast_hash": "9ba618bb478c9fe1efb360d255a25eba",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/gitnexus/gitnexus-debugging/SKILL.md": {
+    "mtime": 1781657257.1660335,
+    "ast_hash": "3998c14d1bb3558b716ea55d9971826b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/gitnexus/gitnexus-exploring/SKILL.md": {
+    "mtime": 1781657257.1661413,
+    "ast_hash": "e938f38cf262c7daad36be1794517ca2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/gitnexus/gitnexus-guide/SKILL.md": {
+    "mtime": 1781657257.1662464,
+    "ast_hash": "52a6df29e7e6161fc0ccfc3a42a1cb88",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/gitnexus/gitnexus-cli/SKILL.md": {
+    "mtime": 1781657257.1659248,
+    "ast_hash": "4990f214db3cbd43b6de75d81a10dda2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md": {
+    "mtime": 1781657257.166355,
+    "ast_hash": "aad191ea3512d8a10e3749f24cabca46",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.claude/skills/test-gap-filler/SKILL.md": {
+    "mtime": 1781657257.1666589,
+    "ast_hash": "a5fb2625e177f53aa9af7d88876a94d4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/user_manual.md": {
+    "mtime": 1781909970.12126,
+    "ast_hash": "0e35d09f83a32c072953047c7cd6358b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/supabase/DESIGN.md": {
+    "mtime": 1781657257.2292085,
+    "ast_hash": "c9ba6ea806e1b7f818b93b4734e8a325",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner/templates/index.html": {
+    "mtime": 1781657257.2172961,
+    "ast_hash": "68a7d882dd7234e7cba93243b2520960",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/templates/registration/register.html": {
+    "mtime": 1781657257.181449,
+    "ast_hash": "ab88a8e0eb9cbe23f358ba7377b92d09",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/templates/registration/login.html": {
+    "mtime": 1781827102.9413974,
+    "ast_hash": "3682cb12a90a6abcbdbd44aa69c0a64e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/accounts/templates/registration/logged_out.html": {
+    "mtime": 1781657257.1813314,
+    "ast_hash": "37e149c172bd042e82d29c7311a17080",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/base.html": {
+    "mtime": 1781919352.3051379,
+    "ast_hash": "a74e99580104a3505255d575ffb4eb63",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/shopping/discovery.html": {
+    "mtime": 1781657257.2323236,
+    "ast_hash": "f67e8bf58c679291bdea2448a635ca1f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/shopping/shopping_week.html": {
+    "mtime": 1781657257.2324185,
+    "ast_hash": "6c2d040f793825439d25a315ae85345f",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/includes/modal.html": {
+    "mtime": 1781657257.2308779,
+    "ast_hash": "e9b761caeb1b7dd52166d685dfbbf2c4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/recipes/llm_import.html": {
+    "mtime": 1781657257.231438,
+    "ast_hash": "a23f9e40b55ee93de74e8279a3c15895",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/recipes/recipe_detail.html": {
+    "mtime": 1781657257.2316422,
+    "ast_hash": "e38acdff15d2e52260c40d1fbe9b83cf",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/recipes/recipe_confirm_delete.html": {
+    "mtime": 1781657257.2315226,
+    "ast_hash": "2986a1ac6e3cfcfbca0cbf0ddf03c3e7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/recipes/recipe_form.html": {
+    "mtime": 1781657257.2317696,
+    "ast_hash": "0a401df992f6f3eeed528697ab8cdfb6",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/recipes/recipe_list.html": {
+    "mtime": 1781657257.2319014,
+    "ast_hash": "1a75eebe4496cd6d7754b0790b36c115",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/recipes/image_import.html": {
+    "mtime": 1781919335.843886,
+    "ast_hash": "1bfb53d0672bbbc91d6657747eaa41e1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/inventory/receipt_import_review.html": {
+    "mtime": 1782086955.3878658,
+    "ast_hash": "87b56fa2c4a76ae291a54121e338994e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/inventory/barcode_scan.html": {
+    "mtime": 1781660315.5178924,
+    "ast_hash": "c56a68b4f7566eae82be23af29b441b1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/inventory/inventory_expiring.html": {
+    "mtime": 1781657257.231156,
+    "ast_hash": "54cadc6443d27a937b4d9cd914228cd1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/inventory/receipt_import.html": {
+    "mtime": 1782086955.2957563,
+    "ast_hash": "952ef98c7a586eb331f11c12e651fdf7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/inventory/inventory_list.html": {
+    "mtime": 1782086964.4156775,
+    "ast_hash": "27ad5186bfa44fe02c41fe91c8c877ed",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/inventory/inventory_form.html": {
+    "mtime": 1781657257.231226,
+    "ast_hash": "eab9e2eb7a1c1268d5795fce957fee49",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/backup/backup.html": {
+    "mtime": 1782054870.57361,
+    "ast_hash": "68a3ed190adaf55ebd7c14732ffedbcf",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/reviews/review_queue.html": {
+    "mtime": 1781657257.232186,
+    "ast_hash": "f0e653d8e0c5b8b8d56d49807f7bfc91",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/reviews/reconcile.html": {
+    "mtime": 1781657257.2321239,
+    "ast_hash": "7915687e3e6384a80ab176afc03b05e4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/templates/reviews/mark_ready.html": {
+    "mtime": 1781657257.2320006,
+    "ast_hash": "01fb1ba88a278288f1d40632c5ffbb45",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/REQUIREMENTS.md": {
+    "mtime": 1781657257.1722858,
+    "ast_hash": "f61ac1c20c13b160348649af55becdca",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/v1-MILESTONE-AUDIT.md": {
+    "mtime": 1781657257.1798491,
+    "ast_hash": "4a6f4376bb96b8b639c2ec3d2d6a61f2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/v1.1-STATE.md": {
+    "mtime": 1781657257.1800313,
+    "ast_hash": "8c1f4a5449afc8017a43ee9acebabe57",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/PROJECT.md": {
+    "mtime": 1781657257.172177,
+    "ast_hash": "1e31cc1d683b593240d39af57e7cb272",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/STATE.md": {
+    "mtime": 1781657257.17241,
+    "ast_hash": "16f0bb048df44140de151e8c98a585d4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/ROADMAP.md": {
+    "mtime": 1781657257.1723485,
+    "ast_hash": "ed3128d60199d976fd84dc5afff222e7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/v1.1-ROADMAP.md": {
+    "mtime": 1781657257.179958,
+    "ast_hash": "e3e08c141bbd0daa3df3f44f584b29e1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/MILESTONES.md": {
+    "mtime": 1781657257.1721096,
+    "ast_hash": "f74c511fc0461e267fb536917aa64daf",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/research/STACK.md": {
+    "mtime": 1781657257.1797154,
+    "ast_hash": "6c268bc18a8a6dfe7018ab84537bc166",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/research/ARCHITECTURE.md": {
+    "mtime": 1781657257.1794908,
+    "ast_hash": "96a9afc01b1714b46ad5e2f1ec21ceb0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/research/PITFALLS.md": {
+    "mtime": 1781657257.1796565,
+    "ast_hash": "0ae1f75bd3dc93532a7c559ee0977787",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/research/SUMMARY.md": {
+    "mtime": 1781657257.1797783,
+    "ast_hash": "ccb0ce7dcc8016d5a886a91e66317a04",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/research/FEATURES.md": {
+    "mtime": 1781657257.1795547,
+    "ast_hash": "a9d4bafbbb2ae5008cce1c0a9805a3a7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/milestones/v1-REQUIREMENTS.md": {
+    "mtime": 1781657257.172771,
+    "ast_hash": "7dbf3a254068fbb79ed63d0e43eaa7ed",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/milestones/v1-ROADMAP.md": {
+    "mtime": 1781657257.1728568,
+    "ast_hash": "081ef9563374893e7408ebaa7c23f7ff",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/codebase/STACK.md": {
+    "mtime": 1781657257.1726172,
+    "ast_hash": "f48e5fb2c786549459cc592fcafa1c51",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/codebase/INTEGRATIONS.md": {
+    "mtime": 1781657257.1725523,
+    "ast_hash": "4d9ea1da1579eb79ac1f6632d3d63a6d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-02-PLAN.md": {
+    "mtime": 1781657257.1732776,
+    "ast_hash": "a0a0250e4238560e9864c8c8de798466",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-05-SUMMARY.md": {
+    "mtime": 1781657257.1740196,
+    "ast_hash": "79ca2643c982d663eb2fdb91715b5ab1",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-03-PLAN.md": {
+    "mtime": 1781657257.173479,
+    "ast_hash": "7d3c0338b65e1821373b2c49a21893df",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-VERIFICATION.md": {
+    "mtime": 1781657257.174262,
+    "ast_hash": "b7bb2ecb691d5df722625857a15d724a",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-01-PLAN.md": {
+    "mtime": 1781657257.17306,
+    "ast_hash": "9ecc717d00687cc283813c35e11a2566",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-02-SUMMARY.md": {
+    "mtime": 1781657257.1733449,
+    "ast_hash": "a72e20e68593affb36dca8b2d27a1f76",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-01-SUMMARY.md": {
+    "mtime": 1781657257.1731336,
+    "ast_hash": "445eef2ecfe4d11b1b3710e41d3c8d51",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-05-PLAN.md": {
+    "mtime": 1781657257.173913,
+    "ast_hash": "12a2608592e7f0b4334408df4d046f8d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-04-SUMMARY.md": {
+    "mtime": 1781657257.1737964,
+    "ast_hash": "0e0eaa1d303a02b12644e56c396a7ba6",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-04-PLAN.md": {
+    "mtime": 1781657257.1737351,
+    "ast_hash": "c22391fd84136fd8b356c97501c6b436",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-06-PLAN.md": {
+    "mtime": 1781657257.174129,
+    "ast_hash": "1fae9712e136c0acf57d1bf7555e9c18",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-03-SUMMARY.md": {
+    "mtime": 1781657257.1735919,
+    "ast_hash": "0f66888a810ff3640ffc8fdeafd7de3c",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-foundation-recipes/01-06-SUMMARY.md": {
+    "mtime": 1781657257.1741936,
+    "ast_hash": "d9cfbcf5a128d68515eb4d1cdb50adb7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-youtube-import/01-01-PLAN.md": {
+    "mtime": 1781657257.174611,
+    "ast_hash": "103c6da4ed79248df584925cce2dfce5",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-youtube-import/01-01-SUMMARY.md": {
+    "mtime": 1781657257.1746745,
+    "ast_hash": "717667ad262c1d71189c0132c9c8c7c8",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-youtube-import/01-CONTEXT.md": {
+    "mtime": 1781657257.1747386,
+    "ast_hash": "d54c36db4d766f66f2ff0383d56d7af2",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-ai-service-integration/01-01-PLAN.md": {
+    "mtime": 1781657257.1748784,
+    "ast_hash": "fccbc4d7dbe1ad55f8aabb475ea02aba",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-ai-service-integration/01-01-SUMMARY.md": {
+    "mtime": 1781657257.1749427,
+    "ast_hash": "5d9f3d18b4de7a214884f43cc4cec261",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-05-SUMMARY.md": {
+    "mtime": 1781657257.1758883,
+    "ast_hash": "dc30a0e0f79a1a41e3139dbae9a619b0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-04-PLAN.md": {
+    "mtime": 1781657257.1756098,
+    "ast_hash": "c073736cea54a1897f4d1db32035f30a",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-02-SUMMARY.md": {
+    "mtime": 1781657257.1753387,
+    "ast_hash": "cac9aeab65c9ea257ce7ce6d53d23030",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-05-PLAN.md": {
+    "mtime": 1781657257.175782,
+    "ast_hash": "f2399f0fa689675e5c60bffef554c914",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-04-SUMMARY.md": {
+    "mtime": 1781657257.1756718,
+    "ast_hash": "5ce2f731b23bfa609f66c804c654fe96",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-VERIFICATION.md": {
+    "mtime": 1781657257.175954,
+    "ast_hash": "c6774acd7351e65c75d69f49020e78da",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-01-SUMMARY.md": {
+    "mtime": 1781657257.1751592,
+    "ast_hash": "fe01d63ab2cfe3290fad20a53cdb219b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-01-PLAN.md": {
+    "mtime": 1781657257.1750858,
+    "ast_hash": "b2d21c37379e7875b8b1ad36c2977c44",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-03-PLAN.md": {
+    "mtime": 1781657257.1754465,
+    "ast_hash": "98885dd8c9f4161e4a993732fe2521d6",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-03-SUMMARY.md": {
+    "mtime": 1781657257.1755047,
+    "ast_hash": "49d2336eef760b1b4286bb321ea6c746",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-meal-planning/02-02-PLAN.md": {
+    "mtime": 1781657257.1752734,
+    "ast_hash": "c8dc7bfa47fb446db96f3c42a66aae03",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-shopping-list-and-polish/04-01-PLAN.md": {
+    "mtime": 1781657257.178766,
+    "ast_hash": "fc9a172be8e06c08426e7dded2d29941",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/06-verification-closure/06-01-PLAN.md": {
+    "mtime": 1781657257.1793022,
+    "ast_hash": "b0b3aefa4d14bb881c229c6d309a5ff3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/06-verification-closure/06-01-SUMMARY.md": {
+    "mtime": 1781657257.179403,
+    "ast_hash": "0fb8c069dcafd7d787ecbf8cb2bee9ee",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-metadata-fetch/02-01-SUMMARY.md": {
+    "mtime": 1781657257.176185,
+    "ast_hash": "a0aed6867ab34ca5c863580ee79e47ee",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/02-metadata-fetch/02-01-PLAN.md": {
+    "mtime": 1781657257.1761117,
+    "ast_hash": "72b8dcde0cbc85e15bd4dfa6b514352d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-form-population/04-01-PLAN.md": {
+    "mtime": 1781657257.1785653,
+    "ast_hash": "0b6775ff62e7aa9943be040567fd6f94",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-form-population/04-01-SUMMARY.md": {
+    "mtime": 1781657257.1786304,
+    "ast_hash": "d468daa7d8883cbd201585aa77460a9d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-content-parsing/03-01-PLAN.md": {
+    "mtime": 1781657257.1766415,
+    "ast_hash": "ebb4e2c1c5dbf049ad7f46c5d81cdcf9",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-content-parsing/03-01-SUMMARY.md": {
+    "mtime": 1781657257.1766984,
+    "ast_hash": "439f5c4df6235c4dac70354731791d0a",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-content-parsing/03-CONTEXT.md": {
+    "mtime": 1781657257.1767604,
+    "ast_hash": "c889e408561cffcfcd0c15c4ce215970",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-discovery-matching/04-02-PLAN.md": {
+    "mtime": 1781657257.1782358,
+    "ast_hash": "368b6a1c3d0f214d5b1525093e2e6399",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-discovery-matching/04-RESEARCH.md": {
+    "mtime": 1781657257.1783981,
+    "ast_hash": "b2179c2993e9a26490a3aa238fbd3685",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-discovery-matching/04-01-PLAN.md": {
+    "mtime": 1781657257.1780646,
+    "ast_hash": "f14b9b89bdc4f04e266bf5a85749bcca",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-discovery-matching/04-01-SUMMARY.md": {
+    "mtime": 1781657257.1781218,
+    "ast_hash": "c1448892f76f905f05bdf42e48ee25ce",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-discovery-matching/04-02-SUMMARY.md": {
+    "mtime": 1781657257.1783385,
+    "ast_hash": "4c398d6f698b50c97d0e19d7a39d57e7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/04-discovery-matching/04-VERIFICATION.md": {
+    "mtime": 1781657257.1784554,
+    "ast_hash": "07accc8a8ce4fa53a3918d6962c8fd3e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-03-SUMMARY.md": {
+    "mtime": 1781657257.17746,
+    "ast_hash": "cd93dfd61bf50b4d787e7897a4a85f21",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-01-PLAN.md": {
+    "mtime": 1781657257.176908,
+    "ast_hash": "2fe9f4be051473df826400413618e3b3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-02-PLAN.md": {
+    "mtime": 1781657257.17713,
+    "ast_hash": "c9f70881473f4ba9fa5f38f594171c05",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-01-SUMMARY.md": {
+    "mtime": 1781657257.177013,
+    "ast_hash": "7e59eeaf5dcb5859190920c67b3542fc",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-03-PLAN.md": {
+    "mtime": 1781657257.1773515,
+    "ast_hash": "f3075ce343961c327edb60e704eebb77",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-04-SUMMARY.md": {
+    "mtime": 1781657257.1776624,
+    "ast_hash": "9e9c285f0acd6853628ad1536aadeafb",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-02-SUMMARY.md": {
+    "mtime": 1781657257.177244,
+    "ast_hash": "9a1da61362fb2bec08adc4437735fb26",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-05-PLAN.md": {
+    "mtime": 1781657257.177763,
+    "ast_hash": "6d97d9b530b4dffc6502cc7594326bd8",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-05-SUMMARY.md": {
+    "mtime": 1781657257.177868,
+    "ast_hash": "6cf3c4b5b9c220ca830f9af3a2043c17",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-04-PLAN.md": {
+    "mtime": 1781657257.1775653,
+    "ast_hash": "55d1701b58a349da99e092165c9aa411",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-inventory-shopping/03-VERIFICATION.md": {
+    "mtime": 1781657257.1779292,
+    "ast_hash": "d98b85a2cf169c9bb905272a18dd94ca",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-02-SUMMARY.md": {
+    "mtime": 1781657257.1791706,
+    "ast_hash": "333914d4511913d35fe2927e94877c64",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-02-PLAN.md": {
+    "mtime": 1781657257.1790717,
+    "ast_hash": "d0c98388e2c319a17e658025ac3403e3",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-01-SUMMARY.md": {
+    "mtime": 1781657257.1789699,
+    "ast_hash": "de07b6a7402a2ed3603b18f3c10b0401",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/05-phase1-gap-remediation/05-01-PLAN.md": {
+    "mtime": 1781657257.178904,
+    "ast_hash": "dedd8680261a5cbd68245a7401cf8581",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-ai-plan-review-acceptance/03-01-PLAN.md": {
+    "mtime": 1781657257.1764727,
+    "ast_hash": "f5b231cc0e18d779b886a3436367c3f4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/03-ai-plan-review-acceptance/01-01-SUMMARY.md": {
+    "mtime": 1781657257.176333,
+    "ast_hash": "243f4169ee289b02f699bc60db93c6a0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-preferences-configuration/01-01-PLAN.md": {
+    "mtime": 1781657257.1743858,
+    "ast_hash": "e241b578d4e2718a50b2c152528f5dfd",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/.planning/phases/01-preferences-configuration/01-01-SUMMARY.md": {
+    "mtime": 1781657257.1744683,
+    "ast_hash": "879498892f40a25d4d8c273ad06fd964",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/meal_planner_app/static/meal_planner_app/icons/icon.svg": {
+    "mtime": 1781657257.2186315,
+    "ast_hash": "836e6e2a960ed45cb88823bc552ac3b7",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/10-discovery.png": {
+    "mtime": 1781743111.9029713,
+    "ast_hash": "ce9c09bb3e8411d5ea8d290fb55006c4",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/08-planner.png": {
+    "mtime": 1781743574.5341766,
+    "ast_hash": "dabca5db412951d31d91e0d54e00933b",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/01-home.png": {
+    "mtime": 1781743574.4896116,
+    "ast_hash": "08c038aa3da6b0721f9274ad7019ef8e",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/05-login-filled.png": {
+    "mtime": 1781742020.1748185,
+    "ast_hash": "b6f43762578f99ac0caf3da0db9f026d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/06-recipe-detail.png": {
+    "mtime": 1781743081.0893679,
+    "ast_hash": "b50abfde8457aff66ab4cc78f060882d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/03-register.png": {
+    "mtime": 1781742020.1700962,
+    "ast_hash": "66730f00ddf5fcc0dde6ee947d5b7104",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/04-recipe-list.png": {
+    "mtime": 1781743197.0681555,
+    "ast_hash": "52b68ec69ea9aa1eae705693f6ece9b0",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/07-inventory.png": {
+    "mtime": 1781743157.9943843,
+    "ast_hash": "681d21cd0d86c147de36d0857eb3d10d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/02-login.png": {
+    "mtime": 1781742020.1678262,
+    "ast_hash": "b6f43762578f99ac0caf3da0db9f026d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/11-expiring.png": {
+    "mtime": 1781743197.024779,
+    "ast_hash": "68068f92074b962f037ae956ecda671d",
+    "semantic_hash": ""
+  },
+  "/Users/mwilson/source/MealPlanner/docs/screenshots/09-shopping.png": {
+    "mtime": 1781743095.049539,
+    "ast_hash": "8e9ee917698974e27d294b7c3eb698c3",
+    "semantic_hash": ""
   }
 }

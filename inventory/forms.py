@@ -49,3 +49,27 @@ class InventoryItemForm(BaseInventoryItemForm):
 class InventoryQuickAddForm(BaseInventoryItemForm):
     class Meta(InventoryItemForm.Meta):
         pass
+
+
+class ReceiptImportForm(forms.Form):
+    image = forms.ImageField(
+        label="Receipt Photo",
+        widget=forms.FileInput(
+            attrs={
+                "class": "input-dark",
+                "accept": "image/*",
+                "capture": "environment",
+            }
+        ),
+    )
+    model = forms.ChoiceField(
+        label="AI Model",
+        choices=[
+            ("google/gemini-2.0-flash-001", "Gemini 2.0 Flash (Paid, Fast)"),
+            ("anthropic/claude-sonnet-4", "Claude Sonnet 4 (Paid, Best)"),
+            ("google/gemini-2.5-pro-preview-06-05", "Gemini 2.5 Pro (Paid, Premium)"),
+        ],
+        initial="google/gemini-2.0-flash-001",
+        required=False,
+        widget=forms.Select(attrs={"class": "input-dark"}),
+    )

@@ -1,4 +1,5 @@
 .gitnexus
+graphify-out/
 
 # Python
 __pycache__/

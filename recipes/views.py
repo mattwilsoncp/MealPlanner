@@ -1157,11 +1157,19 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
                     quantity = float(ing.get("quantity", 1)) or 1
                     unit = ing.get("unit", "piece") or "piece"
 
-                    ing_obj, _ = Ingredient.objects.get_or_create(
-                        household=recipe.household,
-                        name__iexact=name,
-                        defaults={"household": recipe.household, "name": name},
+                    ing_obj = (
+                        Ingredient.objects.filter(
+                            household=recipe.household,
+                            name__iexact=name,
+                        )
+                        .order_by("id")
+                        .first()
                     )
+                    if not ing_obj:
+                        ing_obj = Ingredient.objects.create(
+                            household=recipe.household,
+                            name=name,
+                        )
                     IngredientLink.objects.create(
                         recipe=recipe,
                         ingredient=ing_obj,
@@ -1205,11 +1213,19 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
                 )
                 unit = units[i] if i < len(units) and units[i] else "piece"
 
-                ing, _ = Ingredient.objects.get_or_create(
-                    household=recipe.household,
-                    name__iexact=name,
-                    defaults={"household": recipe.household, "name": name},
+                ing = (
+                    Ingredient.objects.filter(
+                        household=recipe.household,
+                        name__iexact=name,
+                    )
+                    .order_by("id")
+                    .first()
                 )
+                if not ing:
+                    ing = Ingredient.objects.create(
+                        household=recipe.household,
+                        name=name,
+                    )
                 IngredientLink.objects.create(
                     recipe=recipe,
                     ingredient=ing,
@@ -1286,11 +1302,19 @@ class RecipeUpdateView(LoginRequiredMixin, UpdateView):
                 )
                 unit = units[i] if i < len(units) and units[i] else "piece"
 
-                ing, _ = Ingredient.objects.get_or_create(
-                    household=recipe.household,
-                    name__iexact=name,
-                    defaults={"household": recipe.household, "name": name},
+                ing = (
+                    Ingredient.objects.filter(
+                        household=recipe.household,
+                        name__iexact=name,
+                    )
+                    .order_by("id")
+                    .first()
                 )
+                if not ing:
+                    ing = Ingredient.objects.create(
+                        household=recipe.household,
+                        name=name,
+                    )
                 IngredientLink.objects.create(
                     recipe=recipe,
                     ingredient=ing,
