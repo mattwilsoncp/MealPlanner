@@ -44,13 +44,45 @@
             </div>
             
             <div class="mb-4">
-                <label class="label-dark" for="id_household_name">Household Name (optional)</label>
-                <input type="text" name="household_name" id="id_household_name" class="input-dark" placeholder="My Household">
-                <p class="text-sm mt-1" style="color: var(--text-mid-gray);">Give your household a name, or we'll create one for you</p>
+                <label class="label-dark" for="id_household_name">Household <span style="color: var(--text-mid-gray); font-weight: normal;">(optional)</span></label>
+
+                <div id="household-select-wrapper">
+                    <select name="household_name" id="id_household_name" class="input-dark">
+                        <option value="">--- Select a household ---</option>
+                        {% for h in households %}
+                        <option value="{{ h }}">{{ h }}</option>
+                        {% endfor %}
+                        <option value="__other__">Other (type a new one)...</option>
+                    </select>
+                </div>
+
+                <div id="household-text-wrapper" style="display: none;">
+                    <input type="text" name="household_name" id="id_household_name_text" class="input-dark" placeholder="Type a new household name">
+                    <button type="button" id="household-back-btn" class="text-sm link-green" style="background: none; border: none; cursor: pointer; padding: 4px 0; display: block;">&larr; Back to list</button>
+                </div>
+
+                <p class="text-sm mt-1" style="color: var(--text-mid-gray);">Pick an existing household or choose "Other" to type a new one</p>
             </div>
             
             <button type="submit" class="btn-pill w-full" style="background: var(--brand-green); border-color: var(--brand-green);">Register</button>
         </form>
+
+        <script>
+        document.getElementById('id_household_name').addEventListener('change', function() {
+            if (this.value === '__other__') {
+                document.getElementById('household-select-wrapper').style.display = 'none';
+                document.getElementById('household-text-wrapper').style.display = 'block';
+                document.getElementById('id_household_name').disabled = true;
+                document.getElementById('id_household_name_text').focus();
+            }
+        });
+        document.getElementById('household-back-btn').addEventListener('click', function() {
+            document.getElementById('household-text-wrapper').style.display = 'none';
+            document.getElementById('household-select-wrapper').style.display = 'block';
+            document.getElementById('id_household_name').disabled = false;
+            document.getElementById('id_household_name').value = '';
+        });
+        </script>
         
         <hr class="divider-dark">
         

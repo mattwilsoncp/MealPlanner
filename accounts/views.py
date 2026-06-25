@@ -9,7 +9,7 @@ from django.utils.encoding import force_bytes
 from django.views import View
 from django.views.generic import CreateView
 
-from .forms import RegistrationForm
+from .forms import LoginForm, RegistrationForm
 
 User = get_user_model()
 
@@ -17,6 +17,16 @@ User = get_user_model()
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
     redirect_authenticated_user = True
+    form_class = LoginForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from household.models import Household
+
+        context["households"] = Household.objects.values_list(
+            "name", flat=True
+        ).order_by("name")
+        return context
 
 
 class CustomLogoutView(LogoutView):
@@ -50,6 +60,15 @@ class RegisterView(CreateView):
     form_class = RegistrationForm
     template_name = "registration/register.html"
     success_url = reverse_lazy("home")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from household.models import Household
+
+        context["households"] = Household.objects.values_list(
+            "name", flat=True
+        ).order_by("name")
+        return context
 
     def form_valid(self, form):
         from django.contrib.auth import login
