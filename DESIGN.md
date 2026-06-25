@@ -1,14 +1,14 @@
-# Design System Inspired by Supabase
+# Design System
 
 ## 1. Visual Theme & Atmosphere
 
-Supabase's website is a dark-mode-native developer platform that channels the aesthetic of a premium code editor — deep black backgrounds (`#0f0f0f`, `#171717`) with emerald green accents (`#3ecf8e`, `#00c573`) that reference the brand's open-source, PostgreSQL-green identity. The design system feels like it was born in a terminal window and evolved into a sophisticated marketing surface without losing its developer soul.
+The MealPlanner UI is a dark-mode-native developer-style interface that channels the aesthetic of a premium code editor — deep black backgrounds (`#0f0f0f`, `#171717`) with emerald green accents (`#3ecf8e`, `#00c573`) that act as identity markers. The design system feels like it was born in a terminal window and evolved into a sophisticated surface without losing its developer soul.
 
-The typography is built on "Circular" — a geometric sans-serif with rounded terminals that softens the technical edge. At 72px with a 1.00 line-height, the hero text is compressed to its absolute minimum vertical space, creating dense, impactful statements that waste nothing. The monospace companion (Source Code Pro) appears sparingly for uppercase technical labels with 1.2px letter-spacing, creating the "developer console" markers that connect the marketing site to the product experience.
+The typography is built on "Circular" — a geometric sans-serif with rounded terminals that softens the technical edge. At 72px with a 1.00 line-height, the hero text is compressed to its absolute minimum vertical space, creating dense, impactful statements that waste nothing. The monospace companion (Source Code Pro) appears sparingly for uppercase technical labels with 1.2px letter-spacing, creating the "developer console" markers that connect the marketing surface to the product experience.
 
-What makes Supabase distinctive is its sophisticated HSL-based color token system. Rather than flat hex values, Supabase uses HSL with alpha channels for nearly every color (`--colors-crimson4`, `--colors-purple5`, `--colors-slateA12`), enabling a nuanced layering system where colors interact through transparency. This creates depth through translucency — borders at `rgba(46, 46, 46)`, surfaces at `rgba(41, 41, 41, 0.84)`, and accents at partial opacity all blend with the dark background to create a rich, dimensional palette from minimal color ingredients.
+The design system uses HSL-based color tokens with alpha channels for nearly every color (`--colors-crimson4`, `--colors-purple5`, `--colors-slateA12`), enabling a nuanced layering system where colors interact through transparency. This creates depth through translucency — borders at `rgba(46, 46, 46)`, surfaces at `rgba(41, 41, 41, 0.84)`, and accents at partial opacity all blend with the dark background to create a rich, dimensional palette from minimal color ingredients.
 
-The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in link colors (`#00c573`), and in border highlights (`rgba(62, 207, 142, 0.3)`) — always as a signal of "this is Supabase" rather than as a decorative element. Pill-shaped buttons (9999px radius) for primary CTAs contrast with standard 6px radius for secondary elements, creating a clear visual hierarchy of importance.
+The green accent (`#3ecf8e`) appears selectively — in the brand logo, in link colors (`#00c573`), and in border highlights (`rgba(62, 207, 142, 0.3)`) — always as a signal of identity rather than as a decorative element. Pill-shaped buttons (9999px radius) for primary CTAs contrast with standard 6px radius for secondary elements, creating a clear visual hierarchy of importance.
 
 **Key Characteristics:**
 - Dark-mode-native: near-black backgrounds (`#0f0f0f`, `#171717`) — never pure black
@@ -25,7 +25,7 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 ## 2. Color Palette & Roles
 
 ### Brand
-- **Supabase Green** (`#3ecf8e`): Primary brand color, logo, accent borders
+- **Brand Green** (`#3ecf8e`): Primary brand color, logo, accent borders
 - **Green Link** (`#00c573`): Interactive green for links and actions
 - **Green Border** (`rgba(62, 207, 142, 0.3)`): Subtle green border accent
 
@@ -59,7 +59,7 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 - **Fixed Scale Alpha** (`hsla(200, 90.3%, 93.4%, 0.109)`): Light frost overlay
 
 ### Shadows
-- Supabase uses **almost no shadows** in its dark theme. Depth is created through border contrast and surface color differences rather than box-shadows. Focus states use `rgba(0, 0, 0, 0.1) 0px 4px 12px` — minimal, functional.
+Almost no shadows are used in the dark theme. Depth is created through border contrast and surface color differences rather than box-shadows. Focus states use `rgba(0, 0, 0, 0.1) 0px 4px 12px` — minimal, functional.
 
 ## 3. Typography Rules
 
@@ -83,7 +83,7 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 | Code Label | Source Code Pro | 12px (0.75rem) | 400 | 1.33 | 1.2px | `text-transform: uppercase` |
 
 ### Principles
-- **Weight restraint**: Nearly all text uses weight 400 (regular/book). Weight 500 appears only for navigation links and button labels. There is no bold (700) in the detected system — hierarchy is created through size, not weight.
+- **Weight restraint**: Nearly all text uses weight 400 (regular/book). Weight 500 appears only for navigation links and button labels. There is no bold (700) — hierarchy is created through size, not weight.
 - **1.00 hero line-height**: The hero text is compressed to absolute zero leading. This is the defining typographic gesture — text that feels like a terminal command: dense, efficient, no wasted vertical space.
 - **Negative tracking on cards**: Card titles use -0.16px letter-spacing, a subtle tightening that differentiates them from body text without being obvious.
 - **Monospace as ritual**: Source Code Pro in uppercase with 1.2px letter-spacing is the "developer console" voice — used sparingly for technical labels that connect to the product experience.
@@ -133,14 +133,14 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 - Inactive: dark, muted
 
 ### Links
-- **Green**: `#00c573` — Supabase-branded links
+- **Green**: `#00c573` — brand-color interactive links
 - **Primary Light**: `#fafafa` — standard links on dark
 - **Secondary**: `#b4b4b4` — muted links
 - **Muted**: `#898989` — tertiary links, footer
 
 ### Navigation
 - Dark background matching page (`#171717`)
-- Supabase logo with green icon
+- Brand logo with green icon
 - Circular 14px weight 500 for nav links
 - Clean horizontal layout with product dropdown
 - Green "Start your project" CTA pill button
@@ -166,12 +166,12 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 | Mobile | <600px | Single column, stacked layout |
 | Desktop | >600px | Multi-column grids, expanded layout |
 
-*Note: Supabase uses a notably minimal breakpoint system — primarily a single 600px breakpoint, suggesting a mobile-first approach with progressive enhancement.*
+The breakpoint system is intentionally minimal — primarily a single 600px threshold, suggesting a mobile-first approach with progressive enhancement.
 
 ### Whitespace Philosophy
 - **Dramatic section spacing**: 90px–128px between major sections creates a cinematic pacing — each section is its own scene in the dark void.
 - **Dense content blocks**: Within sections, spacing is tight (16px–24px), creating concentrated information clusters.
-- **Border-defined space**: Instead of whitespace + shadows for separation, Supabase uses thin borders on dark backgrounds — separation through line, not gap.
+- **Border-defined space**: Instead of whitespace + shadows for separation, the design uses thin borders on dark backgrounds — separation through line, not gap.
 
 ### Border Radius Scale
 - Standard (6px): Ghost buttons, small elements
@@ -189,13 +189,13 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 | Focus (Level 2) | `rgba(0, 0, 0, 0.1) 0px 4px 12px` | Focus states only |
 | Green Accent (Level 3) | Border `rgba(62, 207, 142, 0.3)` | Brand-highlighted elements |
 
-**Shadow Philosophy**: Supabase deliberately avoids shadows. In a dark-mode-native design, shadows are nearly invisible and serve no purpose. Instead, depth is communicated through a sophisticated border hierarchy — from `#242424` (barely visible) through `#2e2e2e` (standard) to `#393939` (prominent). The green accent border (`rgba(62, 207, 142, 0.3)`) at 30% opacity is the "elevated" state — the brand color itself becomes the depth signal.
+**Shadow philosophy**: In a dark-mode-native design, shadows are nearly invisible and serve no purpose. Depth is communicated through a sophisticated border hierarchy — from `#242424` (barely visible) through `#2e2e2e` (standard) to `#393939` (prominent). The green accent border (`rgba(62, 207, 142, 0.3)`) at 30% opacity is the "elevated" state — the brand color itself becomes the depth signal.
 
 ## 7. Do's and Don'ts
 
 ### Do
 - Use near-black backgrounds (`#0f0f0f`, `#171717`) — depth comes from the gray border hierarchy
-- Apply Supabase green (`#3ecf8e`, `#00c573`) sparingly — it's an identity marker, not a decoration
+- Apply brand green (`#3ecf8e`, `#00c573`) sparingly — it's an identity marker, not a decoration
 - Use Circular at weight 400 for nearly everything — 500 only for buttons and nav
 - Set hero text to 1.00 line-height — the zero-leading is the typographic signature
 - Create depth through border color differences (`#242424` → `#2e2e2e` → `#363636`)
@@ -241,7 +241,7 @@ The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in li
 ### Example Component Prompts
 - "Create a hero section on #171717 background. Headline at 72px Circular weight 400, line-height 1.00, #fafafa text. Sub-text at 16px Circular weight 400, line-height 1.50, #b4b4b4. Pill CTA button (#0f0f0f bg, #fafafa text, 9999px radius, 8px 32px padding, 1px solid #fafafa border)."
 - "Design a feature card: #171717 background, 1px solid #2e2e2e border, 16px radius. Title at 24px Circular weight 400, letter-spacing -0.16px. Body at 14px weight 400, #898989 text."
-- "Build navigation bar: #171717 background. Circular 14px weight 500 for links, #fafafa text. Supabase logo with green icon left-aligned. Green pill CTA 'Start your project' right-aligned."
+- "Build navigation bar: #171717 background. Circular 14px weight 500 for links, #fafafa text. Brand logo with green icon left-aligned. Green pill CTA 'Start your project' right-aligned."
 - "Create a technical label: Source Code Pro 12px, uppercase, letter-spacing 1.2px, #898989 text."
 - "Design a framework logo grid: 6-column layout on dark, grayscale logos at 60% opacity, 1px solid #2e2e2e border between sections."
 
