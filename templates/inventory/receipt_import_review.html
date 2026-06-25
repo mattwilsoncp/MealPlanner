@@ -30,7 +30,18 @@
                     <input type="checkbox" name="items-{{ forloop.counter0 }}-include" checked style="width: 18px; height: 18px; accent-color: var(--brand-primary);">
                     <span class="font-medium">Include</span>
                 </label>
-                <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(95, 157, 255, 0.12); color: var(--brand-primary);">{{ item.confidence }} confidence</span>
+                <div class="flex flex-wrap gap-2 items-center">
+                    {% if item.barcode_enrichment.status == "local" %}
+                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(62, 207, 142, 0.12); color: var(--brand-primary); border: 1px solid rgba(62, 207, 142, 0.3);" title="Barcode matches an item already in your inventory.">UPC · already in inventory</span>
+                    {% elif item.barcode_enrichment.status == "upc" %}
+                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(95, 157, 255, 0.12); color: var(--brand-primary); border: 1px solid rgba(95, 157, 255, 0.3);" title="Verified via {{ item.barcode_enrichment.source }}">UPC verified{% if item.barcode_enrichment.source %} · {{ item.barcode_enrichment.source }}{% endif %}</span>
+                    {% elif item.barcode_enrichment.status == "not_found" %}
+                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(251, 189, 65, 0.12); color: var(--lemon-500); border: 1px solid rgba(251, 189, 65, 0.3);" title="{{ item.barcode_enrichment.message }}">UPC not found</span>
+                    {% elif item.barcode_enrichment.status == "error" %}
+                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(252, 121, 129, 0.12); color: #fc7981; border: 1px solid rgba(252, 121, 129, 0.3);" title="{{ item.barcode_enrichment.message }}">UPC lookup error</span>
+                    {% endif %}
+                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(95, 157, 255, 0.12); color: var(--brand-primary);">{{ item.confidence }} confidence</span>
+                </div>
             </div>
 
             <div class="grid md:grid-cols-3 gap-4">
@@ -41,7 +52,10 @@
 
                 <div class="md:col-span-2">
                     <label class="label-dark">Inventory Name</label>
-                    <input type="text" name="items-{{ forloop.counter0 }}-name" value="{{ item.name }}" class="input-dark" placeholder="Create or correct item name">
+                    <input type="text" name="items-{{ forloop.counter0 }}-name" value="{% if item.name %}{{ item.name }}{% elif item.barcode_enrichment.title %}{{ item.barcode_enrichment.title }}{% endif %}" class="input-dark" placeholder="Create or correct item name">
+                    {% if not item.name and item.barcode_enrichment.title %}
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">Suggested from UPC: {{ item.barcode_enrichment.title }}{% if item.barcode_enrichment.brand %} ({{ item.barcode_enrichment.brand }}{% if item.barcode_enrichment.size %}, {{ item.barcode_enrichment.size }}{% endif %}){% elif item.barcode_enrichment.size %} ({{ item.barcode_enrichment.size }}){% endif %}</p>
+                    {% endif %}
                 </div>
 
                 <div>
@@ -77,9 +91,12 @@
                     <label class="label-dark">Category</label>
                     <select name="items-{{ forloop.counter0 }}-category" class="input-dark">
                         {% for value,label in category_choices %}
-                        <option value="{{ value }}" {% if item.category == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}" {% if item.category == value %}selected{% endif %}>{{ label }}{% if value == item.barcode_enrichment.category and item.category == "other" %} (suggested){% endif %}</option>
                         {% endfor %}
                     </select>
+                    {% if item.category == "other" and item.barcode_enrichment.category %}
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">UPC suggests category: {{ item.barcode_enrichment.category }}.</p>
+                    {% endif %}
                 </div>
 
                 <div>

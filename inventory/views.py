@@ -18,6 +18,7 @@ from openai import OpenAI
 
 from .forms import InventoryItemForm, InventoryQuickAddForm, ReceiptImportForm
 from .models import InventoryItem
+from .services.receipt_barcode_enrichment import enrich_receipt_items
 from .services.upc_lookup import lookup_upc
 
 
@@ -399,10 +400,17 @@ Rules:
             )
             parsed = self._extract_json_payload(response.choices[0].message.content or "")
             items = self._normalize_items(parsed.get("items", []))
+            household_inventory = InventoryItem.objects.filter(
+                household=self.request.user.household
+            )
+            enrichment_map, enriched_items = enrich_receipt_items(
+                items, inventory_items=household_inventory
+            )
             self.request.session["receipt_import"] = {
                 "store": parsed.get("store", ""),
                 "purchased_at": parsed.get("purchased_at", ""),
-                "items": items,
+                "items": enriched_items,
+                "barcode_enrichment": enrichment_map,
             }
             self.request.session.modified = True
             return redirect("inventory:receipt_import_review")
@@ -483,8 +491,14 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         receipt_import = self.request.session.get("receipt_import") or {}
+        raw_items = receipt_import.get("items", [])
+        enrichment_map = receipt_import.get("barcode_enrichment", {}) or {}
         context["receipt"] = receipt_import
-        context["items"] = receipt_import.get("items", [])
+        context["items"] = [
+            {**item, "barcode_enrichment": enrichment_map.get(str(index), item.get("barcode_enrichment"))}
+            for index, item in enumerate(raw_items)
+        ]
+        context["barcode_enrichment"] = enrichment_map
         context["category_choices"] = InventoryItem.CATEGORY_CHOICES
         context["location_choices"] = InventoryItem.LOCATION_CHOICES
         context["unit_choices"] = InventoryItem.UNIT_CHOICES
@@ -496,6 +510,7 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         receipt_import = request.session.get("receipt_import") or {}
         source_items = receipt_import.get("items", [])
+        enrichment_map = receipt_import.get("barcode_enrichment", {}) or {}
         created_count = 0
         updated_count = 0
         skipped_count = 0
@@ -515,6 +530,13 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
             price = request.POST.get(f"items-{index}-price", "").strip()
             receipt_description = request.POST.get(f"items-{index}-receipt_description", "").strip()
 
+            enrichment = enrichment_map.get(str(index)) or {}
+            enriched_title = (enrichment.get("title") or "").strip()
+            enriched_brand = (enrichment.get("brand") or "").strip()
+            enriched_size = (enrichment.get("size") or "").strip()
+            enriched_image = (enrichment.get("image_url") or "").strip()
+            enrichment_status = enrichment.get("status")
+
             if existing_id:
                 item = InventoryItem.objects.filter(
                     household=request.user.household,
@@ -529,14 +551,43 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
                 item.location = location or item.location
                 if barcode:
                     item.barcode = barcode
-                item.notes = self._merge_notes(item.notes, receipt_description, price)
+                enrichment_notes = self._build_enrichment_notes(
+                    enrichment_status,
+                    enriched_brand,
+                    enriched_size,
+                    enriched_image,
+                    enrichment_status == "local",
+                )
+                item.notes = self._merge_notes(
+                    self._merge_notes(item.notes, receipt_description, price),
+                    enrichment_notes,
+                    "",
+                )
                 item.save()
                 updated_count += 1
                 continue
 
+            if not name and enriched_title:
+                name = enriched_title
+
             if not name:
                 skipped_count += 1
                 continue
+
+            category = category if category != "other" else (enrichment.get("category") or category)
+
+            enrichment_notes = self._build_enrichment_notes(
+                enrichment_status,
+                enriched_brand,
+                enriched_size,
+                enriched_image,
+                False,
+            )
+            notes = self._merge_notes(
+                self._build_notes(receipt_description, price),
+                enrichment_notes,
+                "",
+            )
 
             InventoryItem.objects.create(
                 household=request.user.household,
@@ -546,7 +597,7 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
                 category=category,
                 location=location,
                 barcode=barcode,
-                notes=self._build_notes(receipt_description, price),
+                notes=notes,
             )
             created_count += 1
 
@@ -576,3 +627,18 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
         if existing_notes and receipt_notes:
             return f"{existing_notes}\n{receipt_notes}"
         return existing_notes or receipt_notes
+
+    def _build_enrichment_notes(
+        self, status, brand, size, image_url, is_local
+    ):
+        if not status or status not in {"upc", "local"}:
+            return ""
+        prefix = "UPC enrichment" if status == "upc" else "UPC match"
+        parts = [prefix]
+        if brand:
+            parts.append(f"Brand: {brand}")
+        if size:
+            parts.append(f"Size: {size}")
+        if image_url and not is_local:
+            parts.append(f"Image URL: {image_url}")
+        return " · ".join(parts)
