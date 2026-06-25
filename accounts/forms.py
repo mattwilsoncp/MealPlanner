@@ -1,7 +1,25 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
 from .models import CustomUser
+
+
+class LoginForm(AuthenticationForm):
+    """Login form with optional household field — pick from existing or type a new one."""
+
+    household = forms.CharField(max_length=100, required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        household_name = cleaned_data.get("household")
+        user = self.user_cache
+        if household_name and user:
+            from household.models import Household
+
+            household, _ = Household.objects.get_or_create(name=household_name)
+            user.household = household
+            user.save(update_fields=["household"])
+        return cleaned_data
 
 
 class RegistrationForm(UserCreationForm):
@@ -28,9 +46,9 @@ class RegistrationForm(UserCreationForm):
 
         household_name = self.cleaned_data.get("household_name")
         if household_name:
-            household = Household.objects.create(name=household_name)
+            household, _ = Household.objects.get_or_create(name=household_name)
         else:
-            household = Household.objects.create(name="My Household")
+            household, _ = Household.objects.get_or_create(name="My Household")
 
         user.household = household
 
