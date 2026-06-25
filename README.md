@@ -94,7 +94,7 @@ systemctl --user enable --now meal-planner
 
 ## Design
 
-Dark-mode-native, Supabase-inspired aesthetic:
+Dark-mode-native aesthetic:
 
 - `#171717` page background, `#0f0f0f` card/button surfaces
 - `#3ecf8e` / `#00c573` green accent — used sparingly for brand identity
