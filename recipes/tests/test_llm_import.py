@@ -662,8 +662,11 @@ class LLMRecipeImportViewCreateRecipeTests(TestCase):
             self.assertEqual(instructions.count(), 2)
             self.assertEqual(instructions[0].text, "Mix dry ingredients.")
 
-            # Verify transcript log is appended to description
-            self.assertIn("Transcript log:", recipe.description)
+            # Verify transcript log path is recorded on the recipe
+            self.assertTrue(recipe.transcript_log.endswith("test_log.txt"))
+            # Description should remain the user/parsed description, NOT include the
+            # legacy 'Transcript log:' suffix.
+            self.assertNotIn("Transcript log:", recipe.description)
         finally:
             if log_path.exists():
                 log_path.unlink()

@@ -12,9 +12,11 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
     FormView,
+    View,
 )
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
+from django.http import JsonResponse
 from django.conf import settings
 from django.contrib import messages
 from django.views.decorators.http import require_POST
@@ -23,6 +25,49 @@ from .models import Recipe
 from django.core.files.base import File
 from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm, ImageImportForm
 from .youtube import YouTubeService, InvalidVideoError, APIError
+
+
+TRANSCRIPT_DIR = Path(__file__).resolve().parent.parent / "logs" / "transcripts"
+TRANSCRIPT_LOG_SUFFIX_RE = re.compile(
+    r"(?:\n\s*)?Transcript log:\s*(\S+)\s*$"
+)
+
+
+def parse_legacy_transcript_log(description):
+    """Fall back to the trailing 'Transcript log: <path>' line for recipes
+    imported before the dedicated ``Recipe.transcript_log`` field existed.
+    Returns the relative path string, or ``None`` if no suffix is present.
+    """
+    if not description:
+        return None
+    match = TRANSCRIPT_LOG_SUFFIX_RE.search(description)
+    if not match:
+        return None
+    return match.group(1).strip(" \t\r\n,")
+
+
+def resolve_safe_transcript_path(relative_path):
+    """Resolve *relative_path* under ``TRANSCRIPT_DIR`` and refuse anything
+    that escapes the directory (defeats path-traversal attempts).
+
+    Returns the validated absolute ``Path`` or raises ``FileNotFoundError``.
+    """
+    if not relative_path:
+        raise FileNotFoundError("empty path")
+    root = TRANSCRIPT_DIR.resolve()
+    candidate = (TRANSCRIPT_DIR / Path(relative_path).name).resolve()
+    candidate.relative_to(root)  # raises ValueError if outside root
+    if not candidate.exists() or not candidate.is_file():
+        raise FileNotFoundError(str(candidate))
+    return candidate
+
+
+def strip_transcript_log_suffix(description):
+    """Return *description* with a trailing ``Transcript log: <path>`` line
+    removed (used to display the description without the suffix)."""
+    if not description:
+        return description
+    return TRANSCRIPT_LOG_SUFFIX_RE.sub("", description).rstrip()
 from .parsing import RecipeParsingService
 from ingredients.models import IngredientLink, Ingredient
 from instructions.models import Instruction
@@ -727,10 +772,8 @@ Source Context:
             )
 
         recipe.description = (recipe.description or "").strip()
-        if str(transcript_log) not in recipe.description:
-            suffix = f"\n\nTranscript log: {transcript_log.relative_to(PROJECT_ROOT)}"
-            recipe.description = f"{recipe.description}{suffix}".strip()
-            recipe.save(update_fields=["description", "updated_at"])
+        recipe.transcript_log = str(transcript_log.relative_to(PROJECT_ROOT))
+        recipe.save(update_fields=["description", "transcript_log", "updated_at"])
 
         return recipe
 
@@ -1112,7 +1155,62 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
         else:
             context["rating_form"] = RatingForm()
 
+        # Transcript log: prefer the dedicated field; fall back to parsing
+        # the legacy "<path>" suffix from the description.
+        transcript_log_path = recipe.transcript_log or parse_legacy_transcript_log(
+            recipe.description
+        )
+        context["transcript_log_path"] = transcript_log_path
+        # Strip the legacy suffix from the displayed description if the
+        # dedicated field is empty so the link is the only place shown.
+        if transcript_log_path and not recipe.transcript_log:
+            context["recipe_description_display"] = strip_transcript_log_suffix(
+                recipe.description
+            )
+        else:
+            context["recipe_description_display"] = recipe.description
+
         return context
+
+
+class RecipeTranscriptContentView(LoginRequiredMixin, View):
+    """Read-only endpoint that streams the YouTube transcript log content.
+
+    Validates that the recipe belongs to the requesting user's household,
+    resolves the stored log path under ``logs/transcripts/`` (defeats path
+    traversal), and returns the raw text content. Returns 404 if the recipe
+    has no transcript log, the path is unsafe, or the file is missing.
+    """
+
+    TRANSCRIPT_DIR = TRANSCRIPT_DIR
+
+    def get(self, request, pk, *args, **kwargs):
+        recipe = get_object_or_404(
+            Recipe.objects.filter(household=request.user.household),
+            pk=pk,
+        )
+        relative_path = recipe.transcript_log or parse_legacy_transcript_log(
+            recipe.description
+        )
+        if not relative_path:
+            return JsonResponse(
+                {"message": "This recipe has no transcript log."},
+                status=404,
+                content_type="application/json",
+            )
+        try:
+            absolute = resolve_safe_transcript_path(relative_path)
+        except (FileNotFoundError, ValueError):
+            return JsonResponse(
+                {"message": "Transcript log file is unavailable."},
+                status=404,
+                content_type="application/json",
+            )
+        with open(absolute, "r", encoding="utf-8", errors="replace") as fh:
+            content = fh.read()
+        return JsonResponse(
+            {"path": str(absolute.relative_to(TRANSCRIPT_DIR.resolve())), "content": content},
+        )
 
 
 class RecipeCreateView(LoginRequiredMixin, CreateView):

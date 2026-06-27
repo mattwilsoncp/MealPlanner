@@ -11,6 +11,11 @@ class Recipe(models.Model):
     description = models.TextField(blank=True)
     photo = models.ImageField(upload_to="recipes/%Y/%m/%d/", blank=True, null=True)
     video_url = models.URLField(blank=True)
+    transcript_log = models.CharField(
+        max_length=512,
+        blank=True,
+        help_text="Path to the saved YouTube transcript log under logs/transcripts/, if any.",
+    )
     on_hand_idea = models.BooleanField(default=False, db_index=True)
     leftover_worthy = models.BooleanField(default=False, db_index=True)
     needs_review = models.BooleanField(default=True, db_index=True)
