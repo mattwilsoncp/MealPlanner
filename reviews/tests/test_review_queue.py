@@ -46,7 +46,9 @@ class ReviewQueueTests(TestCase):
 
         self.assertEqual(queue_response.status_code, 200)
         self.assertEqual(reconcile_response.status_code, 200)
-        self.assertContains(reconcile_response, "Link to:")
+        self.assertContains(reconcile_response, "Link To")
+        self.assertContains(reconcile_response, "Quick Add Inventory Item")
+        self.assertContains(reconcile_response, "x-data=\"reconciliation()\"")
 
     def test_reconciliation_saves_inventory_link(self):
         item = InventoryItem.objects.create(

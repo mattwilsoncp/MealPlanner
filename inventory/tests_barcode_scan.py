@@ -410,3 +410,70 @@ class UpcUsageViewTests(TestCase):
         self.assertEqual(UpcLookupUsage.today_count("openfoodfacts"), 3)
         # UPC Item DB only triggered when OFF fails
         self.assertEqual(UpcLookupUsage.today_count("upcitemdb"), 0)
+
+
+class InventoryCreateApiTests(TestCase):
+    """Tests for the JSON quick-create API used by the review reconcile modal."""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Quick Create Api")
+        self.user = user_model.objects.create_user(
+            username="quickapi-user",
+            password="pass1234",
+            household=self.household,
+        )
+        self.client.force_login(self.user)
+        InventoryItem.objects.all().delete()
+
+    def test_create_api_requires_location_when_called_as_json(self):
+        """The form's `location` field is required because the model has no
+        `blank=True`. The reconcile modal must include it in its payload
+        (otherwise users see a generic 'Failed to add inventory item: 400')."""
+        response = self.client.post(
+            reverse("inventory:inventory_create_api"),
+            data={"name": "Onion", "quantity": "2", "unit": "piece", "category": "produce"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        body = response.json()
+        self.assertIn("errors", body)
+        self.assertIn("location", body["errors"])
+
+    def test_create_api_persists_inventory_item_with_all_required_fields(self):
+        response = self.client.post(
+            reverse("inventory:inventory_create_api"),
+            data={
+                "name": "Tomato",
+                "quantity": "4",
+                "unit": "piece",
+                "category": "produce",
+                "location": "refrigerator",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        body = response.json()
+        created = InventoryItem.objects.get(id=body["id"])
+        self.assertEqual(created.name, "Tomato")
+        self.assertEqual(created.quantity, Decimal("4"))
+        self.assertEqual(created.location, "refrigerator")
+        self.assertEqual(created.household, self.household)
+
+    def test_create_api_assigns_inventory_item_to_caller_household(self):
+        other_household = Household.objects.create(name="Quick Create Other")
+        response = self.client.post(
+            reverse("inventory:inventory_create_api"),
+            data={
+                "name": "Salt",
+                "quantity": "1",
+                "unit": "piece",
+                "category": "pantry",
+                "location": "pantry",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        created = InventoryItem.objects.get(name="Salt")
+        self.assertEqual(created.household, self.household)
+        self.assertNotEqual(created.household, other_household)
