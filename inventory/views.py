@@ -368,6 +368,11 @@ class ReceiptImportView(LoginRequiredMixin, FormView):
     form_class = ReceiptImportForm
     template_name = "inventory/receipt_import.html"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["household"] = self.request.user.household
+        return kwargs
+
     RECEIPT_PROMPT = """Extract grocery inventory items from this receipt image.
 Return only valid JSON with this exact shape:
 {
@@ -433,11 +438,13 @@ Rules:
             enrichment_map, enriched_items = enrich_receipt_items(
                 items, inventory_items=household_inventory
             )
+            chosen_store = form.cleaned_data.get("store")
             self.request.session["receipt_import"] = {
                 "store": parsed.get("store", ""),
                 "purchased_at": parsed.get("purchased_at", ""),
                 "items": enriched_items,
                 "barcode_enrichment": enrichment_map,
+                "store_override_id": chosen_store.pk if chosen_store else None,
             }
             self.request.session.modified = True
             return redirect("inventory:receipt_import_review")
@@ -520,6 +527,15 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
         receipt_import = self.request.session.get("receipt_import") or {}
         raw_items = receipt_import.get("items", [])
         enrichment_map = receipt_import.get("barcode_enrichment", {}) or {}
+        store_override_id = receipt_import.get("store_override_id")
+        store_override = (
+            Store.objects.filter(
+                household=self.request.user.household, pk=store_override_id
+            ).first()
+            if store_override_id
+            else None
+        )
+        receipt_import["store_override"] = store_override
         context["receipt"] = receipt_import
         context["items"] = [
             {**item, "barcode_enrichment": enrichment_map.get(str(index), item.get("barcode_enrichment"))}
@@ -539,6 +555,13 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
         source_items = receipt_import.get("items", [])
         enrichment_map = receipt_import.get("barcode_enrichment", {}) or {}
         store_from_receipt = receipt_import.get("store", "").strip()
+        store_override_id = receipt_import.get("store_override_id")
+        store_override = (
+            store_override_id
+            and Store.objects.filter(
+                household=request.user.household, pk=store_override_id
+            ).first()
+        )
         created_count = 0
         updated_count = 0
         skipped_count = 0
@@ -625,7 +648,8 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
                 location=location,
                 barcode=barcode,
                 price=price,
-                store=self._resolve_store(request.user.household, store_from_receipt),
+                store=store_override
+                or self._resolve_store(request.user.household, store_from_receipt),
                 notes=notes,
             )
             created_count += 1
