@@ -23,6 +23,26 @@ urlpatterns = [
     path("expiring/", views.InventoryExpiringView.as_view(), name="inventory_expiring"),
     path("expired/", views.InventoryExpiredView.as_view(), name="inventory_expired"),
     path(
+        "stores/",
+        views.StoreListView.as_view(),
+        name="store_list",
+    ),
+    path(
+        "stores/add/",
+        views.StoreCreateView.as_view(),
+        name="store_add",
+    ),
+    path(
+        "stores/<int:pk>/edit/",
+        views.StoreUpdateView.as_view(),
+        name="store_edit",
+    ),
+    path(
+        "stores/<int:pk>/delete/",
+        views.StoreDeleteView.as_view(),
+        name="store_delete",
+    ),
+    path(
         "api/quick-add/",
         views.InventoryQuickAddView.as_view(),
         name="inventory_quick_add",

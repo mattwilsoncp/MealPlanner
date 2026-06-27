@@ -1,9 +1,16 @@
 from django import forms
 
-from .models import InventoryItem
+from .models import InventoryItem, Store
 
 
 class BaseInventoryItemForm(forms.ModelForm):
+    def __init__(self, *args, household=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if household is not None:
+            self.fields["store"].queryset = Store.objects.filter(household=household)
+        else:
+            self.fields["store"].queryset = Store.objects.none()
+
     def clean_quantity(self):
         quantity = self.cleaned_data.get("quantity")
 
@@ -11,6 +18,14 @@ class BaseInventoryItemForm(forms.ModelForm):
             raise forms.ValidationError("Quantity cannot be negative.")
 
         return quantity
+
+    def clean_price(self):
+        price = self.cleaned_data.get("price")
+
+        if price is not None and price < 0:
+            raise forms.ValidationError("Price cannot be negative.")
+
+        return price
 
 
 class InventoryItemForm(BaseInventoryItemForm):
@@ -23,6 +38,8 @@ class InventoryItemForm(BaseInventoryItemForm):
             "category",
             "location",
             "expiration_date",
+            "price",
+            "store",
             "notes",
             "image",
             "barcode",
@@ -38,6 +55,15 @@ class InventoryItemForm(BaseInventoryItemForm):
             "expiration_date": forms.DateInput(
                 attrs={"type": "date", "class": "input input-bordered"}
             ),
+            "price": forms.NumberInput(
+                attrs={
+                    "class": "input input-bordered",
+                    "step": "0.01",
+                    "min": "0",
+                    "placeholder": "0.00",
+                }
+            ),
+            "store": forms.Select(attrs={"class": "select select-bordered"}),
             "notes": forms.Textarea(attrs={"class": "textarea textarea-bordered"}),
             "image": forms.ClearableFileInput(
                 attrs={"class": "file-input file-input-bordered"}

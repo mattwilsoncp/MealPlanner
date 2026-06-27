@@ -244,6 +244,115 @@ class InventoryItemFormTests(TestCase):
         self.assertEqual(item.notes, "Extra virgin")
         self.assertEqual(item.barcode, "123456789012")
 
+    def test_form_saves_price_and_store(self):
+        from inventory.forms import InventoryItemForm
+        from inventory.models import Store
+
+        store = Store.objects.create(household=self.household, name="Local Bakery")
+        form = InventoryItemForm(
+            data={
+                "name": "Bread",
+                "quantity": "1",
+                "unit": "pack",
+                "category": "bakery",
+                "location": "pantry",
+                "price": "3.49",
+                "store": str(store.pk),
+            },
+            household=self.household,
+        )
+        self.assertTrue(form.is_valid())
+        item = form.save(commit=False)
+        item.household = self.household
+        item.save()
+        self.assertEqual(item.price, Decimal("3.49"))
+        self.assertEqual(item.store, store)
+
+    def test_form_treats_blank_price_and_store_as_optional(self):
+        from inventory.forms import InventoryItemForm
+
+        form = InventoryItemForm(
+            data={
+                "name": "Generic Item",
+                "quantity": "1",
+                "unit": "piece",
+                "category": "other",
+                "location": "pantry",
+                "price": "",
+                "store": "",
+            },
+            household=self.household,
+        )
+        self.assertTrue(form.is_valid())
+        item = form.save(commit=False)
+        item.household = self.household
+        item.save()
+        self.assertIsNone(item.price)
+        self.assertIsNone(item.store)
+
+    def test_form_store_choices_are_household_scoped(self):
+        from inventory.forms import InventoryItemForm
+        from inventory.models import Store
+
+        own_store = Store.objects.create(household=self.household, name="Own Mart")
+        Store.objects.create(
+            household=Household.objects.create(name="Other Home"),
+            name="Other Mart",
+        )
+        Store.objects.create(
+            household=self.household,
+            name="Second Own",
+        )
+
+        form = InventoryItemForm(
+            data={
+                "name": "Milk",
+                "quantity": "1",
+                "unit": "piece",
+                "category": "dairy",
+                "location": "refrigerator",
+            },
+            household=self.household,
+        )
+
+        store_choices = {value for value, _label in form.fields["store"].choices}
+        self.assertIn(own_store.pk, store_choices)
+        self.assertIn(Store.objects.get(name="Second Own").pk, store_choices)
+
+    def test_form_store_queryset_is_empty_when_no_household(self):
+        from inventory.forms import InventoryItemForm
+        from inventory.models import Store
+
+        Store.objects.create(household=self.household, name="Family Mart")
+
+        form = InventoryItemForm(
+            data={
+                "name": "Item",
+                "quantity": "1",
+                "unit": "piece",
+                "category": "other",
+                "location": "pantry",
+            },
+        )
+
+        self.assertEqual(list(form.fields["store"].queryset), [])
+
+    def test_form_rejects_negative_price(self):
+        from inventory.forms import InventoryItemForm
+
+        form = InventoryItemForm(
+            data={
+                "name": "Bad Price Item",
+                "quantity": "1",
+                "unit": "piece",
+                "category": "other",
+                "location": "pantry",
+                "price": "-1.00",
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("price", form.errors)
+
 
 class InventoryQuickAddFormTests(TestCase):
     def setUp(self):

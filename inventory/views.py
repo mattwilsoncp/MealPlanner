@@ -5,6 +5,7 @@ import re
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
@@ -19,7 +20,7 @@ from django.views.generic.base import TemplateView
 from openai import OpenAI
 
 from .forms import InventoryItemForm, InventoryQuickAddForm, ReceiptImportForm
-from .models import InventoryItem
+from .models import InventoryItem, Store
 from .services.receipt_barcode_enrichment import enrich_receipt_items
 from .services.upc_lookup import lookup_upc
 
@@ -79,6 +80,11 @@ class InventoryCreateView(LoginRequiredMixin, CreateView):
     template_name = "inventory/inventory_form.html"
     success_url = reverse_lazy("inventory:inventory_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["household"] = self.request.user.household
+        return kwargs
+
     def form_valid(self, form):
         form.instance.household = self.request.user.household
         return super().form_valid(form)
@@ -90,6 +96,11 @@ class InventoryUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "inventory/inventory_form.html"
     pk_url_kwarg = "item_id"
     success_url = reverse_lazy("inventory:inventory_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["household"] = self.request.user.household
+        return kwargs
 
     def get_queryset(self):
         return InventoryItem.objects.filter(household=self.request.user.household)
@@ -192,7 +203,7 @@ class InventoryQuickAddView(LoginRequiredMixin, View):
                 status=400,
             )
 
-        form = InventoryQuickAddForm(payload)
+        form = InventoryQuickAddForm(payload, household=request.user.household)
         if not form.is_valid():
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
@@ -527,6 +538,7 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
         receipt_import = request.session.get("receipt_import") or {}
         source_items = receipt_import.get("items", [])
         enrichment_map = receipt_import.get("barcode_enrichment", {}) or {}
+        store_from_receipt = receipt_import.get("store", "").strip()
         created_count = 0
         updated_count = 0
         skipped_count = 0
@@ -543,7 +555,7 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
             category = request.POST.get(f"items-{index}-category") or "other"
             location = request.POST.get(f"items-{index}-location") or "pantry"
             barcode = request.POST.get(f"items-{index}-barcode", "").strip()
-            price = request.POST.get(f"items-{index}-price", "").strip()
+            price = self._parse_optional_decimal(request.POST.get(f"items-{index}-price"))
             receipt_description = request.POST.get(f"items-{index}-receipt_description", "").strip()
 
             enrichment = enrichment_map.get(str(index)) or {}
@@ -575,9 +587,9 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
                     enrichment_status == "local",
                 )
                 item.notes = self._merge_notes(
-                    self._merge_notes(item.notes, receipt_description, price),
+                    item.notes,
+                    self._build_notes(receipt_description),
                     enrichment_notes,
-                    "",
                 )
                 item.save()
                 updated_count += 1
@@ -600,9 +612,8 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
                 False,
             )
             notes = self._merge_notes(
-                self._build_notes(receipt_description, price),
+                self._build_notes(receipt_description),
                 enrichment_notes,
-                "",
             )
 
             InventoryItem.objects.create(
@@ -613,6 +624,8 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
                 category=category,
                 location=location,
                 barcode=barcode,
+                price=price,
+                store=self._resolve_store(request.user.household, store_from_receipt),
                 notes=notes,
             )
             created_count += 1
@@ -630,19 +643,25 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
         except (InvalidOperation, ValueError):
             return default
 
-    def _build_notes(self, receipt_description, price):
-        notes = []
-        if receipt_description:
-            notes.append(f"Receipt description: {receipt_description}")
-        if price:
-            notes.append(f"Receipt price: ${price}")
-        return "\n".join(notes)
+    def _parse_optional_decimal(self, raw_value):
+        raw = str(raw_value or "").strip().lstrip("$").strip()
+        if not raw:
+            return None
+        try:
+            return Decimal(raw)
+        except (InvalidOperation, ValueError):
+            return None
 
-    def _merge_notes(self, existing_notes, receipt_description, price):
-        receipt_notes = self._build_notes(receipt_description, price)
-        if existing_notes and receipt_notes:
-            return f"{existing_notes}\n{receipt_notes}"
-        return existing_notes or receipt_notes
+    def _build_notes(self, receipt_description):
+        if receipt_description:
+            return f"Receipt description: {receipt_description}"
+        return ""
+
+    def _merge_notes(self, existing_notes, *parts):
+        joined = "\n".join(part for part in parts if part)
+        if existing_notes and joined:
+            return f"{existing_notes}\n{joined}"
+        return existing_notes or joined
 
     def _build_enrichment_notes(
         self, status, brand, size, image_url, is_local
@@ -658,3 +677,77 @@ class ReceiptImportReviewView(LoginRequiredMixin, TemplateView):
         if image_url and not is_local:
             parts.append(f"Image URL: {image_url}")
         return " · ".join(parts)
+
+    def _resolve_store(self, household, raw_name):
+        name = (raw_name or "").strip()
+        if not name:
+            return None
+        store, _ = Store.objects.get_or_create(household=household, name=name)
+        return store
+
+
+class StoreForm(forms.ModelForm):
+    class Meta:
+        model = Store
+        fields = ["name", "notes"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "input-dark"}),
+            "notes": forms.Textarea(attrs={"class": "input-dark", "rows": 3}),
+        }
+
+    def __init__(self, *args, household=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._household = household
+        if self.instance.pk is None and household is not None:
+            self.instance.household = household
+
+    def _get_validation_exclusions(self):
+        # ``household`` is part of unique_together but is not a form
+        # field; surface duplicates on submit by not excluding it.
+        exclude = super()._get_validation_exclusions()
+        exclude.discard("household")
+        return exclude
+
+
+class _StoreHouseholdScopedMixin:
+    def get_queryset(self):
+        return Store.objects.filter(household=self.request.user.household)
+
+
+class StoreListView(LoginRequiredMixin, _StoreHouseholdScopedMixin, ListView):
+    template_name = "inventory/store_list.html"
+    context_object_name = "stores"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for store in context["stores"]:
+            store.item_count = store.inventory_items.count()
+        return context
+
+
+class StoreCreateView(LoginRequiredMixin, CreateView):
+    form_class = StoreForm
+    template_name = "inventory/store_form.html"
+    success_url = reverse_lazy("inventory:store_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["household"] = self.request.user.household
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.household = self.request.user.household
+        return super().form_valid(form)
+
+
+class StoreUpdateView(LoginRequiredMixin, _StoreHouseholdScopedMixin, UpdateView):
+    form_class = StoreForm
+    template_name = "inventory/store_form.html"
+    pk_url_kwarg = "pk"
+    success_url = reverse_lazy("inventory:store_list")
+
+
+class StoreDeleteView(LoginRequiredMixin, _StoreHouseholdScopedMixin, DeleteView):
+    pk_url_kwarg = "pk"
+    success_url = reverse_lazy("inventory:store_list")
+    template_name = "inventory/store_confirm_delete.html"

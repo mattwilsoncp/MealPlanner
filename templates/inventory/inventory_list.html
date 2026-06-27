@@ -15,6 +15,7 @@
             <a href="{% url 'inventory:receipt_import' %}" class="btn-ghost">Import Receipt</a>
             <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Soon</a>
             <a href="{% url 'inventory:inventory_expired' %}" class="btn-ghost">Expired</a>
+            <a href="{% url 'inventory:store_list' %}" class="btn-ghost">Stores</a>
             <a href="{% url 'inventory:inventory_add' %}" class="btn-pill">+ Add Item</a>
         </div>
     </div>
@@ -71,6 +72,8 @@
                         <tr>
                             <th>Name</th>
                             <th>Quantity</th>
+                            <th style="text-align: right;">Price</th>
+                            <th>Store</th>
                             <th>Location</th>
                             <th>Expires</th>
                             <th style="width: 100px; text-align: right;">Actions</th>
@@ -84,6 +87,10 @@
                                 {% if item.barcode %}<div style="font-size: 12px; color: var(--text-mid-gray);">Barcode: {{ item.barcode }}</div>{% endif %}
                             </td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
+                            <td style="text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;">
+                                {% if item.price is not None %}${{ item.price|floatformat:2 }}{% else %}—{% endif %}
+                            </td>
+                            <td>{{ item.store.name|default:"—" }}</td>
                             <td>{{ item.location|default:"—" }}</td>
                             <td>
                                 {% if item.expiration_date %}

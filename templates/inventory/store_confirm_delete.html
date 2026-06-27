@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Store{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <h1 class="text-2xl font-medium mb-6">Delete Store</h1>
+
+    <div class="card-dark p-6 space-y-4">
+        <p>Are you sure you want to delete <strong>{{ object.name }}</strong>?</p>
+        <p style="color: var(--text-light-gray);">Inventory items currently linked to this store will be unlinked (their store will be set to none). This cannot be undone.</p>
+
+        <form method="post" class="flex justify-between mt-4" onsubmit="return confirm('Delete &quot;{{ object.name|escapejs }}&quot;?');">
+            {% csrf_token %}
+            <a href="{% url 'inventory:store_list' %}" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-pill" style="background: #fc7981;">Delete Store</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

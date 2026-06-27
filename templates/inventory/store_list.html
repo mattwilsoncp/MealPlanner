@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Stores{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-wrap justify-between gap-4 items-center">
+        <div>
+            <h1 class="text-2xl font-medium">Stores</h1>
+            <p style="color: var(--text-light-gray);">Manage the retailers and vendors used across your household inventory.</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Back to Inventory</a>
+            <a href="{% url 'inventory:store_add' %}" class="btn-pill">+ Add Store</a>
+        </div>
+    </div>
+
+    {% if not stores %}
+    <div class="card-dark p-8 text-center">
+        <p class="text-lg font-medium">No stores yet.</p>
+        <p style="color: var(--text-light-gray); margin-top: 8px;">Add a store to start tracking where items are purchased.</p>
+        <a href="{% url 'inventory:store_add' %}" class="btn-pill mt-4 inline-block">Add Your First Store</a>
+    </div>
+    {% else %}
+    <div class="card-dark">
+        <div class="p-4">
+            <table class="table-dark">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Notes</th>
+                        <th style="text-align: right;">Items</th>
+                        <th style="width: 140px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td class="font-medium">{{ store.name }}</td>
+                        <td style="color: var(--text-light-gray);">
+                            {% if store.notes %}{{ store.notes|truncatechars:80 }}{% else %}—{% endif %}
+                        </td>
+                        <td style="text-align: right; font-variant-numeric: tabular-nums;">
+                            {{ store.item_count }}
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <a href="{% url 'inventory:store_edit' store.pk %}" class="link-green">Edit</a>
+                            <a href="{% url 'inventory:store_delete' store.pk %}" class="link-green" style="margin-left: 8px; color: #fc7981;">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

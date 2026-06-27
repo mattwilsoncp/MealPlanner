@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Store{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-medium mb-6">{% if object %}Edit{% else %}Add{% endif %} Store</h1>
+
+    <form method="post" class="card-dark p-6 space-y-4">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert-dark">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div>
+            <label class="label-dark" for="{{ form.name.id_for_label }}"><span>Name</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.name.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div>
+            <label class="label-dark" for="{{ form.notes.id_for_label }}"><span>Notes</span></label>
+            {{ form.notes }}
+            {% if form.notes.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.notes.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="flex justify-between mt-4">
+            <a href="{% url 'inventory:store_list' %}" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-pill">{% if object %}Save Changes{% else %}Add Store{% endif %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
