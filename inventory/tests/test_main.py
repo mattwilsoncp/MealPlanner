@@ -156,6 +156,115 @@ class InventoryViewTests(TestCase):
         self.assertEqual(edit_response.status_code, 404)
         self.assertEqual(delete_response.status_code, 404)
 
+    def test_list_page_renders_quick_delete_form_per_item(self):
+        item = InventoryItem.objects.create(
+            household=self.household,
+            name="Quick Delete Apples",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="produce",
+            location="refrigerator",
+        )
+
+        response = self.client.get(reverse("inventory:inventory_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'action="/inventory/{item.id}/delete/"')
+        self.assertContains(response, 'method="post"')
+        self.assertContains(response, "csrfmiddlewaretoken")
+        self.assertContains(response, "js-inventory-delete-form")
+        self.assertContains(response, f'data-item-id="{item.id}"')
+        content = response.content.decode()
+        self.assertIn("Quick Delete Apples", content)
+        self.assertIn("var(--text-light-gray)", content)
+
+    def test_list_page_includes_ajax_delete_handler(self):
+        response = self.client.get(reverse("inventory:inventory_list"))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("X-Requested-With", content)
+        self.assertIn("XMLHttpRequest", content)
+        self.assertIn("js-inventory-delete-form", content)
+
+    def test_quick_delete_form_post_redirects_and_removes_item(self):
+        item = InventoryItem.objects.create(
+            household=self.household,
+            name="Disposable Item",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+        item_id = item.id
+
+        response = self.client.post(
+            reverse("inventory:inventory_delete", args=[item_id])
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("inventory:inventory_list"))
+        self.assertFalse(InventoryItem.objects.filter(id=item_id).exists())
+
+    def test_ajax_quick_delete_returns_json_without_redirect(self):
+        item = InventoryItem.objects.create(
+            household=self.household,
+            name="Ajax Delete Item",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="produce",
+            location="refrigerator",
+        )
+        item_id = item.id
+
+        response = self.client.post(
+            reverse("inventory:inventory_delete", args=[item_id]),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["id"], item_id)
+        self.assertEqual(payload["name"], "Ajax Delete Item")
+        self.assertFalse(InventoryItem.objects.filter(id=item_id).exists())
+
+    def test_ajax_quick_delete_other_household_keeps_item_and_rejects(self):
+        outsider = InventoryItem.objects.create(
+            household=self.other_household,
+            name="Foreign Item",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+
+        response = self.client.post(
+            reverse("inventory:inventory_delete", args=[outsider.id]),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(InventoryItem.objects.filter(id=outsider.id).exists())
+
+    def test_inventory_delete_get_request_is_rejected(self):
+        item = InventoryItem.objects.create(
+            household=self.household,
+            name="Locked Item",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+
+        response = self.client.get(
+            reverse("inventory:inventory_delete", args=[item.id])
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.assertTrue(InventoryItem.objects.filter(id=item.id).exists())
+
     def test_expiring_and_expired_views_use_household_threshold_rules(self):
         today = date.today()
         self.household.expiring_threshold_days = 5

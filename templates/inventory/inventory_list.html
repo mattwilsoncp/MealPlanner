@@ -4,6 +4,8 @@
 
 {% block content %}
 <div class="space-y-6">
+    <div id="js-inventory-feedback" class="alert alert-success" role="status" style="display: none;"></div>
+
     <div class="flex flex-wrap justify-between gap-4 items-center">
         <div>
             <h1 class="text-2xl font-medium">Inventory</h1>
@@ -54,12 +56,13 @@
         <p style="color: var(--text-light-gray); margin-top: 8px;">Try relaxing filters or add an item.</p>
     </div>
     {% else %}
+        <div id="js-inventory-list">
         {% for category, category_items in grouped_items.items %}
-        <div class="card-dark">
+        <div class="card-dark js-inventory-category">
             <div class="p-4" style="border-bottom: 1px solid var(--border-dark);">
                 <h2 class="text-lg font-medium">
                     {% if category == "other" or not category %}Uncategorized{% else %}{{ category }}{% endif %}
-                    <span style="color: var(--text-mid-gray); font-weight: 400;">({{ category_items|length }} items)</span>
+                    <span class="js-category-count" style="color: var(--text-mid-gray); font-weight: 400;" data-count="{{ category_items|length }}">({{ category_items|length }} {% if category_items|length == 1 %}item{% else %}items{% endif %})</span>
                 </h2>
             </div>
             <div class="p-4">
@@ -89,8 +92,16 @@
                                     </span>
                                 {% else %}—{% endif %}
                             </td>
-                            <td style="text-align: right;">
+                            <td style="text-align: right; white-space: nowrap;">
                                 <a href="{% url 'inventory:inventory_edit' item.pk %}" class="link-green">Edit</a>
+                                <form method="post" action="{% url 'inventory:inventory_delete' item.pk %}" class="js-inventory-delete-form" data-item-id="{{ item.pk }}" data-item-name="{{ item.name|escapejs }}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-ghost js-inventory-delete-btn" style="padding: 2px 6px; margin-left: 4px; color: var(--text-light-gray);" title="Delete {{ item.name }}" aria-label="Delete {{ item.name }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -99,6 +110,98 @@
             </div>
         </div>
         {% endfor %}
+        </div>
     {% endif %}
+
+    <div id="js-inventory-empty" class="card-dark p-8 text-center" style="display: none;">
+        <p class="text-lg font-medium">No inventory items found.</p>
+        <p style="color: var(--text-light-gray); margin-top: 8px;">Try relaxing filters or add an item.</p>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const feedback = document.getElementById('js-inventory-feedback');
+    const list = document.getElementById('js-inventory-list');
+    const empty = document.getElementById('js-inventory-empty');
+    let feedbackTimer = null;
+
+    function showFeedback(message, isError) {
+        if (!feedback) return;
+        feedback.textContent = message;
+        feedback.className = 'alert ' + (isError ? 'alert-error' : 'alert-success');
+        feedback.style.display = 'block';
+        if (feedbackTimer) clearTimeout(feedbackTimer);
+        feedbackTimer = setTimeout(() => { feedback.style.display = 'none'; }, 3500);
+    }
+
+    function updateCount(categoryEl, delta) {
+        const countSpan = categoryEl.querySelector('.js-category-count');
+        if (!countSpan) return;
+        const next = Math.max(0, parseInt(countSpan.dataset.count || '0', 10) + delta);
+        countSpan.dataset.count = String(next);
+        countSpan.textContent = '(' + next + (next === 1 ? ' item)' : ' items)');
+    }
+
+    function refreshEmptyState() {
+        if (!list || !empty) return;
+        const remaining = list.querySelectorAll('.js-inventory-category').length;
+        empty.style.display = remaining === 0 ? 'block' : 'none';
+    }
+
+    document.addEventListener('submit', function (event) {
+        const form = event.target.closest && event.target.closest('.js-inventory-delete-form');
+        if (!form) return;
+        event.preventDefault();
+
+        const name = form.dataset.itemName || 'this item';
+        if (!window.confirm('Delete "' + name + '"? This cannot be undone.')) return;
+
+        const csrfField = form.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = csrfField ? csrfField.value : '';
+        const row = form.closest('tr');
+        const categoryEl = form.closest('.js-inventory-category');
+
+        const button = form.querySelector('.js-inventory-delete-btn');
+        if (button) button.disabled = true;
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Delete failed (status ' + response.status + ')');
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                if (!payload || !payload.ok) {
+                    throw new Error('Delete rejected by server');
+                }
+                if (row) row.remove();
+                if (categoryEl) {
+                    if (categoryEl.querySelectorAll('tbody tr').length === 0) {
+                        categoryEl.remove();
+                    } else {
+                        updateCount(categoryEl, -1);
+                    }
+                }
+                refreshEmptyState();
+                showFeedback('Deleted: ' + name, false);
+            })
+            .catch(function () {
+                if (button) button.disabled = false;
+                showFeedback('Could not delete "' + name + '". Please try again.', true);
+            });
+    });
+})();
+</script>
 {% endblock %}
