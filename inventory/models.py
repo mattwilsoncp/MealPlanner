@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models import F
+from django.utils import timezone
+
 from household.models import Household
 
 
@@ -102,3 +105,79 @@ class InventoryItem(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.quantity} {self.unit})"
+
+
+class UpcLookupUsage(models.Model):
+    """Daily per-service counter of outbound UPC barcode lookups.
+
+    Tracks how many HTTP requests the server sends to the third-party
+    barcode services so admins can monitor the UPC Item DB trial quota
+    (default 100 req/day). One row per (service, date).
+    """
+
+    SERVICE_CHOICES = [
+        ("openfoodfacts", "Open Food Facts"),
+        ("upcitemdb", "UPC Item DB"),
+    ]
+
+    service = models.CharField(max_length=20, choices=SERVICE_CHOICES)
+    date = models.DateField()
+    count = models.PositiveIntegerField(default=0)
+    last_call_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-date"]
+        unique_together = (("service", "date"),)
+        indexes = [models.Index(fields=["service", "-date"])]
+
+    def __str__(self):
+        return f"{self.get_service_display()} · {self.date} · {self.count}"
+
+    @classmethod
+    def record(cls, service: str) -> int:
+        """Increment today's counter for the given service and return new count.
+
+        Uses an atomic ``F('count') + 1`` so concurrent updates don't lose
+        increments. Tracking failures are swallowed — never let monitoring
+        break a real UPC lookup.
+        """
+        try:
+            today = timezone.localdate()
+            now = timezone.now()
+            row, created = cls.objects.get_or_create(
+                service=service,
+                date=today,
+                defaults={"count": 1, "last_call_at": now},
+            )
+            if not created:
+                cls.objects.filter(pk=row.pk).update(
+                    count=F("count") + 1,
+                    last_call_at=now,
+                )
+                row.refresh_from_db(fields=["count", "last_call_at"])
+            return row.count
+        except Exception:
+            return -1
+
+    @classmethod
+    def today_count(cls, service: str) -> int:
+        try:
+            return cls.objects.get(
+                service=service, date=timezone.localdate()
+            ).count
+        except cls.DoesNotExist:
+            return 0
+
+    @classmethod
+    def recent(cls, days: int = 30):
+        from datetime import timedelta
+
+        cutoff = timezone.localdate() - timedelta(days=days - 1)
+        return cls.objects.filter(date__gte=cutoff)
+
+    @classmethod
+    def reset_today(cls, service: str) -> int:
+        """Test helper: zero out today's counter for a given service."""
+        return cls.objects.filter(
+            service=service, date=timezone.localdate()
+        ).update(count=0)

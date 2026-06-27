@@ -996,6 +996,7 @@
                             <a href="{% url 'recipes:image_recipe_import' %}" class="dropdown-item block">Import from Photo</a>
                             <a href="{% url 'backup_page' %}" class="dropdown-item block">Backup & Restore</a>
                             <a href="{% url 'inventory:barcode_scan' %}" class="dropdown-item block">Barcode Scanner</a>
+                            <a href="{% url 'upc_usage' %}" class="dropdown-item block">UPC Usage</a>
                         </div>
                     </div>
                     <div class="relative">
@@ -1063,6 +1064,7 @@
                     <hr class="my-2" style="border-color: var(--border-subtle);">
                     <a href="{% url 'backup_page' %}" class="nav-link">Backup & Restore</a>
                     <a href="{% url 'inventory:barcode_scan' %}" class="nav-link">Barcode Scanner</a>
+                    <a href="{% url 'upc_usage' %}" class="nav-link">UPC Usage</a>
                     {% endif %}
                     <hr class="my-2" style="border-color: var(--border-subtle);">
                     {% if user.is_authenticated %}
