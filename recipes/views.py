@@ -362,26 +362,8 @@ Source Context:
 
     def form_valid(self, form):
         import os
-        import json
-        import re
-        import urllib.request
-
-        try:
-            from youtube_transcript_api import YouTubeTranscriptApi
-
-            LLMRecipeImportView.YouTubeTranscriptApi = YouTubeTranscriptApi
-        except ImportError:
-            LLMRecipeImportView.YouTubeTranscriptApi = None
-
-        from household.models import Household
-        from ingredients.models import Ingredient, IngredientLink
-        from instructions.models import Instruction
-        from .models import Recipe
-        from .youtube import YouTubeService, InvalidVideoError
-
-        PROJECT_ROOT = Path(__file__).resolve().parent.parent
-        youtube_url = form.cleaned_data["youtube_url"]
-        model = form.cleaned_data.get("model") or "openrouter/free"
+        import subprocess
+        import sys
 
         OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
         if not OPENROUTER_API_KEY:
@@ -391,41 +373,104 @@ Source Context:
             )
             return self.form_invalid(form)
 
+        household = self.request.user.household
+        if not household:
+            form.add_error(
+                "youtube_url",
+                "No household associated with your account.",
+            )
+            return self.form_invalid(form)
+
+        youtube_url = form.cleaned_data["youtube_url"]
+        title_override = (form.cleaned_data.get("title") or "").strip()
+
+        # The model field is optional; fall back to a sensible default.
+        # ``google/gemini-2.0-flash-001`` is fast and reliably returns
+        # parseable JSON, which is why we surface it as the first choice.
+        model = (
+            (form.cleaned_data.get("model") or "").strip()
+            or "google/gemini-2.0-flash-001"
+        )
+
+        # Delegate the entire import to youtube_importer.py so the web
+        # form and the CLI share identical behavior — same prompt
+        # template, same JSON parser, same recipe upsert. The CLI
+        # raises on malformed URLs, missing API keys, or unparseable
+        # model output; we surface its last stderr line as the form
+        # error so the user sees the actual reason for a failure.
+        script_path = Path(settings.BASE_DIR) / "youtube_importer.py"
+        cmd = [
+            sys.executable,
+            str(script_path),
+            youtube_url,
+            "--model",
+            model,
+            "--household-id",
+            str(household.id),
+        ]
+        if title_override:
+            cmd += ["--title", title_override]
+
         try:
-            household = self.request.user.household
-            if not household:
-                form.add_error(
-                    "youtube_url", "No household associated with your account."
-                )
-                return self.form_invalid(form)
-
-            client = OpenAI(
-                api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1"
+            result = subprocess.run(
+                cmd,
+                cwd=str(settings.BASE_DIR),
+                capture_output=True,
+                text=True,
+                timeout=300,
             )
-
-            video_id = self._extract_video_id(youtube_url)
-            metadata = self._get_video_metadata(video_id, youtube_url)
-            transcript = self._fetch_transcript(video_id)
-            transcript_log = self._write_transcript_log(metadata, transcript)
-            parsed = self._parse_with_llm(client, model, metadata, transcript)
-
-            if form.cleaned_data.get("title"):
-                parsed["title"] = form.cleaned_data["title"]
-
-            recipe = self._create_recipe(parsed, household, youtube_url, transcript_log, video_id)
-
-            messages.success(
-                self.request,
-                f"Imported recipe: {recipe.title} ({len(parsed.get('ingredients', []))} ingredients, {len(parsed.get('instructions', []))} steps)",
+        except subprocess.TimeoutExpired:
+            form.add_error(
+                "youtube_url",
+                "Import timed out after 5 minutes. Try a shorter video or a different model.",
             )
-            return redirect("recipes:recipe_detail", pk=recipe.pk)
+            return self.form_invalid(form)
+        except Exception as exc:
+            form.add_error(
+                "youtube_url",
+                f"Failed to launch importer: {exc}",
+            )
+            return self.form_invalid(form)
 
-        except InvalidVideoError as e:
-            form.add_error("youtube_url", str(e))
+        if result.returncode != 0:
+            stderr_lines = [
+                line for line in (result.stderr or "").splitlines() if line.strip()
+            ]
+            user_message = stderr_lines[-1] if stderr_lines else "Unknown import error"
+            # Strip "ERROR: " prefix the script adds so the form message
+            # reads cleanly without repeating itself.
+            if user_message.startswith("ERROR: "):
+                user_message = user_message[len("ERROR: "):]
+            form.add_error("youtube_url", f"AI import failed: {user_message}")
             return self.form_invalid(form)
-        except Exception as e:
-            form.add_error("youtube_url", f"Import failed: {str(e)}")
+
+        # Pull the recipe the script just upserted back out of the DB.
+        # The script's ``get_or_create`` keys on (household, title), so
+        # this query resolves the same way regardless of whether it was
+        # a first import or a re-import.
+        from .models import Recipe
+
+        recipe = (
+            Recipe.objects
+            .filter(
+                household=household,
+                video_url=youtube_url,
+            )
+            .order_by("-updated_at", "-pk")
+            .first()
+        )
+        if recipe is None:
+            form.add_error(
+                "youtube_url",
+                "Import ran but no recipe was saved. Try again or pick another model.",
+            )
             return self.form_invalid(form)
+
+        messages.success(
+            self.request,
+            f"Imported recipe: {recipe.title}",
+        )
+        return redirect("recipes:recipe_detail", pk=recipe.pk)
 
     def _extract_video_id(self, url: str) -> str:
         patterns = [

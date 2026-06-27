@@ -834,7 +834,13 @@ class LLMRecipeImportViewCreateRecipeTests(TestCase):
 
 
 class LLMRecipeImportViewFullIntegrationTests(TestCase):
-    """Full integration tests for LLMRecipeImportView with mocked external services."""
+    """Full integration tests for LLMRecipeImportView with mocked external services.
+
+    The view now shells out to ``youtube_importer.py`` so the CLI and the
+    web form share a single import path. These tests mock that
+    subprocess call instead of patching ``YouTubeService`` or
+    ``recipes.views.OpenAI`` directly.
+    """
 
     def setUp(self):
         self.household = Household.objects.create(name="Test Household")
@@ -846,97 +852,130 @@ class LLMRecipeImportViewFullIntegrationTests(TestCase):
         )
         self.url = reverse("recipes:llm_recipe_import")
 
-    def _make_mock_llm_response(self, json_content):
-        """Create a mock OpenAI response with the given JSON string."""
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = json_content
-        return mock_response
+    def _successful_subprocess_mock(self, title, video_url=None):
+        """Patch ``subprocess.run`` to act as if the CLI imported
+        *title* successfully. Creates the recipe in the DB before the
+        view reads it back, and returns a ``CompletedProcess`` so the
+        view can parse success."""
+        from ingredients.models import Ingredient, IngredientLink
+        from instructions.models import Instruction
+
+        def _side_effect(cmd, *args, **kwargs):
+            recipe = Recipe.objects.create(
+                household=self.household,
+                title=title,
+                description="Imported via CLI",
+                video_url=video_url or "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                needs_review=True,
+            )
+            ingredient = Ingredient.objects.create(
+                household=self.household,
+                name="all-purpose flour",
+            )
+            IngredientLink.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                quantity=Decimal("2"),
+                unit="cup",
+                order=1,
+            )
+            Instruction.objects.create(
+                recipe=recipe,
+                step_number=1,
+                text="Mix and bake.",
+            )
+            completed = MagicMock()
+            completed.returncode = 0
+            completed.stdout = f"Created recipe #{recipe.pk}: {recipe.title}"
+            completed.stderr = ""
+            return completed
+
+        mock = MagicMock(side_effect=_side_effect)
+        return mock
+
+    def _failing_subprocess_mock(self, stderr_text):
+        """Patch ``subprocess.run`` to act as if the CLI exited with
+        *stderr_text* on stderr — the view surfaces that line as a
+        form error."""
+        result = MagicMock()
+        result.returncode = 1
+        result.stdout = ""
+        result.stderr = stderr_text
+        return MagicMock(return_value=result)
 
     def test_full_import_success(self):
-        """POST with valid YouTube URL, transcript, and LLM response creates recipe."""
+        """POST with valid YouTube URL shells out to the CLI and creates a recipe."""
         self.client.login(username="alice", password="pass1234")
 
         with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}):
-            with patch("youtube_transcript_api.YouTubeTranscriptApi",
-                       MockYouTubeTranscriptApi(SAMPLE_TRANSCRIPT_ITEMS)):
-                with patch("recipes.views.YouTubeService") as mock_yt_svc:
-                    mock_yt_svc.return_value.get_video_metadata.return_value = MagicMock(
-                        title="Test Recipe",
-                        description="Test description",
-                        thumbnail_url="https://example.com/thumb.jpg",
-                    )
+            with patch(
+                "subprocess.run",
+                self._successful_subprocess_mock("Chocolate Chip Cookies"),
+            ):
+                response = self.client.post(
+                    self.url,
+                    {
+                        "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                        "model": "google/gemini-2.0-flash-001",
+                    },
+                )
 
-                    with patch("recipes.views.OpenAI") as mock_openai:
-                        mock_client = MagicMock()
-                        mock_client.chat.completions.create.return_value = (
-                            self._make_mock_llm_response(SAMPLE_LLM_JSON_RESPONSE)
-                        )
-                        mock_openai.return_value = mock_client
+                self.assertEqual(
+                    response.status_code,
+                    302,
+                    msg=f"Expected 302, got {response.status_code}",
+                )
+                self.assertRegex(response.url, r"/recipes/\d+/")
 
-                        response = self.client.post(
-                            self.url,
-                            {
-                                "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                                "model": "openrouter/free",
-                            },
-                        )
-
-                        self.assertEqual(response.status_code, 302, msg=f"Expected 302, got {response.status_code}")
-                        self.assertRegex(response.url, r"/recipes/\d+/")
-
-                        recipe = Recipe.objects.latest("pk")
-                        self.assertEqual(recipe.title, "Chocolate Chip Cookies")
-                        self.assertEqual(recipe.household, self.household)
-                        self.assertEqual(recipe.ingredients.count(), 4)
-                        self.assertTrue(Instruction.objects.filter(recipe=recipe).exists())
+                recipe = Recipe.objects.latest("pk")
+                self.assertEqual(recipe.title, "Chocolate Chip Cookies")
+                self.assertEqual(recipe.household, self.household)
+                self.assertEqual(recipe.ingredients.count(), 1)
+                self.assertTrue(
+                    Instruction.objects.filter(recipe=recipe).exists()
+                )
 
     def test_import_with_custom_title_overrides_llm_title(self):
-        """POST with custom title overrides the LLM-generated title."""
+        """POST with custom title forwards as ``--title`` to the CLI."""
         self.client.login(username="alice", password="pass1234")
 
-        from recipes.views import LLMRecipeImportView
-
         with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}):
-            with patch("youtube_transcript_api.YouTubeTranscriptApi",
-                       MockYouTubeTranscriptApi(SAMPLE_TRANSCRIPT_ITEMS)):
-                with patch("recipes.views.YouTubeService") as mock_yt_svc:
-                    mock_yt_svc.return_value.get_video_metadata.return_value = MagicMock(
-                        title="Test Recipe",
-                        description="Test description",
-                        thumbnail_url="https://example.com/thumb.jpg",
-                    )
+            subprocess_mock = self._successful_subprocess_mock(
+                "My Custom Cookie Recipe",
+            )
+            with patch("subprocess.run", subprocess_mock):
+                response = self.client.post(
+                    self.url,
+                    {
+                        "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                        "title": "My Custom Cookie Recipe",
+                        "model": "openrouter/free",
+                    },
+                )
 
-                    with patch("recipes.views.OpenAI") as mock_openai:
-                        mock_client = MagicMock()
-                        mock_client.chat.completions.create.return_value = (
-                            self._make_mock_llm_response(SAMPLE_LLM_JSON_RESPONSE)
-                        )
-                        mock_openai.return_value = mock_client
+                # The CLI was invoked at least once with our title.
+                self.assertTrue(subprocess_mock.called)
+                cmd_args = subprocess_mock.call_args.args[0]
+                self.assertIn("--title", cmd_args)
+                self.assertIn("My Custom Cookie Recipe", cmd_args)
 
-                        response = self.client.post(
-                            self.url,
-                            {
-                                "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                                "title": "My Custom Cookie Recipe",
-                                "model": "openrouter/free",
-                            },
-                        )
-
-                        msg = f"Expected 302, got {response.status_code}."
-                        if response.status_code == 200 and response.context:
-                            msg += f" Form errors: {response.context['form'].errors.as_text()}"
-                        self.assertEqual(response.status_code, 302, msg=msg)
-                        recipe = Recipe.objects.latest("pk")
-                        self.assertEqual(recipe.title, "My Custom Cookie Recipe")
+                msg = f"Expected 302, got {response.status_code}."
+                if response.status_code == 200 and response.context:
+                    msg += f" Form errors: {response.context['form'].errors.as_text()}"
+                self.assertEqual(response.status_code, 302, msg=msg)
+                recipe = Recipe.objects.latest("pk")
+                self.assertEqual(recipe.title, "My Custom Cookie Recipe")
 
     def test_import_invalid_video_error_returns_form_error(self):
-        """POST with non-YouTube URL raises InvalidVideoError and returns form error."""
+        """POST with non-YouTube URL surfaces script failure as a form error."""
         self.client.login(username="alice", password="pass1234")
 
         with patch.dict(
             "os.environ",
             {"OPENROUTER_API_KEY": "test-key"},
+        ), patch(
+            "subprocess.run",
+            self._failing_subprocess_mock("Invalid YouTube URL: not-youtube"),
         ):
             response = self.client.post(
                 self.url,
@@ -948,15 +987,19 @@ class LLMRecipeImportViewFullIntegrationTests(TestCase):
             self.assertEqual(response.status_code, 200)
             form = response.context["form"]
             self.assertIn("youtube_url", form.errors)
+            self.assertIn("Invalid YouTube URL", str(form.errors["youtube_url"]))
 
     def test_import_llm_json_parse_error_returns_form_error(self):
-        """POST when LLM returns unparseable JSON returns form error."""
+        """POST when the CLI fails to parse the model's JSON reports it on the form."""
         self.client.login(username="alice", password="pass1234")
 
         with patch.dict(
             "os.environ",
             {"OPENROUTER_API_KEY": "test-key"},
-        ), patch("youtube_transcript_api.YouTubeTranscriptApi", side_effect=ImportError):
+        ), patch(
+            "subprocess.run",
+            self._failing_subprocess_mock("AI response did not contain a JSON object or array"),
+        ):
             response = self.client.post(
                 self.url,
                 {"youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
@@ -965,16 +1008,19 @@ class LLMRecipeImportViewFullIntegrationTests(TestCase):
             self.assertEqual(response.status_code, 200)
             form = response.context["form"]
             self.assertIn("youtube_url", form.errors)
-            self.assertIn("Import failed", str(form.errors["youtube_url"]))
+            self.assertIn("AI import failed", str(form.errors["youtube_url"]))
 
     def test_import_transcript_api_missing_returns_form_error(self):
-        """POST when youtube-transcript-api is not installed returns form error."""
+        """POST when youtube-transcript-api is not installed reports it on the form."""
         self.client.login(username="alice", password="pass1234")
 
         with patch.dict(
             "os.environ",
             {"OPENROUTER_API_KEY": "test-key"},
-        ), patch("youtube_transcript_api.YouTubeTranscriptApi", side_effect=ImportError):
+        ), patch(
+            "subprocess.run",
+            self._failing_subprocess_mock("No module named youtube_transcript_api"),
+        ):
             response = self.client.post(
                 self.url,
                 {"youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
