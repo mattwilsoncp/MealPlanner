@@ -508,7 +508,7 @@ class LLMRecipeImportViewParseLLMTests(TestCase):
                 {"url": "https://youtube.com/watch?v=abc"},
                 "sample transcript",
             )
-        self.assertIn("not a JSON object", str(ctx.exception))
+        self.assertIn("did not contain a JSON object or array", str(ctx.exception))
 
     def test_build_source_context(self):
         """_build_source_context formats metadata and transcript into context string."""

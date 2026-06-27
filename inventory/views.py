@@ -475,21 +475,10 @@ Rules:
         return base64.b64encode(buffer.getvalue()).decode("utf-8"), "image/jpeg"
 
     def _extract_json_payload(self, raw_text):
-        text = raw_text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            text = match.group(0)
-        payload = json.loads(text)
-        if not isinstance(payload, dict):
-            raise RuntimeError("AI response was not a JSON object")
-        return payload
+        """Delegate to the shared extractor so prose around the JSON and
+        trailing commentary do not abort the import."""
+        from recipes.llm_json import extract_json_payload
+        return extract_json_payload(raw_text, expected_type=dict)
 
     def _normalize_items(self, items):
         category_values = {value for value, _ in InventoryItem.CATEGORY_CHOICES}
