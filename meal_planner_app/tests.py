@@ -2863,3 +2863,94 @@ class AiPlanSaveSuccessMessageTests(TestCase):
         self.assertEqual(len(messages_list), 1)
         self.assertIn("Shopping List", str(messages_list[0]))
         self.assertIn("1", str(messages_list[0]))
+
+
+class HomePageViewTests(TestCase):
+    """Tests for the project HomePageView and the reviews-count badge."""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Homepage Household")
+        self.other_household = Household.objects.create(name="Other Homepage")
+        self.user = user_model.objects.create_user(
+            username="homepage-user",
+            email="homepage@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.client.force_login(self.user)
+
+    def _make_recipes(self, count, household, needs_review=True):
+        for index in range(count):
+            Recipe.objects.create(
+                household=household,
+                title=f"Recipe {index}",
+                needs_review=needs_review,
+            )
+
+    def test_home_renders_for_authenticated_user(self):
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_home_counts_only_needs_review_recipes_in_self_household(self):
+        # 3 needs_review=True in self.household; 1 needs_review=False in
+        # self.household; 2 in other_household (must NOT be counted).
+        for index in range(3):
+            Recipe.objects.create(
+                household=self.household,
+                title=f"Pending {index}",
+                needs_review=True,
+            )
+        Recipe.objects.create(
+            household=self.household,
+            title="Reviewed",
+            needs_review=False,
+        )
+        for index in range(2):
+            Recipe.objects.create(
+                household=self.other_household,
+                title=f"Other {index}",
+                needs_review=True,
+            )
+
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.context.get("reviews_count"), 3)
+
+    def test_home_recipe_reviews_card_omits_badge_when_no_pending(self):
+        Recipe.objects.create(
+            household=self.household, title="Done", needs_review=False
+        )
+
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get("reviews_count"), 0)
+        body = response.content.decode("utf-8")
+        # The phrase "need review" only appears inside the badge; the section
+        # is absent when no recipes are pending.
+        self.assertNotIn("need review", body)
+
+    def test_home_recipe_reviews_card_shows_singular_badge_for_one(self):
+        self._make_recipes(1, self.household)
+
+        response = self.client.get(reverse("home"))
+        body = response.content.decode("utf-8")
+        # Count == 1: Django's pluralize tag drops the "s" so the rendered
+        # text is "1 need review" (no apostrophe-s). CSS uppercase shows it
+        # as "1 NEED REVIEW" but that's a presentational transform.
+        self.assertIn("1 need review</span>", body)
+        self.assertNotIn("1 needs review", body)
+
+    def test_home_recipe_reviews_card_shows_plural_badge_for_many(self):
+        self._make_recipes(5, self.household)
+
+        response = self.client.get(reverse("home"))
+        body = response.content.decode("utf-8")
+        self.assertIn("5 needs review</span>", body)
+
+    def test_home_anonymous_user_omits_reviews_count_from_context(self):
+        self.client.logout()
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        # reviews_count is not passed at all for anonymous visitors so the
+        # template's `{% if reviews_count %}` branch is skipped cleanly.
+        self.assertNotIn("reviews_count", response.context)
