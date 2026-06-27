@@ -8,7 +8,10 @@
 
     <span class="vp-eyebrow">{% if object %}Edit{% else %}Add{% endif %} Item</span>
     <h1 class="vp-display-secondary">{% if object %}Edit item{% else %}Add a new item{% endif %}</h1>
-    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Capture what you have at home so recipes and shopping lists stay accurate.</p>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">
+        Capture what you have at home so recipes and shopping lists stay accurate.
+        Got a barcode? Scan or type 8&ndash;14 digits in the Barcode field below &mdash; we&rsquo;ll look it up.
+    </p>
 
     <form method="post" enctype="multipart/form-data" class="vp-card" style="margin-top: 40px;">
         {% csrf_token %}
@@ -23,13 +26,13 @@
             <div class="md:col-span-2">
                 <label class="vp-label-mono mb-2" for="{{ form.name.id_for_label }}">Name</label>
                 {{ form.name }}
-                {% if form.name.errors %}<p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.name.errors|join:", " }}</p>{% endif %}
+                {% if form.name.errors %}<p class="vp-label-mono mt-2" style="color: var(--text-primary);">{{ form.name.errors|join:", " }}</p>{% endif %}
             </div>
 
             <div>
                 <label class="vp-label-mono mb-2" for="{{ form.quantity.id_for_label }}">Quantity</label>
                 {{ form.quantity }}
-                {% if form.quantity.errors %}<p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.quantity.errors|join:", " }}</p>{% endif %}
+                {% if form.quantity.errors %}<p class="vp-label-mono mt-2" style="color: var(--text-primary);">{{ form.quantity.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
                 <label class="vp-label-mono mb-2" for="{{ form.unit.id_for_label }}">Unit</label>
@@ -49,15 +52,103 @@
                 <label class="vp-label-mono mb-2" for="{{ form.expiration_date.id_for_label }}">Expiration Date</label>
                 {{ form.expiration_date }}
             </div>
-            <div>
+            <div x-data="inventoryBarcodeLookup()"
+                 x-init="init({% if object %}{{ object.id }}{% else %}null{% endif %})">
                 <label class="vp-label-mono mb-2" for="{{ form.barcode.id_for_label }}">Barcode</label>
-                {{ form.barcode }}
+                <div style="display: flex; gap: 12px; align-items: stretch;">
+                    <input
+                        type="text"
+                        name="{{ form.barcode.html_name }}"
+                        id="{{ form.barcode.id_for_label }}"
+                        value="{{ form.barcode.value|default_if_none:'' }}"
+                        inputmode="numeric"
+                        pattern="[0-9]{8,14}"
+                        maxlength="14"
+                        placeholder="Scan or type 8&ndash;14 digits"
+                        autocomplete="off"
+                        @input="onBarcodeInput"
+                        @keydown.enter.prevent="onBarcodeEnter"
+                        style="flex: 1; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px 14px; font-size: 0.9375rem; color: var(--text-primary); font-family: var(--font-primary);"
+                    >
+                    <button type="button" @click="toggleScanner" class="vp-btn-ghost" :disabled="scannerActive">
+                        <span x-show="!scannerActive">Start Camera</span>
+                        <span x-show="scannerActive" x-cloak>Stop Camera</span>
+                    </button>
+                </div>
+                <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 8px; font-size: 0.75rem;">Point your scanner here, then press Enter &mdash; or type 8&ndash;14 digits.</p>
+                {% if form.barcode.errors %}<p class="vp-label-mono mt-2" style="color: var(--text-primary);">{{ form.barcode.errors|join:", " }}</p>{% endif %}
+
+                <div x-show="scannerActive" x-cloak class="vp-card-tight" style="text-align: center; padding: 24px; margin-top: 12px;">
+                    <div id="inventory-barcode-reader" style="width: 100%; max-width: 320px; margin: 0 auto;"></div>
+                    <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 12px;">Align the barcode within the frame.</p>
+                </div>
+
+                <div x-show="state !== 'idle'" x-cloak style="margin-top: 12px;">
+                    <template x-if="state === 'looking'">
+                        <div class="vp-card-tight" style="padding: 12px 16px; background: var(--bg-elevated);">
+                            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em;">Looking up barcode&hellip;</span>
+                        </div>
+                    </template>
+
+                    <template x-if="state === 'self'">
+                        <div class="vp-card-tight" style="padding: 12px 16px;">
+                            <span class="vp-label-mono">Barcode matches the current item.</span>
+                        </div>
+                    </template>
+
+                    <template x-if="state === 'local'">
+                        <div class="vp-card-tight" style="padding: 12px 16px; border-color: var(--border-strong);">
+                            <span class="vp-label-mono" style="color: var(--text-primary);">Already in inventory</span>
+                            <a :href="'/inventory/' + result.item.id + '/edit/'"
+                               class="vp-display-secondary"
+                               style="display: block; font-size: 1.125rem; margin-top: 4px; text-decoration: none; color: var(--text-primary); font-weight: 500;"
+                               x-text="result.item.name"></a>
+                            <div style="display: flex; gap: 16px; margin-top: 8px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em;">
+                                <span>Qty <span style="color: var(--text-secondary); text-transform: none; letter-spacing: 0;" x-text="result.item.quantity + ' ' + result.item.unit"></span></span>
+                                <template x-if="result.item.category">
+                                    <span>Category <span style="color: var(--text-secondary); text-transform: none; letter-spacing: 0;" x-text="result.item.category"></span></span>
+                                </template>
+                            </div>
+                            <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 12px; font-size: 0.75rem;">Continue if you mean to add a separate stock-keeping record.</p>
+                        </div>
+                    </template>
+
+                    <template x-if="state === 'upc'">
+                        <div class="vp-card-tight" style="padding: 12px 16px; border-color: var(--border-strong);">
+                            <span class="vp-label-mono" style="color: var(--text-primary);">Product found &middot; UPC match</span>
+                            <p class="vp-display-secondary" style="font-size: 1.125rem; margin-top: 4px; line-height: 1.2;" x-text="result.item.title"></p>
+                            <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em;">
+                                <template x-if="result.item.brand">
+                                    <span>Brand <span style="color: var(--text-secondary); text-transform: none; letter-spacing: 0;" x-text="result.item.brand"></span></span>
+                                </template>
+                                <template x-if="result.item.size">
+                                    <span>Size <span style="color: var(--text-secondary); text-transform: none; letter-spacing: 0;" x-text="result.item.size"></span></span>
+                                </template>
+                                <span>Category <span style="color: var(--text-secondary); text-transform: none; letter-spacing: 0;" x-text="result.item.category || 'other'"></span></span>
+                            </div>
+                            <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 12px; font-size: 0.75rem;">Name and category pre-filled below &mdash; review before saving.</p>
+                        </div>
+                    </template>
+
+                    <template x-if="state === 'none'">
+                        <div class="vp-card-tight" style="padding: 12px 16px;">
+                            <span class="vp-label-mono" style="color: var(--text-muted);">No online match for this barcode. Enter details manually below.</span>
+                        </div>
+                    </template>
+
+                    <template x-if="state === 'error'">
+                        <div class="vp-card-tight" style="padding: 12px 16px; border-color: var(--border-strong);">
+                            <span class="vp-label-mono" style="color: var(--text-primary);">Lookup failed</span>
+                            <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 4px; font-size: 0.75rem;" x-text="errorMessage"></p>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <div>
                 <label class="vp-label-mono mb-2" for="{{ form.price.id_for_label }}">Price</label>
                 {{ form.price }}
-                {% if form.price.errors %}<p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.price.errors|join:", " }}</p>{% endif %}
+                {% if form.price.errors %}<p class="vp-label-mono mt-2" style="color: var(--text-primary);">{{ form.price.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
                 <label class="vp-label-mono mb-2" for="{{ form.store.id_for_label }}">Store</label>
@@ -83,4 +174,176 @@
         </div>
     </form>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+function inventoryBarcodeLookup() {
+    return {
+        barcodeInput: null,
+        nameInput: null,
+        categoryInput: null,
+        notesInput: null,
+        currentItemId: null,
+        state: "idle",
+        result: {},
+        errorMessage: "",
+        scannerActive: false,
+        scanner: null,
+        BARCODE_PATTERN: /^\d{8,14}$/,
+
+        get csrfToken() {
+            const t = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return t ? t.value : "";
+        },
+
+        init(currentItemId) {
+            this.currentItemId = currentItemId;
+            this.barcodeInput = document.getElementById("id_barcode");
+            this.nameInput = document.getElementById("id_name");
+            this.categoryInput = document.getElementById("id_category");
+            this.notesInput = document.getElementById("id_notes");
+            if (this.barcodeInput) {
+                this.barcodeInput.focus();
+                const initial = (this.barcodeInput.value || "").trim();
+                if (this.BARCODE_PATTERN.test(initial)) {
+                    this.lookup(initial);
+                }
+            }
+        },
+
+        onBarcodeInput() {
+            const code = (this.barcodeInput.value || "").trim();
+            if (this.BARCODE_PATTERN.test(code)) {
+                this.lookup(code);
+            } else {
+                this.reset();
+            }
+        },
+
+        onBarcodeEnter() {
+            const code = (this.barcodeInput.value || "").trim();
+            if (this.BARCODE_PATTERN.test(code)) {
+                this.lookup(code);
+            }
+        },
+
+        reset() {
+            this.state = "idle";
+            this.result = {};
+            this.errorMessage = "";
+        },
+
+        async lookup(code) {
+            if (!code) return;
+            this.state = "looking";
+            this.errorMessage = "";
+            try {
+                const response = await fetch("{% url 'inventory:barcode_lookup_api' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": this.csrfToken,
+                        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    },
+                    body: new URLSearchParams({ barcode: code }).toString(),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        this.state = "idle";
+                    } else {
+                        this.state = "error";
+                        this.errorMessage = (data && data.message) || "Lookup failed.";
+                    }
+                    return;
+                }
+                this.result = data || {};
+                if ((data.source === "local") && data.item && this.currentItemId && data.item.id === this.currentItemId) {
+                    this.state = "self";
+                } else if (data.source === "local") {
+                    this.state = "local";
+                } else if (data.source === "upc") {
+                    this.state = "upc";
+                    this.prefill(data.item);
+                } else {
+                    this.state = "none";
+                }
+            } catch (err) {
+                this.state = "error";
+                this.errorMessage = (err && err.message) || "Lookup failed.";
+            }
+        },
+
+        prefill(item) {
+            if (!item) return;
+            if (item.title && this.nameInput && !this.nameInput.value.trim()) {
+                this.nameInput.value = item.title;
+            }
+            if (item.category && this.categoryInput) {
+                const valid = Array.from(this.categoryInput.options).some(function (o) {
+                    return o.value === item.category;
+                });
+                if (valid && !this.categoryInput.value) {
+                    this.categoryInput.value = item.category;
+                }
+            }
+            if ((item.brand || item.size) && this.notesInput) {
+                const additions = [];
+                if (item.brand) additions.push("Brand: " + item.brand);
+                if (item.size) additions.push("Size: " + item.size);
+                const addition = additions.join("\n");
+                const existing = (this.notesInput.value || "").trim();
+                if (existing && !existing.includes(addition)) {
+                    this.notesInput.value = existing + "\n" + addition;
+                } else if (!existing) {
+                    this.notesInput.value = addition;
+                }
+            }
+        },
+
+        async toggleScanner() {
+            this.scannerActive = !this.scannerActive;
+            if (this.scannerActive) {
+                this.scanner = new Html5Qrcode("inventory-barcode-reader");
+                try {
+                    await this.scanner.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 150 } },
+                        (decodedText) => {
+                            if (this.barcodeInput) {
+                                this.barcodeInput.value = decodedText;
+                            }
+                            this.stopScanner();
+                            const code = decodedText;
+                            if (this.BARCODE_PATTERN.test(code)) {
+                                this.lookup(code);
+                            }
+                        },
+                        function () { /* ignore per-frame decode failures */ }
+                    );
+                } catch (err) {
+                    this.scannerActive = false;
+                    this.scanner = null;
+                    this.state = "error";
+                    this.errorMessage = "Camera error: " + ((err && err.message) || "unknown");
+                }
+            } else {
+                this.stopScanner();
+            }
+        },
+
+        async stopScanner() {
+            if (this.scanner) {
+                try {
+                    await this.scanner.stop();
+                } catch (e) { /* ignore */ }
+                this.scanner.clear && this.scanner.clear();
+                this.scanner = null;
+            }
+            this.scannerActive = false;
+        }
+    }
+}
+</script>
 {% endblock %}
