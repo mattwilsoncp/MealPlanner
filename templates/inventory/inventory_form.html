@@ -50,6 +50,16 @@
                 {{ form.barcode }}
             </div>
 
+            <div>
+                <label class="label-dark" for="{{ form.price.id_for_label }}"><span>Price</span></label>
+                {{ form.price }}
+                {% if form.price.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.price.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="label-dark" for="{{ form.store.id_for_label }}"><span>Store</span></label>
+                {{ form.store }}
+            </div>
+
             <div class="md:col-span-2">
                 <label class="label-dark" for="{{ form.notes.id_for_label }}"><span>Notes</span></label>
                 {{ form.notes }}

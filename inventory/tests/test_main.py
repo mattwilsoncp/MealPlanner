@@ -265,6 +265,39 @@ class InventoryViewTests(TestCase):
         self.assertEqual(response.status_code, 405)
         self.assertTrue(InventoryItem.objects.filter(id=item.id).exists())
 
+    def test_list_page_renders_price_and_store_columns(self):
+        from inventory.models import Store
+
+        store = Store.objects.create(household=self.household, name="Acme Market")
+        InventoryItem.objects.create(
+            household=self.household,
+            name="Priced Item",
+            quantity=Decimal("2.00"),
+            unit="piece",
+            category="dairy",
+            location="refrigerator",
+            price=Decimal("4.50"),
+            store=store,
+        )
+        InventoryItem.objects.create(
+            household=self.household,
+            name="Plain Item",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="dairy",
+            location="refrigerator",
+        )
+
+        response = self.client.get(reverse("inventory:inventory_list"))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn(">Price<", content)
+        self.assertIn(">Store<", content)
+        self.assertIn("$4.50", content)
+        self.assertIn("Acme Market", content)
+        self.assertIn("—", content)
+
     def test_expiring_and_expired_views_use_household_threshold_rules(self):
         today = date.today()
         self.household.expiring_threshold_days = 5

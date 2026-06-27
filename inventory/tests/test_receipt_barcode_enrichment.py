@@ -378,7 +378,39 @@ class ReceiptImportReviewViewEnrichmentTests(TestCase):
         existing.refresh_from_db()
         self.assertEqual(existing.quantity, before_qty + Decimal("2"))
         self.assertIn("Brand: Quaker", existing.notes)
-        self.assertIn("Receipt price: $4.50", existing.notes)
+        self.assertNotIn("Receipt price", existing.notes)
+        self.assertIsNone(existing.price)
+
+    def test_post_writes_price_and_store_to_fields_when_creating(self):
+        items = [{"receipt_description": "MLK 2CT", "name": "Greek Yogurt",
+                  "quantity": "1", "unit": "piece", "category": "dairy",
+                  "location": "refrigerator", "price": "4.50",
+                  "barcode": "012345678905", "confidence": "high"}]
+        self._seed_session(items, {"0": None})
+        session = self.client.session
+        session["receipt_import"]["store"] = "Acme Market"
+        session.save()
+
+        response = self.client.post(
+            reverse("inventory:receipt_import_review"),
+            data={
+                "items-0-include": "on",
+                "items-0-name": "Greek Yogurt",
+                "items-0-receipt_description": "MLK 2CT",
+                "items-0-quantity": "1",
+                "items-0-unit": "piece",
+                "items-0-category": "dairy",
+                "items-0-location": "refrigerator",
+                "items-0-barcode": "012345678905",
+                "items-0-price": "4.50",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        created = InventoryItem.objects.get(barcode="012345678905")
+        self.assertEqual(created.price, Decimal("4.50"))
+        self.assertEqual(created.store.name, "Acme Market")
+        self.assertNotIn("Receipt price", created.notes)
 
     def test_post_skips_row_with_no_name_and_no_enrichment(self):
         items = [{"receipt_description": "???", "name": "", "quantity": "1",

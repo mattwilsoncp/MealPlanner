@@ -2,6 +2,25 @@ from django.db import models
 from household.models import Household
 
 
+class Store(models.Model):
+    """A retailer or vendor where household inventory items can be purchased."""
+
+    household = models.ForeignKey(
+        Household, on_delete=models.CASCADE, related_name="stores"
+    )
+    name = models.CharField(max_length=200)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = (("household", "name"),)
+
+    def __str__(self):
+        return self.name
+
+
 class InventoryItem(models.Model):
     """Inventory item for tracking household food supplies."""
 
@@ -58,6 +77,16 @@ class InventoryItem(models.Model):
         max_length=20, choices=LOCATION_CHOICES, default="pantry"
     )
     expiration_date = models.DateField(null=True, blank=True)
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    store = models.ForeignKey(
+        Store,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_items",
+    )
     notes = models.TextField(blank=True)
     image = models.ImageField(upload_to="inventory/%Y/%m/%d/", blank=True, null=True)
     barcode = models.CharField(max_length=50, blank=True, db_index=True)
