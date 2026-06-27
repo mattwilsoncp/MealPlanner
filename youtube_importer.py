@@ -57,6 +57,7 @@ _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 from household.models import Household
 from ingredients.models import Ingredient, IngredientLink
 from instructions.models import Instruction
+from recipes.llm_json import extract_json_payload as _extract_recipe_payload
 from recipes.models import Recipe
 from recipes.youtube import InvalidVideoError, YouTubeService
 
@@ -375,35 +376,11 @@ def write_transcript_log(metadata: dict[str, str], transcript: str) -> Path:
 
 
 def extract_json_payload(raw_text: str) -> list[dict[str, Any]]:
-    text = raw_text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-
-    # Try to find a JSON array first, then fall back to a single object
-    array_match = re.search(r"\[.*\]", text, re.DOTALL)
-    if array_match:
-        try:
-            payload = json.loads(array_match.group(0))
-            if isinstance(payload, list):
-                return payload
-        except json.JSONDecodeError:
-            pass
-
-    obj_match = re.search(r"\{.*\}", text, re.DOTALL)
-    if obj_match:
-        text = obj_match.group(0)
-
-    payload = json.loads(text)
-    if isinstance(payload, dict):
-        return [payload]
-    if isinstance(payload, list):
-        return payload
-    raise RuntimeError("Model response was not a JSON object or array")
+    """Thin wrapper around the shared extractor so this CLI tolerates
+    prose around the JSON that smaller open-source models (Gemma, etc.)
+    emit. The shared helper rejects "Extra data: ..." trailing chatter
+    that the prior in-script copy raised on."""
+    return _extract_recipe_payload(raw_text, expected_type=list)
 
 
 def build_source_context(metadata: dict[str, str], transcript: str) -> str:

@@ -24,6 +24,7 @@ from django.db.models import Avg, Q
 from .models import Recipe
 from django.core.files.base import File
 from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm, ImageImportForm
+from .llm_json import extract_json_payload
 from .youtube import YouTubeService, InvalidVideoError, APIError
 
 
@@ -606,23 +607,10 @@ Source Context:
         )
 
     def _extract_json_payload(self, raw_text: str) -> dict:
-        text = raw_text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            text = match.group(0)
-
-        payload = json.loads(text)
-        if not isinstance(payload, dict):
-            raise RuntimeError("Model response was not a JSON object")
-        return payload
+        """Delegate to the shared extractor so prose-wrapped and
+        multi-blob LLM responses parse even when the model emits
+        trailing commentary after the closing brace."""
+        return extract_json_payload(raw_text, expected_type=dict)
 
     def _normalize_quantity(self, raw_quantity: any) -> Decimal:
         if raw_quantity is None:
@@ -943,36 +931,10 @@ Rules:
             return self.form_invalid(form)
 
     def _extract_json_payload(self, raw_text: str) -> list:
-        text = raw_text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-
-        # Try array first
-        array_match = re.search(r"\[.*\]", text, re.DOTALL)
-        if array_match:
-            try:
-                payload = json.loads(array_match.group(0))
-                if isinstance(payload, list):
-                    return payload
-            except json.JSONDecodeError:
-                pass
-
-        # Fall back to single object
-        obj_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if obj_match:
-            text = obj_match.group(0)
-
-        payload = json.loads(text)
-        if isinstance(payload, dict):
-            return [payload]
-        if isinstance(payload, list):
-            return payload
-        raise RuntimeError("AI response was not valid JSON")
+        """Delegate to the shared extractor so prose around the JSON and
+        trailing commentary won't blow up the import. A single top-level
+        object from the model is wrapped into a one-element list."""
+        return extract_json_payload(raw_text, expected_type=list)
 
     def _normalize_quantity(self, raw_quantity) -> Decimal:
         if raw_quantity is None:
