@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from .backup import BackupPageView, ExportBackupView, ImportBackupView
+from .views import HomePageView
 from inventory.views import UpcUsageView
 
 
@@ -19,7 +20,7 @@ urlpatterns = [
     path("shopping/", include("shopping.urls", namespace="shopping")),
     path("tags/", include("tags.urls", namespace="tags")),
     path("ratings/", include("ratings.urls", namespace="ratings")),
-    path("", TemplateView.as_view(template_name="index.html"), name="home"),
+    path("", HomePageView.as_view(), name="home"),
     path(
         "accounts/logged-out/",
         TemplateView.as_view(template_name="registration/logged_out.html"),
