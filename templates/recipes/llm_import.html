@@ -3,70 +3,65 @@
 {% block title %}Import Recipe from YouTube{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <div class="card-dark">
-        <div class="p-8">
-            <h1 class="text-2xl font-medium mb-2">Import from YouTube</h1>
-            <p class="text-sm mb-6" style="color: var(--text-light-gray);">
-                Import a recipe from YouTube using AI-powered extraction. Paste a YouTube recipe video URL to accurately parse ingredients, quantities, and cooking instructions.
-            </p>
-
+<section class="vp-hero">
+    <div class="vp-hero-inner grid md:grid-cols-2 gap-16 items-end">
+        <div>
+            <a href="{% url 'recipes:recipe_list' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Recipes</a>
+            <span class="vp-eyebrow">YouTube Import</span>
+            <h1 class="vp-display">Paste a<br>video URL.</h1>
+            <p class="vp-subhead">We'll fetch the transcript and parse ingredients, quantities, and cooking steps with AI.</p>
+        </div>
+        <div class="vp-card">
             <form method="post" action="{% url 'recipes:llm_recipe_import' %}" id="import-form">
                 {% csrf_token %}
-                
-                <div class="mb-6">
-                    <label class="label-dark" for="id_youtube_url">YouTube URL</label>
-                    <input type="url" 
-                           name="youtube_url" 
-                           id="id_youtube_url" 
-                           class="input-dark"
-                           placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
+
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-2" for="id_youtube_url">YouTube URL</label>
+                    <input type="url"
+                           name="youtube_url"
+                           id="id_youtube_url"
+                           class="vp-input"
+                           placeholder="https://youtube.com/watch?v=… or https://youtu.be/…"
                            required
                            {% if form.youtube_url.value %}value="{{ form.youtube_url.value }}"{% endif %}>
-                    {% if form.youtube_url.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.youtube_url.errors }}</p>
-                    {% endif %}
+                    {% if form.youtube_url.errors %}<p class="vp-label-mono mt-2">{{ form.youtube_url.errors }}</p>{% endif %}
                 </div>
 
-                <div class="mb-6">
-                    <label class="label-dark" for="id_title">Recipe Title (optional)</label>
-                    <input type="text" 
-                           name="title" 
-                           id="id_title" 
-                           class="input-dark"
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-2" for="id_title">Recipe Title <span style="color: var(--text-muted);">(optional)</span></label>
+                    <input type="text"
+                           name="title"
+                           id="id_title"
+                           class="vp-input"
                            placeholder="Override AI-generated title"
                            {% if form.title.value %}value="{{ form.title.value }}"{% endif %}>
-                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
-                        Leave blank to use the AI-generated title
-                    </p>
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">Leave blank to use the AI-generated title.</p>
                 </div>
 
-                <div class="mb-6">
-                    <label class="label-dark" for="id_model">AI Model</label>
-                    <select name="model" id="id_model" class="input-dark">
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-2" for="id_model">AI Model</label>
+                    <select name="model" id="id_model" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                         {% for value, label in form.fields.model.choices %}
                         <option value="{{ value }}" {% if form.model.value == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
-                        All models are free through OpenRouter. "Auto" picks the best available and handles rate-limit fallback automatically.
-                    </p>
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">All models are free through OpenRouter. "Auto" picks the best available.</p>
                 </div>
 
-                <button type="submit" 
-                        class="btn-pill w-full" 
-                        id="import-btn"
-                        style="background: var(--brand-green); border-color: var(--brand-green);">
+                <hr class="vp-divider" style="margin: 32px 0 24px;">
+
+                <button type="submit" class="vp-btn-primary w-full" id="import-btn">
                     <span id="btn-text">Import with AI</span>
                 </button>
             </form>
         </div>
     </div>
+</section>
 
-    <div class="mt-4 text-center">
-        <a href="{% url 'recipes:recipe_create' %}" class="link-green">Or create a new recipe manually</a>
-    </div>
+<div style="margin-top: 32px; text-align: center;">
+    <a href="{% url 'recipes:recipe_create' %}" class="link" style="font-size: 0.875rem;">Or create a new recipe manually</a>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
@@ -74,9 +69,8 @@ document.getElementById('import-form').addEventListener('submit', function() {
     const btn = document.getElementById('import-btn');
     const btnText = document.getElementById('btn-text');
     btn.disabled = true;
-    btnText.textContent = 'Processing...';
+    btnText.textContent = 'Processing…';
     btn.style.opacity = '0.7';
 });
 </script>
-{% endblock %}
 {% endblock %}

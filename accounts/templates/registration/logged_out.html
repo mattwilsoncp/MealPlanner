@@ -3,21 +3,19 @@
 {% block title %}Logged Out - Meal Planner{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-center min-h-[60vh]">
-    <div class="card-clay p-8 text-center" style="max-width: 400px; width: 100%;">
-        <h2 class="text-2xl font-semibold mb-4" style="letter-spacing: -0.64px;">Logged Out</h2>
-        
-        <div class="alert-clay mb-4" style="background: var(--matcha-300); color: var(--text-black);">
-            <span>You have been logged out successfully.</span>
+<section class="vp-hero">
+    <div class="vp-hero-inner grid md:grid-cols-2 gap-16 items-end">
+        <div>
+            <span class="vp-eyebrow">Session Ended</span>
+            <h1 class="vp-display">You're<br>logged out.</h1>
+            <p class="vp-subhead">Come back soon. Your kitchen will be here.</p>
         </div>
-        
-        <p style="color: var(--text-silver); margin-bottom: 24px;">
-            Come back soon!
-        </p>
-        
-        <a href="{% url 'login' %}" class="btn-clay w-full">
-            Login Again
-        </a>
+        <div class="vp-card">
+            <p style="color: var(--text-secondary); font-size: 1.125rem; margin-bottom: 32px;">
+                You've been signed out successfully.
+            </p>
+            <a href="{% url 'login' %}" class="vp-btn-primary">Sign In Again</a>
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}

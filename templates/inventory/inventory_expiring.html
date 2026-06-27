@@ -3,81 +3,88 @@
 {% block title %}{% if is_expired_page %}Expired{% else %}Expiring{% endif %} Inventory{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
-    <div class="flex flex-wrap justify-between items-center gap-3">
-        <div>
-            <h1 class="text-2xl font-medium">Expiration Triage</h1>
-            <p class="text-sm" style="color: var(--text-light-gray);">Track what needs to be used soon and what is already expired.</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Back to Inventory</a>
-            <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Soon</a>
-            <a href="{% url 'inventory:inventory_expired' %}" class="btn-ghost">Expired</a>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Triage</span>
+                <h1 class="vp-display">Use it<br>before it<br>goes bad.</h1>
+                <p class="vp-subhead">Track what needs attention and clear out what's already expired.</p>
+            </div>
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost">Back to Inventory</a>
+                <a href="{% url 'inventory:inventory_expiring' %}" class="vp-btn-ghost">Expiring Soon</a>
+                <a href="{% url 'inventory:inventory_expired' %}" class="vp-btn-ghost">Expired</a>
+            </div>
         </div>
     </div>
+</section>
 
-    <div class="card-dark">
-        <div class="p-6">
-            <h2 class="text-lg font-medium">Expiring Soon</h2>
+<section class="vp-section">
+    <div class="vp-card-tight" style="padding: 0; margin-bottom: 32px;">
+        <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: baseline; justify-content: space-between;">
+            <h2 class="vp-section-header-title">Expiring Soon</h2>
+            <span class="vp-label-mono">{% if expiring_items %}{{ expiring_items|length }} ITEM{{ expiring_items|length|pluralize }}{% else %}0 ITEMS{% endif %}</span>
+        </div>
+        <div style="padding: 0 28px 24px;">
             {% if expiring_items %}
-            <div class="overflow-x-auto mt-4">
-                <table class="table-dark">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Location</th>
-                            <th>Expiration</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in expiring_items %}
-                        <tr>
-                            <td>{{ item.name }}</td>
-                            <td>{{ item.quantity }} {{ item.unit }}</td>
-                            <td>{{ item.get_location_display }}</td>
-                            <td><span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">{{ item.expiration_date }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <table class="vp-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Location</th>
+                        <th>Expiration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in expiring_items %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                        <td>{{ item.get_location_display }}</td>
+                        <td>{{ item.expiration_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-            <p style="color: var(--text-light-gray);">No items currently expiring within your household threshold.</p>
+            <p style="color: var(--text-secondary); padding: 24px 0;">No items currently expiring within your household threshold.</p>
             {% endif %}
         </div>
     </div>
 
-    <div class="card-dark">
-        <div class="p-6">
-            <h2 class="text-lg font-medium">Already Expired</h2>
+    <div class="vp-card-tight" style="padding: 0;">
+        <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: baseline; justify-content: space-between;">
+            <h2 class="vp-section-header-title">Already Expired</h2>
+            <span class="vp-label-mono">{% if expired_items %}{{ expired_items|length }} ITEM{{ expired_items|length|pluralize }}{% else %}0 ITEMS{% endif %}</span>
+        </div>
+        <div style="padding: 0 28px 24px;">
             {% if expired_items %}
-            <div class="overflow-x-auto mt-4">
-                <table class="table-dark">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Location</th>
-                            <th>Expiration</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in expired_items %}
-                        <tr>
-                            <td>{{ item.name }}</td>
-                            <td>{{ item.quantity }} {{ item.unit }}</td>
-                            <td>{{ item.get_location_display }}</td>
-                            <td><span class="badge-dark" style="background: rgba(239, 68, 68, 0.15); color: #fc7981; border-color: rgba(239, 68, 68, 0.3);">{{ item.expression_date }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <table class="vp-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Location</th>
+                        <th>Expiration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in expired_items %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                        <td>{{ item.get_location_display }}</td>
+                        <td>{{ item.expression_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-            <p style="color: var(--text-light-gray);">No expired items</p>
+            <p style="color: var(--text-secondary); padding: 24px 0;">No expired items.</p>
             {% endif %}
         </div>
     </div>
-</div>
+</section>
 {% endblock %}

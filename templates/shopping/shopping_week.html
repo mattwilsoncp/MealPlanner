@@ -3,84 +3,60 @@
 {% block title %}Shopping Checklist{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
-    <div class="card-dark">
-        <div class="p-6">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <div>
-                    <h1 class="text-2xl font-medium mb-1">Shopping Checklist</h1>
-                    <p style="color: var(--text-light-gray);">
-                        Week of {{ week_start|date:"M d, Y" }} to {{ week_end|date:"M d, Y" }}
-                    </p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <a href="{% url 'shopping:week' %}?week_start={{ previous_week|date:'Y-m-d' }}" class="btn-ghost">
-                        ← Previous
-                    </a>
-                    <a href="{% url 'shopping:week' %}?week_start={{ next_week|date:'Y-m-d' }}" class="btn-ghost">
-                        Next →
-                    </a>
-                </div>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Shopping</span>
+                <h1 class="vp-display">This week's<br>checklist.</h1>
+                <p class="vp-subhead">Week of {{ week_start|date:"M d, Y" }} to {{ week_end|date:"M d, Y" }}</p>
             </div>
-
-            <div class="flex flex-wrap gap-4">
-                <form method="post" action="{% url 'shopping:regenerate_week' %}">
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                <a href="{% url 'shopping:week' %}?week_start={{ previous_week|date:'Y-m-d' }}" class="vp-btn-ghost">&larr; Previous</a>
+                <a href="{% url 'shopping:week' %}?week_start={{ next_week|date:'Y-m-d' }}" class="vp-btn-ghost">Next &rarr;</a>
+                <form method="post" action="{% url 'shopping:regenerate_week' %}" style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
-                    <button type="submit" class="btn-pill">
-                        Regenerate Week
-                    </button>
+                    <button type="submit" class="vp-btn-primary">Regenerate</button>
                 </form>
-
-                <button
-                    type="button"
-                    class="btn-ghost"
-                    style="color: #fc7981;"
-                    onclick="clearWeekItems('{{ week_start|date:'Y-m-d' }}')"
-                >
-                    Clear All Items
-                </button>
+                <button type="button" class="vp-btn-ghost" onclick="clearWeekItems('{{ week_start|date:'Y-m-d' }}')">Clear All</button>
             </div>
         </div>
     </div>
+</section>
 
+<section class="vp-section">
     {% if shopping_items %}
         {% regroup shopping_items by category as category_groups %}
-
         {% for category_group in category_groups %}
-        <div class="card-dark">
-            <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid var(--border-dark);">
-                <h2 class="text-lg font-medium capitalize">{{ category_group.grouper|default:"Other" }}</h2>
-                <span class="badge-dark">{{ category_group.list|length }} item{{ category_group.list|length|pluralize }}</span>
+        <div class="vp-card-tight" style="padding: 0; margin-bottom: 24px;">
+            <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: baseline; justify-content: space-between;">
+                <h2 class="vp-section-header-title" style="text-transform: capitalize;">{{ category_group.grouper|default:"Other" }}</h2>
+                <span class="vp-label-mono">{{ category_group.list|length }} ITEM{{ category_group.list|length|pluralize }}</span>
             </div>
-
-            <div class="p-4">
-                <table class="table-dark">
+            <div style="padding: 0 28px 24px;">
+                <table class="vp-table">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">Done</th>
+                            <th style="width: 64px;">Done</th>
                             <th>Item</th>
                             <th>Quantity</th>
-                            <th style="width: 100px; text-align: right;">Actions</th>
+                            <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in category_group.list %}
-                        <tr id="item-row-{{ item.id }}" style="{% if item.checked %}opacity: 0.6;{% endif %}">
+                        <tr id="item-row-{{ item.id }}" style="{% if item.checked %}opacity: 0.5;{% endif %}">
                             <td>
-                                <input
-                                    type="checkbox"
-                                    style="width: 20px; height: 20px;"
-                                    {% if item.checked %}checked{% endif %}
-                                    onchange="toggleShoppingItem({{ item.id }}, this)"
-                                >
+                                <input type="checkbox"
+                                       style="width: 20px; height: 20px; accent-color: var(--text-primary);"
+                                       {% if item.checked %}checked{% endif %}
+                                       onchange="toggleShoppingItem({{ item.id }}, this)">
                             </td>
-                            <td style="{% if item.checked %}text-decoration: line-through;{% endif %}">
-                                {{ item.name }}
-                            </td>
+                            <td style="{% if item.checked %}text-decoration: line-through; color: var(--text-muted);{% endif %}">{{ item.name }}</td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
                             <td style="text-align: right;">
-                                <button onclick="deleteShoppingItem({{ item.pk }})" class="link-green text-sm" style="background: none; border: none; cursor: pointer;">Delete</button>
+                                <button onclick="deleteShoppingItem({{ item.pk }})" class="link" style="font-size: 0.875rem; background: none; border: none; cursor: pointer;">Delete</button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -90,23 +66,17 @@
         </div>
         {% endfor %}
     {% else %}
-    <div class="empty-dark p-8 text-center">
-        <h2 class="text-xl font-medium mb-4">No shopping items</h2>
-        <p style="color: var(--text-light-gray); margin-bottom: 16px;">
-            Generate a shopping list from your meal plan, or add items manually.
-        </p>
-        <div class="flex gap-4 justify-center">
-            <form method="post" action="{% url 'shopping:regenerate_week' %}">
-                {% csrf_token %}
-                <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
-                <button type="submit" class="btn-pill">
-                    Generate from Meal Plan
-                </button>
-            </form>
-        </div>
+    <div class="vp-card text-center" style="padding: 64px 32px;">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">No shopping items.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px; margin-bottom: 32px;">Generate a shopping list from your meal plan.</p>
+        <form method="post" action="{% url 'shopping:regenerate_week' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
+            <button type="submit" class="vp-btn-primary">Generate from Meal Plan</button>
+        </form>
     </div>
     {% endif %}
-</div>
+</section>
 
 <script>
 function toggleShoppingItem(itemId, checkbox) {
@@ -120,7 +90,12 @@ function toggleShoppingItem(itemId, checkbox) {
         if (response.ok) {
             const row = document.getElementById(`item-row-${itemId}`);
             if (checkbox.checked) {
-                row.style.opacity = '0.6';
+                row.style.opacity = '0.5';
+                const cell = row.querySelectorAll('td')[1];
+                if (cell) {
+                    cell.style.textDecoration = 'line-through';
+                    cell.style.color = 'var(--text-muted)';
+                }
             } else {
                 row.style.opacity = '1';
             }
@@ -138,7 +113,6 @@ function deleteShoppingItem(itemId) {
             }
         }).then(response => {
             if (response.ok) {
-                // Remove the item row from the table
                 const row = document.getElementById(`item-row-${itemId}`);
                 if (row) {
                     row.remove();

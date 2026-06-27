@@ -3,164 +3,118 @@
 {% block title %}Cooking: {{ recipe.title }}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-2xl font-medium" style="letter-spacing: -0.64px;">Cooking: {{ recipe.title }}</h1>
-            <p class="text-sm" style="color: var(--text-light-gray);">Mark ingredients as you use them</p>
-        </div>
-        <a href="{% url 'meal_planner:cooking_home' %}" class="btn-ghost">
-            Back to Cooking Queue
-        </a>
+<section class="vp-hero" style="padding-top: 64px; padding-bottom: 40px;">
+    <div class="vp-hero-inner">
+        <a href="{% url 'meal_planner:cooking_home' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Cooking Queue</a>
+        <span class="vp-eyebrow">Cooking</span>
+        <h1 class="vp-display-secondary" style="font-size: clamp(28px, 4vw, 48px);">{{ recipe.title }}</h1>
+        <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Mark ingredients as you use them, snap inventory updates as you go.</p>
     </div>
+</section>
 
-    <form id="cooking-form" method="post" action="{% url 'meal_planner:process_cooking' meal_id %}">
+<section class="vp-section" style="max-width: 1100px;">
+    <form id="cooking-form" method="post" action="{% url 'meal_planner:process_cooking' meal_id %}" style="display: grid; grid-template-columns: 1fr; gap: 24px;">
         {% csrf_token %}
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="card-dark">
-                <div class="p-6">
-                    <h2 class="text-lg font-medium">Recipe Ingredients</h2>
-                    <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Check off ingredients as you use them</p>
-                    
-                    <div class="space-y-3" id="recipe-ingredients">
-                        {% for ing in recipe_ingredients %}
-                            <div class="flex items-center gap-3 p-3 rounded-lg ingredient-item" 
-                                 data-ing-id="{{ ing.id }}"
-                                 data-inv-id="{{ ing.inventory_item_id|default:'' }}"
-                                 style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
-                                <input type="checkbox" 
-                                       name="used_ingredient_ids[]" 
-                                       value="{{ ing.id }}"
-                                       class="ingredient-checkbox"
-                                       id="ing_{{ ing.id }}"
-                                       style="width: 20px; height: 20px;">
-                                <label for="ing_{{ ing.id }}" class="flex-1 cursor-pointer">
-                                    <span class="font-medium">{{ ing.name }}</span>
-                                    <span class="text-sm" style="color: var(--text-light-gray);">
-                                        {{ ing.quantity }} {{ ing.unit }}
-                                    </span>
-                                    {% if ing.inventory_name %}
-                                        <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green); margin-left: 8px; font-size: 12px;">
-                                            Linked: {{ ing.inventory_name }} ({{ ing.inventory_quantity }} {{ ing.unit }})
-                                        </span>
-                                    {% endif %}
-                                </label>
-                            </div>
+        {% if not is_wide %}
+        <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+        {% else %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        {% endif %}
+
+            <div class="vp-card-tight">
+                <span class="vp-label-mono mb-2">Recipe Ingredients</span>
+                <p class="vp-label-mono" style="color: var(--text-muted); margin-bottom: 16px;">Check off ingredients as you use them.</p>
+                <div class="vp-section" style="padding: 0; max-width: none; display: flex; flex-direction: column; gap: 12px;" id="recipe-ingredients">
+                    {% for ing in recipe_ingredients %}
+                    <label for="ing_{{ ing.id }}" data-ing-id="{{ ing.id }}" data-inv-id="{{ ing.inventory_item_id|default:'' }}" class="ingredient-item" style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 16px 20px; display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                        <input type="checkbox"
+                               name="used_ingredient_ids[]"
+                               value="{{ ing.id }}"
+                               class="ingredient-checkbox"
+                               id="ing_{{ ing.id }}"
+                               style="width: 18px; height: 18px; accent-color: var(--text-primary);">
+                        <span style="flex: 1;">
+                            <span style="font-weight: 500;">{{ ing.name }}</span>
+                            <span class="vp-label-mono" style="color: var(--text-muted); margin-left: 8px;">{{ ing.quantity }} {{ ing.unit }}</span>
+                            {% if ing.inventory_name %}
+                            <span class="badge" style="margin-left: 12px;">Linked: {{ ing.inventory_name }} ({{ ing.inventory_quantity }} {{ ing.unit }})</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% empty %}
+                    <p class="vp-label-mono" style="color: var(--text-muted);">No ingredients found for this recipe.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="vp-card-tight">
+                    <span class="vp-label-mono mb-2">Inventory &mdash; Still Have</span>
+                    <p class="vp-label-mono" style="color: var(--text-muted); margin-bottom: 16px;">Items still available in your kitchen.</p>
+                    <div style="display: flex; flex-direction: column; gap: 8px;" id="inventory-still-have">
+                        {% for item in inventory_items %}
+                        <div class="inventory-item" data-inv-id="{{ item.id }}" style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 16px; display: inline-flex; align-items: center; gap: 12px;">
+                            <input type="checkbox" name="used_inventory_ids[]" value="{{ item.id }}" class="inventory-checkbox" id="inv_{{ item.id }}" style="width: 18px; height: 18px; accent-color: var(--text-primary);">
+                            <label for="inv_{{ item.id }}" style="flex: 1; cursor: pointer;">
+                                <span style="font-weight: 500;">{{ item.name }}</span>
+                                <span class="vp-label-mono" style="color: var(--text-muted); margin-left: 8px;">{{ item.quantity }} {{ item.unit }}</span>
+                            </label>
+                            <button type="button" class="move-to-used vp-btn-ghost" data-inv-id="{{ item.id }}" style="padding: 6px 10px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);">Move to Used</button>
+                        </div>
                         {% empty %}
-                            <p class="text-sm" style="color: var(--text-light-gray);">No ingredients found for this recipe.</p>
+                        <p class="vp-label-mono" style="color: var(--text-muted);">No inventory items found.</p>
                         {% endfor %}
                     </div>
                 </div>
-            </div>
 
-            <div class="space-y-6">
-                <div class="card-dark">
-                    <div class="p-6">
-                        <h2 class="text-lg font-medium">Inventory - Still Have</h2>
-                        <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Items still available in your kitchen</p>
-                        
-                        <div class="space-y-2" id="inventory-still-have">
-                            {% for item in inventory_items %}
-                                <div class="flex items-center gap-3 p-2 rounded-lg inventory-item"
-                                     data-inv-id="{{ item.id }}"
-                                     style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
-                                    <input type="checkbox" 
-                                           name="used_inventory_ids[]" 
-                                           value="{{ item.id }}"
-                                           class="inventory-checkbox"
-                                           id="inv_{{ item.id }}"
-                                           style="width: 20px; height: 20px;">
-                                    <label for="inv_{{ item.id }}" class="flex-1 cursor-pointer">
-                                        <span class="font-medium">{{ item.name }}</span>
-                                        <span class="text-sm" style="color: var(--text-light-gray);">
-                                            {{ item.quantity }} {{ item.unit }}
-                                        </span>
-                                    </label>
-                                    <button type="button" 
-                                            class="btn-ghost move-to-used"
-                                            data-inv-id="{{ item.id }}"
-                                            style="padding: 4px 8px; font-size: 12px;">
-                                        Move to Used
-                                    </button>
-                                </div>
-                            {% empty %}
-                                <p class="text-sm" style="color: var(--text-light-gray);">No inventory items found.</p>
-                            {% endfor %}
-                        </div>
-                    </div>
+                <div class="vp-card-tight">
+                    <span class="vp-label-mono mb-2">Used / Ran Out</span>
+                    <p class="vp-label-mono" style="color: var(--text-muted); margin-bottom: 16px;">Items that are used up.</p>
+                    <div style="display: flex; flex-direction: column; gap: 8px; min-height: 48px;" id="inventory-used"></div>
                 </div>
 
-                <div class="card-dark">
-                    <div class="p-6">
-                        <h2 class="text-lg font-medium">Used / Ran Out</h2>
-                        <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Items that are used up</p>
-                        
-                        <div class="space-y-2" id="inventory-used">
-                        </div>
-                        
-                        <button type="button" id="mark-all-used" class="btn-pill-muted mt-4" style="padding: 6.4px 12.8px; font-size: 14px;">
-                            Mark All Inventory Used
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card-dark">
-                    <div class="p-6">
-                        <h2 class="text-lg font-medium">Quick Add to Inventory</h2>
-                        <p class="text-sm" style="color: var(--text-light-gray); margin-bottom: 16px;">Add recipe ingredients to inventory</p>
-                        
-                        <div>
-                            <label class="label-dark">Ingredient Name</label>
-                            <input type="text" id="quick-add-name" placeholder="e.g., onions" class="input-dark">
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <input type="number" id="quick-add-qty" placeholder="Qty" class="input-dark">
-                            </div>
-                            <div class="flex-1">
-                                <select id="quick-add-unit" class="input-dark" style="width: auto;">
-                                    <option value="piece">piece</option>
-                                    <option value="oz">oz</option>
-                                    <option value="lb">lb</option>
-                                    <option value="cup">cup</option>
-                                    <option value="tbsp">tbsp</option>
-                                    <option value="tsp">tsp</option>
-                                </select>
-                            </div>
-                            <button type="button" id="quick-add-btn" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">
-                                Add
-                            </button>
+                <div class="vp-card-tight">
+                    <span class="vp-label-mono mb-2">Quick Add to Inventory</span>
+                    <p class="vp-label-mono" style="color: var(--text-muted); margin-bottom: 16px;">Add recipe ingredients to inventory.</p>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <input type="text" id="quick-add-name" placeholder="e.g., onions" class="vp-input" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px;">
+                            <input type="number" id="quick-add-qty" placeholder="Qty" class="vp-input" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                            <select id="quick-add-unit" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                                <option value="piece">piece</option>
+                                <option value="oz">oz</option>
+                                <option value="lb">lb</option>
+                                <option value="cup">cup</option>
+                                <option value="tbsp">tbsp</option>
+                                <option value="tsp">tsp</option>
+                            </select>
+                            <button type="button" id="quick-add-btn" class="vp-btn-ghost">Add</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="mt-8 flex justify-end gap-4">
-            <a href="{% url 'meal_planner:cooking_home' %}" class="btn-ghost">
-                Cancel
-            </a>
-            <button type="submit" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">
-                Confirm Cooking
-            </button>
+        <hr class="vp-divider" style="margin: 32px 0 16px;">
+        <div style="display: inline-flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap;">
+            <a href="{% url 'meal_planner:cooking_home' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Confirm Cooking</button>
         </div>
     </form>
-</div>
+</section>
 
-{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.move-to-used').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const invId = this.dataset.invId;
-            const itemEl = document.querySelector(`.inventory-item[data-inv-id="${invId}"]`);
+            const itemEl = document.querySelector('.inventory-item[data-inv-id="' + invId + '"]');
             const usedContainer = document.getElementById('inventory-used');
-            
+
             if (itemEl && usedContainer) {
                 usedContainer.appendChild(itemEl);
                 this.remove();
-                
+
                 const checkbox = itemEl.querySelector('.inventory-checkbox');
                 if (checkbox) {
                     checkbox.checked = true;
@@ -169,10 +123,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.getElementById('mark-all-used').addEventListener('click', function() {
+    document.getElementById('mark-all-used')?.addEventListener('click', function() {
         const stillHaveContainer = document.getElementById('inventory-still-have');
         const usedContainer = document.getElementById('inventory-used');
-        
+
         if (stillHaveContainer && usedContainer) {
             const items = stillHaveContainer.querySelectorAll('.inventory-item');
             items.forEach(function(item) {
@@ -198,12 +152,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const stillHaveContainer = document.getElementById('inventory-still-have');
         if (stillHaveContainer) {
             const newItem = document.createElement('div');
-            newItem.className = 'flex items-center gap-3 p-2 rounded-lg inventory-item';
-            newItem.style.cssText = 'background: var(--bg-near-black); border: 1px solid var(--border-dark);';
+            newItem.className = 'inventory-item';
+            newItem.style.cssText = 'background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 16px; display: inline-flex; align-items: center; gap: 12px;';
             newItem.innerHTML = `
-                <span class="font-medium">${name}</span>
-                <span class="text-sm" style="opacity: 0.7;">${qty || '1'} ${unit}</span>
-                <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green);">New</span>
+                <span style="font-weight: 500;">${name}</span>
+                <span class="vp-label-mono" style="color: var(--text-muted);">${qty || '1'} ${unit}</span>
+                <span class="badge">New</span>
             `;
             stillHaveContainer.appendChild(newItem);
         }
@@ -214,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('cooking-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const form = this;
         const formData = new FormData(form);
 
@@ -241,5 +195,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %}
 {% endblock %}

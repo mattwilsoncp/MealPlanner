@@ -3,122 +3,87 @@
 {% block title %}Meal Planner{% endblock %}
 
 {% block content %}
-<section class="hero mb-8">
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-4xl sm:text-5xl mb-4" style="color: var(--text-primary);">
-            Plan your meals,<br>
-            <span style="color: var(--brand-primary);">simplify your week.</span>
-        </h1>
-        <p class="text-lg mb-8" style="color: var(--text-secondary); max-width: 480px; margin: 0 auto;">
-            Track inventory, discover recipes with what you have, and generate shopping lists automatically.
-        </p>
-        
+<section class="vp-hero">
+    <div class="vp-hero-inner">
         {% if not user.is_authenticated %}
-        <div class="flex gap-3 justify-center">
-            <a href="{% url 'register' %}" class="btn-primary">
-                Get Started
-            </a>
-            <a href="{% url 'login' %}" class="btn-secondary">
-                Log in
-            </a>
+        <span class="vp-eyebrow">Meal Planner</span>
+        <h1 class="vp-display">Plan your meals,<br>simplify your week.</h1>
+        <p class="vp-subhead">Track inventory, discover recipes with what you have, and generate shopping lists automatically.</p>
+        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; margin-top: 32px;">
+            <a href="{% url 'register' %}" class="vp-btn-primary">Get Started</a>
+            <a href="{% url 'login' %}" class="vp-btn-ghost">Sign In</a>
         </div>
         {% else %}
-        <p class="text-xl font-semibold mb-4">Welcome back, {{ user.username }}!</p>
-        <div class="flex gap-3 justify-center">
-            <a href="{% url 'meal_planner:planner' %}" class="btn-primary">
-                Open Planner
-            </a>
-            <a href="{% url 'recipes:recipe_list' %}" class="btn-secondary">
-                My Recipes
-            </a>
+        <span class="vp-eyebrow">Welcome</span>
+        <h1 class="vp-display">Hello,<br>{{ user.username }}.</h1>
+        <p class="vp-subhead">Pick up where you left off — plan, shop, and track what's in your kitchen.</p>
+        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; margin-top: 32px;">
+            <a href="{% url 'meal_planner:planner' %}" class="vp-btn-primary">Open Planner</a>
+            <a href="{% url 'recipes:recipe_list' %}" class="vp-btn-ghost">My Recipes</a>
         </div>
         {% endif %}
     </div>
 </section>
 
 {% if user.is_authenticated %}
-<section>
-    <div class="grid-cards">
-        <a href="{% url 'meal_planner:planner' %}" class="stat-card card-hover group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: var(--brand-light);">
-                    <svg class="w-6 h-6" style="color: var(--brand-primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
+<section class="vp-section">
+    <div style="display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        <a href="{% url 'meal_planner:planner' %}" class="vp-card" style="display: block; padding: 32px; text-decoration: none; color: var(--text-primary);">
+            <div style="display: flex; align-items: start; gap: 16px;">
+                <div style="width: 48px; height: 48px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.05em;">01</div>
                 <div>
-                    <h3 class="text-lg font-semibold group-hover:text-brand-primary transition-colors">Weekly Planner</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Plan meals for the week</p>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; margin: 0 0 8px;">Weekly Planner</h3>
+                    <p class="vp-label-mono" style="color: var(--text-muted);">Plan meals for the week</p>
                 </div>
             </div>
         </a>
-        
-        <a href="{% url 'recipes:recipe_list' %}" class="stat-card card-hover group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: #fef3c7;">
-                    <svg class="w-6 h-6" style="color: #d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                    </svg>
-                </div>
+
+        <a href="{% url 'recipes:recipe_list' %}" class="vp-card" style="display: block; padding: 32px; text-decoration: none; color: var(--text-primary);">
+            <div style="display: flex; align-items: start; gap: 16px;">
+                <div style="width: 48px; height: 48px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.05em;">02</div>
                 <div>
-                    <h3 class="text-lg font-semibold group-hover:text-brand-primary transition-colors">Recipes</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Browse and manage recipes</p>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; margin: 0 0 8px;">Recipes</h3>
+                    <p class="vp-label-mono" style="color: var(--text-muted);">Browse and manage recipes</p>
                 </div>
             </div>
         </a>
-        
-        <a href="{% url 'inventory:inventory_list' %}" class="stat-card card-hover group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: #e0e7ff;">
-                    <svg class="w-6 h-6" style="color: #4f46e5;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4l8-4m-8 4l-8 4"/>
-                    </svg>
-                </div>
+
+        <a href="{% url 'inventory:inventory_list' %}" class="vp-card" style="display: block; padding: 32px; text-decoration: none; color: var(--text-primary);">
+            <div style="display: flex; align-items: start; gap: 16px;">
+                <div style="width: 48px; height: 48px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.05em;">03</div>
                 <div>
-                    <h3 class="text-lg font-semibold group-hover:text-brand-primary transition-colors">Inventory</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Track household items</p>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; margin: 0 0 8px;">Inventory</h3>
+                    <p class="vp-label-mono" style="color: var(--text-muted);">Track household items</p>
                 </div>
             </div>
         </a>
-        
-        <a href="{% url 'shopping:week' %}" class="stat-card card-hover group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: #fce7f3;">
-                    <svg class="w-6 h-6" style="color: #db2777;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2c0-1.1.9-2 2-2h2a2 2 0 012 2v1H7v-1z"/>
-                    </svg>
-                </div>
+
+        <a href="{% url 'shopping:week' %}" class="vp-card" style="display: block; padding: 32px; text-decoration: none; color: var(--text-primary);">
+            <div style="display: flex; align-items: start; gap: 16px;">
+                <div style="width: 48px; height: 48px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.05em;">04</div>
                 <div>
-                    <h3 class="text-lg font-semibold group-hover:text-brand-primary transition-colors">Shopping List</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Generate & manage lists</p>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; margin: 0 0 8px;">Shopping List</h3>
+                    <p class="vp-label-mono" style="color: var(--text-muted);">Generate &amp; manage lists</p>
                 </div>
             </div>
         </a>
-        
-        <a href="{% url 'shopping:discovery' %}" class="stat-card card-hover group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: #dcfce7;">
-                    <svg class="w-6 h-6" style="color: #16a34a;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M8 12H4m2.585 5.364l.707-.707M12 21v-1m-4.673-4.636l-.707-.707"/>
-                    </svg>
-                </div>
+
+        <a href="{% url 'shopping:discovery' %}" class="vp-card" style="display: block; padding: 32px; text-decoration: none; color: var(--text-primary);">
+            <div style="display: flex; align-items: start; gap: 16px;">
+                <div style="width: 48px; height: 48px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.05em;">05</div>
                 <div>
-                    <h3 class="text-lg font-semibold group-hover:text-brand-primary transition-colors">What Can I Make?</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Discover with inventory</p>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; margin: 0 0 8px;">What Can I Make?</h3>
+                    <p class="vp-label-mono" style="color: var(--text-muted);">Discover with inventory</p>
                 </div>
             </div>
         </a>
-        
-        <a href="{% url 'reviews:review_queue' %}" class="stat-card card-hover group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: #fee2e1;">
-                    <svg class="w-6 h-6" style="color: #dc2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
+
+        <a href="{% url 'reviews:review_queue' %}" class="vp-card" style="display: block; padding: 32px; text-decoration: none; color: var(--text-primary);">
+            <div style="display: flex; align-items: start; gap: 16px;">
+                <div style="width: 48px; height: 48px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.05em;">06</div>
                 <div>
-                    <h3 class="text-lg font-semibold group-hover:text-brand-primary transition-colors">Recipe Reviews</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Reconcile ingredients</p>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; margin: 0 0 8px;">Recipe Reviews</h3>
+                    <p class="vp-label-mono" style="color: var(--text-muted);">Reconcile ingredients</p>
                 </div>
             </div>
         </a>

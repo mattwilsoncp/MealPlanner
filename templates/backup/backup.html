@@ -3,74 +3,54 @@
 {% block title %}Backup & Restore - Meal Planner{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-6" x-data="backupRestore()">
-    <div>
-        <h1 class="text-2xl font-medium">Backup & Restore</h1>
-        <p class="text-sm" style="color: var(--text-secondary);">Export your recipes and inventory as a JSON file, or restore from a previous backup.</p>
+<section class="vp-hero" style="padding-top: 64px; padding-bottom: 40px;">
+    <div class="vp-hero-inner">
+        <span class="vp-eyebrow">Backup</span>
+        <h1 class="vp-display-secondary" style="font-size: clamp(28px, 4vw, 48px);">Backup &amp; Restore.</h1>
+        <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Export your recipes and inventory as a JSON file, or restore from a previous backup.</p>
+    </div>
+</section>
+
+<section class="vp-section" style="max-width: 720px;" x-data="backupRestore()">
+    <div class="vp-card-tight" style="padding: 32px; margin-bottom: 32px;">
+        <span class="vp-label-mono mb-2">Export Backup</span>
+        <p style="color: var(--text-secondary); margin-top: 8px; margin-bottom: 24px;">Download a JSON file containing all your data.</p>
+        <div style="display: inline-flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;">
+            <span class="badge">{{ recipe_count }} recipes</span>
+            <span class="badge">{{ inventory_count }} inventory items</span>
+        </div>
+        <a href="{% url 'backup_export' %}" class="vp-btn-primary">Download Backup</a>
     </div>
 
-    <!-- Export Section -->
-    <div class="card p-6 space-y-4">
-        <div>
-            <h2 class="text-lg font-medium">Export Backup</h2>
-            <p class="text-sm" style="color: var(--text-secondary);">
-                Download a JSON file containing all your data.
-            </p>
-        </div>
-        <div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
-            <span class="badge badge-brand">{{ recipe_count }} recipes</span>
-            <span class="badge badge-brand">{{ inventory_count }} inventory items</span>
-        </div>
-        <a href="{% url 'backup_export' %}" class="btn-primary inline-flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-            </svg>
-            Download Backup
-        </a>
-    </div>
-
-    <!-- Import Section -->
-    <div class="card p-6 space-y-4">
-        <div>
-            <h2 class="text-lg font-medium">Restore from Backup</h2>
-            <p class="text-sm" style="color: var(--text-secondary);">
-                Upload a previously exported JSON file. Duplicate recipes (same title) and inventory items (same barcode) will be skipped.
-            </p>
-        </div>
+    <div class="vp-card-tight" style="padding: 32px;">
+        <span class="vp-label-mono mb-2">Restore from Backup</span>
+        <p style="color: var(--text-secondary); margin-top: 8px; margin-bottom: 24px;">Upload a previously exported JSON file. Duplicate recipes (same title) and inventory items (same barcode) will be skipped.</p>
 
         <form @submit.prevent="importBackup" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="space-y-4">
-                <label class="block">
-                    <span class="label">Backup File</span>
-                    <input
-                        type="file"
-                        accept=".json,.zip"
-                        @change="file = $event.target.files[0]"
-                        class="input"
-                        style="padding: 8px;"
-                    >
-                </label>
-                <button type="submit" class="btn-secondary inline-flex items-center gap-2" :disabled="!file || isImporting">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                    </svg>
-                    <span x-text="isImporting ? 'Importing...' : 'Restore Backup'"></span>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label class="vp-label-mono mb-2" for="backup-file">Backup File</label>
+                    <input type="file"
+                           id="backup-file"
+                           accept=".json,.zip"
+                           @change="file = $event.target.files[0]"
+                           style="font-family: var(--font-primary); padding: 8px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary); width: 100%;">
+                </div>
+                <button type="submit" class="vp-btn-primary" style="align-self: flex-start;" :disabled="!file || isImporting">
+                    <span x-text="isImporting ? 'Importing…' : 'Restore Backup'"></span>
                 </button>
             </div>
         </form>
 
-        <!-- Result message -->
-        <div x-show="resultMessage" x-cloak>
-            <div :class="resultOk ? 'alert alert-success' : 'alert alert-error'">
+        <div x-show="resultMessage" x-cloak style="margin-top: 24px;">
+            <div class="alert">
                 <span x-text="resultMessage"></span>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+</section>
 
-{% block extra_js %}
 <script>
 function backupRestore() {
     return {

@@ -3,23 +3,20 @@
 {% block title %}Mark Recipe Ready{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div class="card-dark">
-        <div class="p-6">
-            <h2 class="text-xl font-medium">Mark Recipe as Ready?</h2>
-            <p class="my-4">
-                Are you sure you want to mark "<strong>{{ object.title }}</strong>" as ready?
-                This will remove it from the review queue.
-            </p>
+<section class="vp-section" style="max-width: 640px;">
+    <a href="{% url 'reviews:review_queue' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Review Queue</a>
 
-            <form method="post">
-                {% csrf_token %}
-                <div class="flex justify-end gap-2 mt-4">
-                    <a href="{% url 'reviews:review_queue' %}" class="btn-ghost">No, Go Back</a>
-                    <button type="submit" class="btn-pill">Yes, Mark Ready</button>
-                </div>
-            </form>
+    <span class="vp-eyebrow">Mark Ready</span>
+    <h1 class="vp-display-secondary">Mark &ldquo;{{ object.title }}&rdquo;<br>as ready?</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">This removes the recipe from the review queue.</p>
+
+    <form method="post" class="vp-card" style="margin-top: 40px;">
+        {% csrf_token %}
+        <hr class="vp-divider" style="margin: 0 0 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'reviews:review_queue' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Yes, Mark Ready</button>
         </div>
-    </div>
-</div>
+    </form>
+</section>
 {% endblock %}

@@ -3,34 +3,38 @@
 {% block title %}{% if object %}Edit{% else %}Add{% endif %} Store{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-medium mb-6">{% if object %}Edit{% else %}Add{% endif %} Store</h1>
+<section class="vp-section" style="max-width: 720px;">
+    <a href="{% url 'inventory:store_list' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Stores</a>
 
-    <form method="post" class="card-dark p-6 space-y-4">
+    <span class="vp-eyebrow">{% if object %}Edit{% else %}Add{% endif %} Store</span>
+    <h1 class="vp-display-secondary">{% if object %}Edit store{% else %}Add a store{% endif %}</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Group purchases by retailer so you can compare prices over time.</p>
+
+    <form method="post" class="vp-card" style="margin-top: 40px;">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="alert-dark">
-            {{ form.non_field_errors }}
-        </div>
+        <div class="alert" style="margin-bottom: 24px;">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div>
-            <label class="label-dark" for="{{ form.name.id_for_label }}"><span>Name</span></label>
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="{{ form.name.id_for_label }}">Name</label>
             {{ form.name }}
-            {% if form.name.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.name.errors|join:", " }}</p>{% endif %}
+            {% if form.name.errors %}<p class="vp-label-mono mt-2">{{ form.name.errors|join:", " }}</p>{% endif %}
         </div>
 
-        <div>
-            <label class="label-dark" for="{{ form.notes.id_for_label }}"><span>Notes</span></label>
+        <div class="mb-8">
+            <label class="vp-label-mono mb-2" for="{{ form.notes.id_for_label }}">Notes</label>
             {{ form.notes }}
-            {% if form.notes.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.notes.errors|join:", " }}</p>{% endif %}
+            {% if form.notes.errors %}<p class="vp-label-mono mt-2">{{ form.notes.errors|join:", " }}</p>{% endif %}
         </div>
 
-        <div class="flex justify-between mt-4">
-            <a href="{% url 'inventory:store_list' %}" class="btn-ghost">Cancel</a>
-            <button type="submit" class="btn-pill">{% if object %}Save Changes{% else %}Add Store{% endif %}</button>
+        <hr class="vp-divider" style="margin: 32px 0 24px;">
+
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'inventory:store_list' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">{% if object %}Save Changes{% else %}Add Store{% endif %}</button>
         </div>
     </form>
-</div>
+</section>
 {% endblock %}

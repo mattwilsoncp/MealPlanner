@@ -3,43 +3,48 @@
 {% block title %}Recipe Review Queue{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-medium">Recipe Review Queue</h1>
-        <a href="{% url 'recipes:recipe_list' %}" class="btn-ghost">Back to Recipes</a>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Review Queue</span>
+                <h1 class="vp-display">Recipes<br>in review.</h1>
+                <p class="vp-subhead">Link ingredients to inventory items before they go live.</p>
+            </div>
+            <a href="{% url 'recipes:recipe_list' %}" class="vp-btn-ghost">Back to Recipes</a>
+        </div>
     </div>
+</section>
 
+<section class="vp-section">
     {% if not needs_review %}
-    <div class="card-dark p-8 text-center">
-        <p class="text-lg">No recipes need review.</p>
-        <p class="text-sm" style="color: var(--text-light-gray); margin-top: 8px;">All recipes are ready for use!</p>
-        <a href="{% url 'recipes:recipe_list' %}" class="btn-pill mt-4">View All Recipes</a>
+    <div class="vp-card text-center" style="padding: 64px 32px;">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">Queue is clear.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px; margin-bottom: 32px;">All recipes are ready for use.</p>
+        <a href="{% url 'recipes:recipe_list' %}" class="vp-btn-primary">View All Recipes</a>
     </div>
     {% else %}
-    <div class="space-y-4">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
         {% for recipe in needs_review %}
-        <div class="card-dark">
-            <div class="p-6">
-                <h2 class="text-lg font-medium">{{ recipe.title }}</h2>
-                <p class="text-sm" style="color: var(--text-light-gray);">{{ recipe.description|truncatewords:30 }}</p>
-                
-                <div class="flex items-center gap-2 mt-2 text-sm">
-                    <span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">Needs Review</span>
-                    <span style="color: var(--text-light-gray);">{{ recipe.ingredients.count }} ingredients</span>
-                </div>
-
-                <div class="flex justify-end gap-2 mt-4">
-                    <a href="{% url 'reviews:recipe_reconcile' recipe.pk %}" class="btn-ghost">
-                        Reconcile Ingredients
-                    </a>
-                    <a href="{% url 'reviews:mark_ready' recipe.pk %}" class="btn-pill">
-                        Mark Ready
-                    </a>
+        <div class="vp-card-tight" style="padding: 0;">
+            <div style="padding: 24px 28px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: start; justify-content: space-between;">
+                    <div>
+                        <h2 class="vp-display-secondary" style="font-size: 1.25rem; margin: 0;">{{ recipe.title }}</h2>
+                        <p class="vp-label-mono mt-2" style="color: var(--text-secondary); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.9375rem;">{{ recipe.description|truncatewords:30 }}</p>
+                        <div class="vp-label-mono" style="margin-top: 12px; color: var(--text-muted);">
+                            <span class="badge">{{ recipe.ingredients.count }} INGREDIENTS</span>
+                        </div>
+                    </div>
+                    <div style="display: inline-flex; gap: 8px; flex-wrap: wrap;">
+                        <a href="{% url 'reviews:recipe_reconcile' recipe.pk %}" class="vp-btn-ghost">Reconcile</a>
+                        <a href="{% url 'reviews:mark_ready' recipe.pk %}" class="vp-btn-primary">Mark Ready</a>
+                    </div>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
     {% endif %}
-</div>
+</section>
 {% endblock %}

@@ -3,144 +3,104 @@
 {% block title %}Reconcile Ingredients - {{ object.title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto" x-data="reconciliation()">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-medium">Reconcile Ingredients</h1>
-        <a href="{% url 'reviews:review_queue' %}" class="btn-ghost">Back to Queue</a>
-    </div>
+<section class="vp-section" style="max-width: 960px;" x-data="reconciliation()">
+    <a href="{% url 'reviews:review_queue' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Review Queue</a>
 
-    <div class="card-dark mb-6">
-        <div class="p-6">
-            <h2 class="text-xl font-medium">{{ object.title }}</h2>
-            <p class="text-sm" style="color: var(--text-light-gray);">{{ object.description }}</p>
-        </div>
-    </div>
+    <span class="vp-eyebrow">Reconcile</span>
+    <h1 class="vp-display-secondary">Reconcile &ldquo;{{ object.title }}&rdquo;</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">{{ object.description }}</p>
 
-    <form method="post" action="{% url 'reviews:save_reconciliation' object.pk %}">
+    <form method="post" action="{% url 'reviews:save_reconciliation' object.pk %}" class="vp-card" style="margin-top: 40px;">
         {% csrf_token %}
-        
-        <div class="space-y-4 mb-6">
-            <h3 class="text-lg font-medium">Ingredients</h3>
-            
+
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+            <h2 class="vp-section-header-title">Ingredients</h2>
+
             {% for link in ingredient_links %}
-            <div class="card-dark p-4">
-                <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex-1 min-w-[200px]">
-                        <span class="font-medium">{{ link.ingredient.name }}</span>
-                        <span class="text-sm" style="color: var(--text-light-gray); margin-left: 8px;">{{ link.quantity }} {{ link.unit }}</span>
+            <div class="vp-card-tight" style="padding: 20px 24px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+                    <div style="flex: 1; min-width: 220px;">
+                        <span style="font-weight: 500;">{{ link.ingredient.name }}</span>
+                        <span class="vp-label-mono" style="color: var(--text-muted); margin-left: 12px;">{{ link.quantity }} {{ link.unit }}</span>
                     </div>
-                    
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm" for="inventory_item_{{ link.id }}">Link to:</label>
-                        <select 
-                            name="inventory_item_{{ link.id }}" 
-                            id="inventory_item_{{ link.id }}"
-                            class="input-dark"
-                            style="width: auto;"
-                        >
-                            <option value="none">-- Not in Inventory --</option>
+
+                    <div style="display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <label class="vp-label-mono mb-0" for="inventory_item_{{ link.id }}">Link To</label>
+                        <select name="inventory_item_{{ link.id }}"
+                                id="inventory_item_{{ link.id }}"
+                                class="vp-input input-select"
+                                style="width: auto; background-color: var(--bg-elevated); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                            <option value="none">&mdash; Not in Inventory &mdash;</option>
                             {% for inv in inventory_items %}
-                            <option value="{{ inv.id }}" {% if link.inventory_item_id == inv.id %}selected{% endif %}>
-                                {{ inv.name }} ({{ inv.quantity }} {{ inv.unit }})
-                            </option>
+                            <option value="{{ inv.id }}" {% if link.inventory_item_id == inv.id %}selected{% endif %}>{{ inv.name }} ({{ inv.quantity }} {{ inv.unit }})</option>
                             {% endfor %}
                         </select>
-                        
-                        <button type="button" 
-                                class="btn-ghost"
+                        <button type="button"
+                                class="vp-btn-ghost"
+                                style="font-size: 0.6875rem; padding: 8px 12px;"
                                 @click="showQuickAdd = true; currentLinkId = {{ link.id }}; newItem.name = '{{ link.ingredient.name|escapejs }}'; newItem.quantity = 1; newItem.unit = 'piece'; newItem.category = 'other'">
                             + Quick Add
                         </button>
                     </div>
-
-                    <p class="text-xs" style="color: var(--text-mid-gray); width: 100%;">
-                        Choose an inventory item in your household to persist this ingredient link.
-                    </p>
                 </div>
+                <p class="vp-label-mono mt-3" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-size: 0.75rem;">Choose an inventory item in your household to persist this ingredient link.</p>
             </div>
             {% empty %}
-            <div class="card-dark p-4">
-                <p>No ingredients found for this recipe. Please add ingredients first.</p>
-            </div>
+            <div class="vp-card-tight" style="padding: 20px 24px; color: var(--text-secondary);">No ingredients found for this recipe. Please add ingredients first.</div>
             {% endfor %}
         </div>
 
-        <div class="flex justify-between items-center">
-            <a href="{% url 'reviews:review_queue' %}" class="btn-ghost">Cancel</a>
-            
-            <div class="flex gap-2">
-                <button type="submit" name="mark_ready" value="1" class="btn-pill">
-                    Save & Mark Ready
-                </button>
-                <button type="submit" class="btn-pill-muted">
-                    Save Links
-                </button>
+        <hr class="vp-divider" style="margin: 0 0 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'reviews:review_queue' %}" class="vp-btn-ghost">Cancel</a>
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                <button type="submit" name="mark_ready" value="1" class="vp-btn-primary">Save &amp; Mark Ready</button>
+                <button type="submit" class="vp-btn-ghost">Save Links</button>
             </div>
         </div>
     </form>
 
-    <div id="quick_add_modal" x-show="showQuickAdd" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;" @click.self="showQuickAdd = false">
-    <div style="background: #1c1917; border: 1px solid #44403c; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%;">
-        <div>
-            <h3 class="font-medium text-lg mb-4">Quick Add Inventory Item</h3>
-            
-            <form @submit.prevent="submitQuickAdd">
-                <div class="mb-4">
-                    <label class="label-dark">
-                        <span>Item Name</span>
-                    </label>
-                    <input type="text" name="name" x-model="newItem.name" required class="input-dark" placeholder="e.g., Chicken Breast">
+    <dialog id="quick_add_modal" x-show="showQuickAdd" class="vp-card" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 32px; max-width: 480px; border-radius: 6px;">
+        <h2 class="vp-display-secondary" style="font-size: 1.25rem; margin-bottom: 24px;">Quick Add Inventory Item</h2>
+
+        <form @submit.prevent="submitQuickAdd">
+            <div class="mb-6">
+                <label class="vp-label-mono mb-2">Item Name</label>
+                <input type="text" name="name" x-model="newItem.name" required class="vp-input" style="background-color: var(--bg-elevated); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;" placeholder="e.g., Chicken Breast">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <div>
+                    <label class="vp-label-mono mb-2">Quantity</label>
+                    <input type="number" name="quantity" x-model="newItem.quantity" required class="vp-input" style="background-color: var(--bg-elevated); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;" step="0.01" min="0">
                 </div>
-                
-                <div class="flex gap-4 mb-4">
-                    <div class="flex-1">
-                        <label class="label-dark">
-                            <span>Quantity</span>
-                        </label>
-                        <input type="number" name="quantity" x-model="newItem.quantity" required class="input-dark" step="0.01" min="0">
-                    </div>
-                    
-                    <div class="flex-1">
-                        <label class="label-dark">
-                            <span>Unit</span>
-                        </label>
-                        <select name="unit" x-model="newItem.unit" class="input-dark" style="width: auto;">
-                            <option value="piece">piece</option>
-                            <option value="oz">ounce</option>
-                            <option value="lb">pound</option>
-                            <option value="cup">cup</option>
-                            <option value="g">gram</option>
-                            <option value="kg">kilogram</option>
-                            <option value="ml">milliliter</option>
-                            <option value="l">liter</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="label-dark">
-                        <span>Category</span>
-                    </label>
-                    <select name="category" x-model="newItem.category" class="input-dark" style="width: auto;">
-                        <option value="produce">Produce</option>
-                        <option value="dairy">Dairy</option>
-                        <option value="meat">Meat & Seafood</option>
-                        <option value="frozen">Frozen</option>
-                        <option value="pantry">Pantry</option>
-                        <option value="beverages">Beverages</option>
-                        <option value="condiments">Condiments & Sauces</option>
-                        <option value="snacks">Snacks</option>
-                        <option value="bakery">Bakery</option>
-                        <option value="other">Other</option>
+                <div>
+                    <label class="vp-label-mono mb-2">Unit</label>
+                    <select name="unit" x-model="newItem.unit" class="vp-input input-select" style="width: 100%; background-color: var(--bg-elevated); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                        <option value="piece">piece</option><option value="oz">ounce</option><option value="lb">pound</option>
+                        <option value="cup">cup</option><option value="g">gram</option><option value="kg">kilogram</option>
+                        <option value="ml">milliliter</option><option value="l">liter</option>
                     </select>
                 </div>
-                
-                <div class="flex gap-2 mt-4">
-                    <button type="button" class="btn-ghost" @click="showQuickAdd = false; newItem = { name: '', quantity: 1, unit: 'piece', category: 'other' }">Cancel</button>
-                    <button type="submit" class="btn-pill">Add to Inventory</button>
-                </div>
-            </form>
-        </div></div></div>
+            </div>
+
+            <div class="mb-6">
+                <label class="vp-label-mono mb-2">Category</label>
+                <select name="category" x-model="newItem.category" class="vp-input input-select" style="width: 100%; background-color: var(--bg-elevated); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                    <option value="produce">Produce</option><option value="dairy">Dairy</option><option value="meat">Meat &amp; Seafood</option>
+                    <option value="frozen">Frozen</option><option value="pantry">Pantry</option><option value="beverages">Beverages</option>
+                    <option value="condiments">Condiments &amp; Sauces</option><option value="snacks">Snacks</option>
+                    <option value="bakery">Bakery</option><option value="other">Other</option>
+                </select>
+            </div>
+
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                <button type="button" class="vp-btn-ghost" style="border-color: transparent;" @click="showQuickAdd = false; newItem = { name: '', quantity: 1, unit: 'piece', category: 'other' }">Cancel</button>
+                <button type="submit" class="vp-btn-primary">Add to Inventory</button>
+            </div>
+        </form>
+    </dialog>
+</section>
 
 <script>
 function reconciliation() {
@@ -153,16 +113,14 @@ function reconciliation() {
             unit: 'piece',
             category: 'other'
         },
-        
+
         async submitQuickAdd() {
-            console.log('Submitting:', this.newItem);
             const payload = {
                 name: this.newItem.name,
                 quantity: parseFloat(this.newItem.quantity) || 1,
                 unit: this.newItem.unit,
                 category: this.newItem.category
             };
-            console.log('Payload:', payload);
             try {
                 const response = await fetch('{% url "inventory:inventory_create_api" %}', {
                     method: 'POST',
@@ -172,24 +130,19 @@ function reconciliation() {
                     },
                     body: JSON.stringify(payload)
                 });
-                
-                console.log('Response status:', response.status);
-                
+
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Created item:', data);
-                    const select = document.getElementById(`inventory_item_${this.currentLinkId}`);
+                    const select = document.getElementById('inventory_item_' + this.currentLinkId);
                     const option = document.createElement('option');
                     option.value = data.id;
-                    option.text = `${payload.name} (${payload.quantity} ${payload.unit})`;
+                    option.text = payload.name + ' (' + payload.quantity + ' ' + payload.unit + ')';
                     option.selected = true;
                     select.appendChild(option);
-                    
+
                     this.showQuickAdd = false;
                     this.newItem = { name: '', quantity: 1, unit: 'piece', category: 'other' };
                 } else {
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
                     alert('Failed to add inventory item: ' + response.status);
                 }
             } catch (error) {

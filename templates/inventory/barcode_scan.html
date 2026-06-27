@@ -3,99 +3,101 @@
 {% block title %}Scan Barcode{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6" x-data="barcodeScan()">
-    <div class="flex flex-wrap justify-between items-center gap-2">
-        <div>
-            <h1 class="text-2xl font-medium">Barcode Scan</h1>
-            <p class="text-sm" style="color: var(--text-light-gray);">Scan a barcode using your camera or enter it manually.</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Items</a>
-            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Back to Inventory</a>
-        </div>
-    </div>
-
-    <div class="card-dark">
-        <div class="p-6 space-y-4">
-            <form method="post" @submit.prevent="lookupBarcode" class="space-y-3">
-                {% csrf_token %}
-                <label class="block">
-                    <span class="label-dark">Barcode</span>
-                    <div class="flex gap-2">
-                        <input
-                            type="text"
-                            x-model="barcode"
-                            class="input-dark flex-1"
-                            inputmode="numeric"
-                            pattern="[0-9]{8,14}"
-                            maxlength="14"
-                            placeholder="Enter 8-14 digit barcode"
-                            required
-                        >
-                        <button type="button" @click="toggleScanner" class="btn-pill" :disabled="scannerActive">
-                            <span x-show="!scannerActive">Start Scanner</span>
-                            <span x-show="scannerActive">Stop Scanner</span>
-                        </button>
-                    </div>
-                </label>
-                <button type="submit" class="btn-pill" :disabled="isLoading">
-                    <span x-show="!isLoading">Lookup Barcode</span>
-                    <span x-show="isLoading">Looking up...</span>
-                </button>
-            </form>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Barcode Scan</span>
+                <h1 class="vp-display">Snap a<br>barcode.</h1>
+                <p class="vp-subhead">Use your camera or type a 8-14 digit barcode to match or create an inventory item.</p>
+            </div>
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                <a href="{% url 'inventory:inventory_expiring' %}" class="vp-btn-ghost">Expiring Items</a>
+                <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost">Back to Inventory</a>
+            </div>
         </div>
     </div>
+</section>
 
-    <div x-show="scannerActive" x-cloak class="card-dark" style="border: 2px solid var(--brand-green);">
-        <div class="p-4">
-            <div id="reader" class="w-full max-w-md mx-auto"></div>
-            <p class="text-center text-sm mt-2 text-gray-400">Align the barcode within the frame.</p>
-        </div>
+<section class="vp-section" style="max-width: 880px;" x-data="barcodeScan()">
+    <div class="vp-card-tight" style="margin-bottom: 24px;">
+        <form method="post" @submit.prevent="lookupBarcode" style="display: flex; flex-direction: column; gap: 20px;">
+            {% csrf_token %}
+            <div>
+                <label class="vp-label-mono mb-2" for="barcode-input">Barcode</label>
+                <div style="display: flex; gap: 12px; align-items: stretch;">
+                    <input
+                        id="barcode-input"
+                        type="text"
+                        x-model="barcode"
+                        class="vp-input"
+                        inputmode="numeric"
+                        pattern="[0-9]{8,14}"
+                        maxlength="14"
+                        placeholder="Enter 8-14 digit barcode"
+                        required
+                        style="flex: 1;"
+                    >
+                    <button type="button" @click="toggleScanner" class="vp-btn-ghost" :disabled="scannerActive">
+                        <span x-show="!scannerActive">Start Camera</span>
+                        <span x-show="scannerActive">Stop Camera</span>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="vp-btn-primary" style="align-self: flex-start;" :disabled="isLoading">
+                <span x-show="!isLoading">Lookup Barcode</span>
+                <span x-show="isLoading">Looking up…</span>
+            </button>
+        </form>
+    </div>
+
+    <div x-show="scannerActive" x-cloak class="vp-card-tight" style="text-align: center; padding: 32px;">
+        <div id="reader" style="width: 100%; max-width: 360px; margin: 0 auto;"></div>
+        <p class="vp-label-mono mt-3" style="color: var(--text-muted);">Align the barcode within the frame.</p>
     </div>
 
     <template x-if="resultType === 'local'">
-        <div class="card-dark" style="border: 2px solid var(--brand-green);">
-            <div class="p-6">
-                <h2 class="text-lg font-medium" style="color: var(--brand-green);">Already in Your Inventory</h2>
-                <p><strong x-text="result.item.name"></strong> is already tracked for your household.</p>
-                <p class="text-sm" style="color: var(--text-light-gray);">Barcode: <span x-text="result.item.barcode"></span></p>
-                <p class="text-sm" style="color: var(--text-light-gray);">Quantity: <span x-text="result.item.quantity"></span> <span x-text="result.item.unit"></span></p>
+        <div class="vp-card" style="border-color: var(--border-strong);">
+            <span class="vp-eyebrow">Already in Your Inventory</span>
+            <p class="vp-display-secondary" style="font-size: 1.5rem; margin-top: 8px;"><strong x-text="result.item.name"></strong></p>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.12em;">
+                <span>Barcode <span style="color: var(--text-primary); text-transform: none; letter-spacing: 0;"><span x-text="result.item.barcode"></span></span></span>
+                <span>Quantity <span style="color: var(--text-primary); text-transform: none; letter-spacing: 0;"><span x-text="result.item.quantity"></span> <span x-text="result.item.unit"></span></span></span>
             </div>
         </div>
     </template>
 
     <template x-if="resultType === 'upc'">
-        <div class="card-dark" style="border: 2px solid var(--green-link);">
-            <div class="p-6 space-y-3">
-                <h2 class="text-lg font-medium" style="color: var(--green-link);">UPC Match Found</h2>
-                <p><strong x-text="result.item.title || 'Scanned Item'"></strong></p>
-                <p class="text-sm" style="color: var(--text-light-gray);">Brand: <span x-text="result.item.brand || '—'"></span></p>
-                <p class="text-sm" style="color: var(--text-light-gray);">Size: <span x-text="result.item.size || '—'"></span></p>
-                <p class="text-sm" style="color: var(--text-light-gray);">Category: <span x-text="result.item.category || 'other'"></span></p>
-
-                <form method="post" action="{% url 'inventory:barcode_create_api' %}" @submit.prevent="createItem" class="pt-2">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-pill" :disabled="isCreating">
-                        <span x-show="!isCreating">Create Item</span>
-                        <span x-show="isCreating">Creating...</span>
-                    </button>
-                </form>
+        <div class="vp-card" style="border-color: var(--border-strong); margin-top: 24px;">
+            <span class="vp-eyebrow">UPC Match Found</span>
+            <p class="vp-display-secondary" style="font-size: 1.5rem; margin-top: 8px;" x-text="result.item.title || 'Scanned Item'"></p>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.12em;">
+                <span>Brand <span style="color: var(--text-primary); text-transform: none; letter-spacing: 0;" x-text="result.item.brand || '—'"></span></span>
+                <span>Size <span style="color: var(--text-primary); text-transform: none; letter-spacing: 0;" x-text="result.item.size || '—'"></span></span>
+                <span>Category <span style="color: var(--text-primary); text-transform: none; letter-spacing: 0;" x-text="result.item.category || 'other'"></span></span>
             </div>
+            <form method="post" action="{% url 'inventory:barcode_create_api' %}" @submit.prevent="createItem" style="margin-top: 24px;">
+                {% csrf_token %}
+                <button type="submit" class="vp-btn-primary" :disabled="isCreating">
+                    <span x-show="!isCreating">Create Item</span>
+                    <span x-show="isCreating">Creating…</span>
+                </button>
+            </form>
         </div>
     </template>
 
     <template x-if="resultType === 'error'">
-        <div class="alert-dark">
+        <div class="alert" style="margin-top: 24px;">
             <span x-text="errorMessage"></span>
         </div>
     </template>
 
     <template x-if="resultType === 'created'">
-        <div class="alert-success">
+        <div class="alert" style="margin-top: 24px;">
             <span>Created inventory item: <strong x-text="createdName"></strong>.</span>
         </div>
     </template>
-</div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
@@ -178,8 +180,7 @@ function barcodeScan() {
             this.result = payload;
             this.resultType = payload.source;
             this.isLoading = false;
-            
-            // Stop scanner after successful lookup
+
             if (this.scannerActive) {
                 this.toggleScanner();
             }

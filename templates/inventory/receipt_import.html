@@ -3,63 +3,68 @@
 {% block title %}Import Receipt{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <div class="card-dark">
-        <div class="p-8">
-            <h1 class="text-2xl font-medium mb-2">Import Receipt</h1>
-            <p class="text-sm mb-6" style="color: var(--text-light-gray);">
-                Take a photo or upload a grocery receipt. AI will extract grocery items, prices, descriptions, and visible barcodes for review before adding them to inventory.
-            </p>
+<section class="vp-hero">
+    <div class="vp-hero-inner grid md:grid-cols-2 gap-16 items-end">
+        <div>
+            <a href="{% url 'inventory:inventory_list' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Inventory</a>
+            <span class="vp-eyebrow">Receipt Import</span>
+            <h1 class="vp-display">From<br>paper to<br>pantry.</h1>
+            <p class="vp-subhead">Snap a photo. We extract every line, match barcodes, and prep it for review.</p>
+        </div>
 
+        <div class="vp-card">
             <form method="post" enctype="multipart/form-data" id="receipt-import-form">
                 {% csrf_token %}
 
-                <div class="mb-6">
-                    <label class="label-dark" for="id_image">Receipt Photo</label>
-                    {{ form.image }}
-                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">
-                        On mobile, this opens your camera. On desktop, select an image file.
-                    </p>
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-3" for="id_image">Receipt Photo</label>
+                    <div style="background: var(--bg-elevated); border: 1px dashed var(--border-medium); border-radius: 4px; padding: 24px; text-align: center;">
+                        {{ form.image }}
+                    </div>
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">On mobile: opens camera. On desktop: select an image file.</p>
                     {% if form.image.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.image.errors|join:", " }}</p>
+                    <p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.image.errors|join:", " }}</p>
                     {% endif %}
                 </div>
 
-                <div id="image-preview" class="mb-6 hidden">
-                    <img id="preview-img" class="w-full max-h-80 object-contain rounded-lg" style="border: 1px solid var(--border-subtle);">
+                <div id="image-preview" class="mb-8" style="display: none;">
+                    <span class="vp-label-mono mb-2">Preview</span>
+                    <img id="preview-img" style="width: 100%; max-height: 320px; object-fit: contain; border: 1px solid var(--border-subtle); border-radius: 4px;">
                 </div>
 
-                <div class="mb-6">
-                    <label class="label-dark" for="id_model">AI Model</label>
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-2" for="id_model">AI Model</label>
                     {{ form.model }}
                     {% if form.model.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.model.errors|join:", " }}</p>
+                    <p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.model.errors|join:", " }}</p>
                     {% endif %}
                 </div>
 
-                <div class="mb-6">
-                    <label class="label-dark" for="id_store">Receipt From</label>
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-2" for="id_store">Receipt From</label>
                     {{ form.store }}
                     {% if form.store.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.store.errors|join:", " }}</p>
+                    <p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.store.errors|join:", " }}</p>
                     {% endif %}
                     {% if form.store.help_text %}
-                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">{{ form.store.help_text }}</p>
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">{{ form.store.help_text }}</p>
                     {% endif %}
                 </div>
 
                 {% if form.non_field_errors %}
-                <div class="alert-dark mb-4">{{ form.non_field_errors }}</div>
+                <div class="alert mb-4">{{ form.non_field_errors }}</div>
                 {% endif %}
 
-                <div class="flex items-center gap-4">
-                    <button type="submit" class="btn-primary" id="submit-btn">Extract Receipt Items</button>
-                    <a href="{% url 'inventory:inventory_list' %}" class="btn-secondary">Cancel</a>
+                <hr class="vp-divider" style="margin: 32px 0 24px;">
+
+                <div class="flex items-center justify-between gap-4 flex-wrap">
+                    <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost">Cancel</a>
+                    <button type="submit" class="vp-btn-primary" id="submit-btn">Extract Receipt Items</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
@@ -72,18 +77,18 @@ document.getElementById('id_image').addEventListener('change', function(e) {
         const reader = new FileReader();
         reader.onload = function(e) {
             img.src = e.target.result;
-            preview.classList.remove('hidden');
+            preview.style.display = 'block';
         };
         reader.readAsDataURL(file);
     } else {
-        preview.classList.add('hidden');
+        preview.style.display = 'none';
     }
 });
 
 document.getElementById('receipt-import-form').addEventListener('submit', function() {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
-    btn.textContent = 'Extracting receipt...';
+    btn.textContent = 'Extracting receipt…';
 });
 </script>
 {% endblock %}

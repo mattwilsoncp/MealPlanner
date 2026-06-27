@@ -4,117 +4,90 @@
 
 {% block content %}
 {% csrf_token %}
-<div class="space-y-6">
-    <div class="card-dark">
-        <div class="p-6">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-medium">What Can I Make?</h1>
-                    <p style="color: var(--text-light-gray);">Recipes ranked by ingredient match with urgency cues for expiring inventory.</p>
-                </div>
-                <span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">
-                    {{ urgent_count }} urgent match{{ urgent_count|pluralize }} (≤ {{ threshold_days }} day{{ threshold_days|pluralize }})
-                </span>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Discovery</span>
+                <h1 class="vp-display">What can<br>I make?</h1>
+                <p class="vp-subhead">Recipes matched against your inventory with urgency cues for items that need to be used.</p>
             </div>
-            <p style="color: var(--text-mid-gray); font-size: 14px; margin-top: 8px;">As of {{ today|date:"M d, Y" }}</p>
+            <span class="vp-label-mono" style="color: var(--text-secondary); padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 4px;">
+                {{ urgent_count }} URGENT MATCH{{ urgent_count|pluralize }} (&le; {{ threshold_days }} day{{ threshold_days|pluralize }})
+            </span>
         </div>
+        <p class="vp-label-mono mt-3" style="color: var(--text-muted);">As of {{ today|date:"M d, Y" }}</p>
     </div>
+</section>
 
+<section class="vp-section">
     {% if matches %}
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div style="display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         {% for match in matches %}
-        <article class="card-dark" data-recipe-id="{{ match.recipe.pk }}">
-            <div class="p-6 space-y-4">
-                <div class="flex items-start justify-between gap-2">
-                    <h2 class="text-lg font-medium">{{ match.recipe.title }}</h2>
-                    <span class="badge-dark">{{ match.available_count }}/{{ match.total_count }}</span>
+        <article class="vp-card-tight" data-recipe-id="{{ match.recipe.pk }}" style="padding: 0;">
+            <div style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 24px;">
+                    <h2 class="vp-display-secondary" style="font-size: 1.25rem; margin: 0;">{{ match.recipe.title }}</h2>
+                    <span class="vp-label-mono">{{ match.available_count }}/{{ match.total_count }}</span>
                 </div>
 
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between text-sm" style="color: var(--text-light-gray);">
-                        <span>Match score</span>
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); margin-bottom: 8px;">
+                        <span>Match</span>
                         <span>{{ match.match_percentage }}%</span>
                     </div>
-                    <div class="progress-dark">
-                        <div class="progress-dark-fill" style="width: {{ match.match_percentage }}%;"></div>
-                    </div>
+                    <div class="progress"><div class="progress-fill" style="width: {{ match.match_percentage }}%;"></div></div>
                 </div>
 
-                <div class="space-y-2">
-                    <p class="code-label">Missing ingredients</p>
-                    <div class="flex flex-wrap gap-1">
+                <div style="margin-bottom: 16px;">
+                    <span class="vp-label-mono mb-2">Missing ingredients</span>
+                    <div style="display: inline-flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
                         {% for ingredient_name in match.missing_ingredients %}
                         <button type="button"
-                            class="badge-dark discovery-quick-add"
-                            style="cursor: pointer; transition: all 0.2s ease;"
+                            class="badge discovery-quick-add"
+                            style="cursor: pointer; transition: all 0.18s ease;"
                             data-ingredient="{{ ingredient_name }}"
                             data-recipe-id="{{ match.recipe.pk }}"
                             title="Click to add '{{ ingredient_name }}' to inventory">
                             {{ ingredient_name }}
                         </button>
                         {% empty %}
-                        <span class="badge-dark" style="background: rgba(62, 207, 142, 0.15); color: var(--brand-green); border-color: var(--green-border);">No missing ingredients</span>
+                        <span class="badge">No missing ingredients</span>
                         {% endfor %}
                     </div>
                 </div>
 
                 {% if match.has_expired_match or match.has_urgent_match %}
-                <div class="space-y-2">
-                    <div class="flex flex-wrap gap-2">
-                        {% if match.has_expired_match %}
-                        <span class="badge-dark" style="background: rgba(239, 68, 68, 0.15); color: #fc7981; border-color: rgba(239, 68, 68, 0.3);">Uses expired inventory</span>
-                        {% endif %}
-                        {% if match.has_urgent_match %}
-                        <span class="badge-dark" style="background: rgba(251, 189, 65, 0.15); color: #fbbd41; border-color: rgba(251, 189, 65, 0.3);">Uses expiring inventory</span>
-                        {% endif %}
-                    </div>
-
-                    {% if match.urgent_items %}
-                    <div class="flex flex-wrap gap-1">
-                        {% for urgent_name in match.urgent_items %}
-                        <span class="badge-dark">{{ urgent_name }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+                <div style="display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 16px;">
+                    {% if match.has_expired_match %}<span class="badge">Uses expired inventory</span>{% endif %}
+                    {% if match.has_urgent_match %}<span class="badge">Uses expiring inventory</span>{% endif %}
                 </div>
+                {% if match.urgent_items %}
+                <div style="display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                    {% for urgent_name in match.urgent_items %}<span class="badge">{{ urgent_name }}</span>{% endfor %}
+                </div>
+                {% endif %}
                 {% endif %}
             </div>
         </article>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-dark text-center p-8">
-        <h2 class="text-xl font-medium">No recipes available yet</h2>
-        <p style="color: var(--text-light-gray); margin-top: 8px;">Add reviewed recipes to your household to see discovery matches.</p>
+    <div class="vp-card text-center" style="padding: 64px 32px;">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">No recipes available yet.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px;">Add reviewed recipes to your household to see discovery matches.</p>
     </div>
     {% endif %}
-</div>
+</section>
 
 <style>
-.progress-dark {
-    height: 8px;
-    background: var(--border-subtle);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.progress-dark-fill {
-    height: 100%;
-    background: var(--brand-green);
-    border-radius: 4px;
-    transition: width 0.3s ease;
-}
-
 .discovery-quick-add:hover {
-    background: rgba(62, 207, 142, 0.15) !important;
-    border-color: var(--green-border) !important;
-    color: var(--brand-green) !important;
+    border-color: var(--border-strong) !important;
+    background: var(--bg-elevated) !important;
 }
-
 .discovery-quick-add.added {
-    background: rgba(62, 207, 142, 0.15) !important;
-    border-color: var(--green-border) !important;
-    color: var(--brand-green) !important;
+    border-color: var(--border-strong) !important;
+    background: var(--bg-elevated) !important;
     pointer-events: none;
 }
 </style>
@@ -134,7 +107,7 @@
 
         button.disabled = true;
         button.style.opacity = '0.6';
-        button.textContent = '...';
+        button.textContent = '…';
 
         try {
             const response = await fetch('{% url "inventory:inventory_quick_add" %}', {

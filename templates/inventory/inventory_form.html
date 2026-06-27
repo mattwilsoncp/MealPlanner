@@ -3,78 +3,84 @@
 {% block title %}{% if object %}Edit{% else %}Add{% endif %} Inventory Item{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-medium mb-6">{% if object %}Edit{% else %}Add{% endif %} Inventory Item</h1>
+<section class="vp-section" style="max-width: 880px;">
+    <a href="{% url 'inventory:inventory_list' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Inventory</a>
 
-    <form method="post" enctype="multipart/form-data" class="card-dark p-6 space-y-4">
+    <span class="vp-eyebrow">{% if object %}Edit{% else %}Add{% endif %} Item</span>
+    <h1 class="vp-display-secondary">{% if object %}Edit item{% else %}Add a new item{% endif %}</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Capture what you have at home so recipes and shopping lists stay accurate.</p>
+
+    <form method="post" enctype="multipart/form-data" class="vp-card" style="margin-top: 40px;">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="alert-dark">
+        <div class="alert" style="margin-bottom: 24px;">
             {{ form.non_field_errors }}
         </div>
         {% endif %}
 
-        <div class="grid md:grid-cols-2 gap-4">
+        <div class="grid md:grid-cols-2 gap-x-12 gap-y-8">
             <div class="md:col-span-2">
-                <label class="label-dark" for="{{ form.name.id_for_label }}"><span>Name</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.name.id_for_label }}">Name</label>
                 {{ form.name }}
-                {% if form.name.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.name.errors|join:", " }}</p>{% endif %}
+                {% if form.name.errors %}<p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.name.errors|join:", " }}</p>{% endif %}
             </div>
 
             <div>
-                <label class="label-dark" for="{{ form.quantity.id_for_label }}"><span>Quantity</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.quantity.id_for_label }}">Quantity</label>
                 {{ form.quantity }}
-                {% if form.quantity.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.quantity.errors|join:", " }}</p>{% endif %}
+                {% if form.quantity.errors %}<p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.quantity.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
-                <label class="label-dark" for="{{ form.unit.id_for_label }}"><span>Unit</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.unit.id_for_label }}">Unit</label>
                 {{ form.unit }}
             </div>
 
             <div>
-                <label class="label-dark" for="{{ form.category.id_for_label }}"><span>Category</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.category.id_for_label }}">Category</label>
                 {{ form.category }}
             </div>
             <div>
-                <label class="label-dark" for="{{ form.location.id_for_label }}"><span>Location</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.location.id_for_label }}">Location</label>
                 {{ form.location }}
             </div>
 
             <div>
-                <label class="label-dark" for="{{ form.expiration_date.id_for_label }}"><span>Expiration Date</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.expiration_date.id_for_label }}">Expiration Date</label>
                 {{ form.expiration_date }}
             </div>
             <div>
-                <label class="label-dark" for="{{ form.barcode.id_for_label }}"><span>Barcode</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.barcode.id_for_label }}">Barcode</label>
                 {{ form.barcode }}
             </div>
 
             <div>
-                <label class="label-dark" for="{{ form.price.id_for_label }}"><span>Price</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.price.id_for_label }}">Price</label>
                 {{ form.price }}
-                {% if form.price.errors %}<p class="text-sm mt-1" style="color: #fc7981;">{{ form.price.errors|join:", " }}</p>{% endif %}
+                {% if form.price.errors %}<p class="vp-label-mono mt-2" style="color: #ededed;">{{ form.price.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
-                <label class="label-dark" for="{{ form.store.id_for_label }}"><span>Store</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.store.id_for_label }}">Store</label>
                 {{ form.store }}
             </div>
 
             <div class="md:col-span-2">
-                <label class="label-dark" for="{{ form.notes.id_for_label }}"><span>Notes</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.notes.id_for_label }}">Notes</label>
                 {{ form.notes }}
             </div>
 
             <div class="md:col-span-2">
-                <label class="label-dark" for="{{ form.image.id_for_label }}"><span>Image Upload</span></label>
+                <label class="vp-label-mono mb-2" for="{{ form.image.id_for_label }}">Image Upload</label>
                 {{ form.image }}
             </div>
         </div>
 
-        <div class="flex justify-between mt-4">
-            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Cancel</a>
-            <button type="submit" class="btn-pill">{% if object %}Save Changes{% else %}Add Item{% endif %}</button>
+        <hr class="vp-divider" style="margin: 40px 0 24px;">
+
+        <div class="flex justify-between gap-4 flex-wrap">
+            <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">{% if object %}Save Changes{% else %}Add Item{% endif %}</button>
         </div>
     </form>
-</div>
+</section>
 {% endblock %}
