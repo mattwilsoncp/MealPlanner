@@ -8,10 +8,12 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View, FormView
 from django.views.generic.base import TemplateView
 from openai import OpenAI
@@ -99,8 +101,22 @@ class InventoryDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy("inventory:inventory_list")
     template_name = "inventory/inventory_list.html"
 
+    @method_decorator(require_POST)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         return InventoryItem.objects.filter(household=self.request.user.household)
+
+    def form_valid(self, form):
+        item_id = self.object.id
+        item_name = self.object.name
+        success_url = self.get_success_url()
+        self.object.delete()
+        messages.success(self.request, f"Deleted item: {item_name}")
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": True, "id": item_id, "name": item_name})
+        return HttpResponseRedirect(success_url)
 
 
 class InventoryExpiringView(LoginRequiredMixin, ListView):
