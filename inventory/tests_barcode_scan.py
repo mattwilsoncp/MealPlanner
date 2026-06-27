@@ -297,3 +297,116 @@ class InventoryFormBarcodeLookupTests(TestCase):
         self.assertEqual(created.name, "Greek Yogurt")
         self.assertEqual(created.category, "dairy")
         self.assertIn("Acme", created.notes)
+
+
+class UpcUsageModelTests(TestCase):
+    def test_record_increments_today_counter_atomically(self):
+        from inventory.models import UpcLookupUsage
+
+        UpcUsageModelTests._reset()
+
+        count1 = UpcLookupUsage.record("upcitemdb")
+        count2 = UpcLookupUsage.record("upcitemdb")
+        count3 = UpcLookupUsage.record("upcitemdb")
+        self.assertEqual(count1, 1)
+        self.assertEqual(count2, 2)
+        self.assertEqual(count3, 3)
+        self.assertEqual(UpcLookupUsage.today_count("upcitemdb"), 3)
+
+    def test_today_count_returns_zero_when_no_record(self):
+        UpcUsageModelTests._reset()
+        from inventory.models import UpcLookupUsage
+        self.assertEqual(UpcLookupUsage.today_count("openfoodfacts"), 0)
+        self.assertEqual(UpcLookupUsage.today_count("upcitemdb"), 0)
+
+    def test_recent_returns_only_window_inclusive(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        from inventory.models import UpcLookupUsage
+
+        UpcUsageModelTests._reset()
+        today = timezone.localdate()
+        UpcLookupUsage.objects.create(service="upcitemdb", date=today, count=2)
+        UpcLookupUsage.objects.create(service="upcitemdb", date=today - timedelta(days=29), count=5)
+        UpcLookupUsage.objects.create(service="upcitemdb", date=today - timedelta(days=30), count=99)
+
+        recent = list(UpcLookupUsage.recent(days=30).order_by("date").values_list("date", "count"))
+        self.assertEqual(len(recent), 2)
+        self.assertIn((today, 2), recent)
+        self.assertIn((today - timedelta(days=29), 5), recent)
+
+    def test_record_swallows_exceptions(self):
+        from inventory.models import UpcLookupUsage
+
+        UpcUsageModelTests._reset()
+
+        original = UpcLookupUsage.objects.get_or_create
+        UpcLookupUsage.objects.get_or_create = lambda **kw: (_ for _ in ()).throw(RuntimeError("boom"))
+        try:
+            self.assertEqual(UpcLookupUsage.record("upcitemdb"), -1)
+        finally:
+            UpcLookupUsage.objects.get_or_create = original
+
+    @staticmethod
+    def _reset():
+        from inventory.models import UpcLookupUsage
+        UpcLookupUsage.objects.all().delete()
+
+
+class UpcUsageViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Settings Household")
+        self.user = user_model.objects.create_user(
+            username="settings-user",
+            password="pass1234",
+            household=self.household,
+        )
+
+    def test_upc_usage_page_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("upc_usage"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_upc_usage_page_renders_with_today_context(self):
+        from inventory.models import UpcLookupUsage
+        from django.utils import timezone
+
+        UpcLookupUsage.record("upcitemdb")
+        UpcLookupUsage.record("upcitemdb")
+        UpcLookupUsage.record("openfoodfacts")
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("upc_usage"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode("utf-8")
+        self.assertIn("UPC Item DB", body)
+        self.assertIn("Open Food Facts", body)
+        self.assertIn('Quota remaining', body)
+        self.assertIn("Recent activity", body)
+        # Today counts surface in the page
+        context = response.context
+        self.assertEqual(context["today_count_upcitemdb"], 2)
+        self.assertEqual(context["today_count_openfoodfacts"], 1)
+        self.assertEqual(context["daily_quota"], 100)
+        self.assertEqual(context["quota_remaining"], 98)
+        self.assertEqual(context["today"], timezone.localdate())
+
+    def test_upc_lookup_creates_counter_rows_bump_each_call(self):
+        from inventory.models import UpcLookupUsage
+
+        UpcLookupUsage.objects.all().delete()
+        with patch("inventory.services.upc_lookup.urlopen") as mock_urlopen:
+            mock_urlopen.return_value.__enter__.return_value.read.return_value = (
+                b'{"status":1,"product":{"product_name":"X"}}'
+            )
+            from inventory.services.upc_lookup import lookup_upc
+            for _ in range(3):
+                result = lookup_upc("0000000000003")
+                self.assertTrue(result["ok"])
+
+        self.assertEqual(UpcLookupUsage.today_count("openfoodfacts"), 3)
+        # UPC Item DB only triggered when OFF fails
+        self.assertEqual(UpcLookupUsage.today_count("upcitemdb"), 0)

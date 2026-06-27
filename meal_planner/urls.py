@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from .backup import BackupPageView, ExportBackupView, ImportBackupView
+from inventory.views import UpcUsageView
 
 
 urlpatterns = [
@@ -28,6 +29,8 @@ urlpatterns = [
     path("tools/backup/", BackupPageView.as_view(), name="backup_page"),
     path("tools/backup/export/", ExportBackupView.as_view(), name="backup_export"),
     path("tools/backup/import/", ImportBackupView.as_view(), name="backup_import"),
+    # UPC lookup usage monitor
+    path("tools/upc-usage/", UpcUsageView.as_view(), name="upc_usage"),
 ]
 
 if settings.DEBUG:

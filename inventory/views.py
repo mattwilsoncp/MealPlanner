@@ -20,7 +20,7 @@ from django.views.generic.base import TemplateView
 from openai import OpenAI
 
 from .forms import InventoryItemForm, InventoryQuickAddForm, ReceiptImportForm
-from .models import InventoryItem, Store
+from .models import InventoryItem, Store, UpcLookupUsage
 from .services.receipt_barcode_enrichment import enrich_receipt_items
 from .services.upc_lookup import lookup_upc
 
@@ -775,3 +775,43 @@ class StoreDeleteView(LoginRequiredMixin, _StoreHouseholdScopedMixin, DeleteView
     pk_url_kwarg = "pk"
     success_url = reverse_lazy("inventory:store_list")
     template_name = "inventory/store_confirm_delete.html"
+
+
+UPC_ITEM_DB_DAILY_QUOTA = 100
+
+
+class UpcUsageView(LoginRequiredMixin, TemplateView):
+    """Settings page showing third-party UPC lookup usage + recent history."""
+
+    template_name = "settings/upc_usage.html"
+
+    HISTORY_DAYS = 30
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today_upcitemdb = UpcLookupUsage.today_count("upcitemdb")
+        today_openfoodfacts = UpcLookupUsage.today_count("openfoodfacts")
+        recent = list(
+            UpcLookupUsage.recent(days=self.HISTORY_DAYS)
+            .order_by("-date", "service")
+            .values("service", "date", "count", "last_call_at")
+        )
+        context.update(
+            {
+                "today_count_upcitemdb": today_upcitemdb,
+                "today_count_openfoodfacts": today_openfoodfacts,
+                "daily_quota": UPC_ITEM_DB_DAILY_QUOTA,
+                "quota_remaining": max(
+                    UPC_ITEM_DB_DAILY_QUOTA - today_upcitemdb, 0
+                ),
+                "quota_percentage": min(
+                    int(round((today_upcitemdb / UPC_ITEM_DB_DAILY_QUOTA) * 100)),
+                    100,
+                ),
+                "history": recent,
+                "history_days": self.HISTORY_DAYS,
+                "today": timezone.localdate(),
+                "service_choices": UpcLookupUsage.SERVICE_CHOICES,
+            }
+        )
+        return context

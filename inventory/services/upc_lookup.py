@@ -7,6 +7,8 @@ from urllib.request import Request, urlopen
 
 import certifi
 
+from inventory.models import UpcLookupUsage
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +18,24 @@ REQUEST_TIMEOUT_SECONDS = 5
 _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 
+def _record(service: str) -> None:
+    """Bump today's usage counter for the given service.
+
+    Never raises — quota monitoring is best-effort and must not break a
+    real UPC lookup path.
+    """
+    try:
+        UpcLookupUsage.record(service)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to record %s usage: %s", service, exc)
+
+
 def _lookup_open_food_facts(barcode: str) -> dict | None:
     """Primary lookup via Open Food Facts (free, open source, no key needed)."""
     url = f"{OPEN_FOOD_FACTS_URL}/{barcode}.json"
     request = Request(url)
     request.add_header("User-Agent", "MealPlannerApp/1.0 (personal use)")
+    _record("openfoodfacts")
 
     try:
         with urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS, context=_SSL_CONTEXT) as response:
@@ -66,6 +81,7 @@ def _lookup_upc_itemdb(barcode: str) -> dict | None:
     """Fallback lookup via UPC Item DB (free trial, 100 req/day)."""
     query = urlencode({"upc": barcode})
     request = Request(f"{UPC_LOOKUP_URL}?{query}")
+    _record("upcitemdb")
 
     try:
         with urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS, context=_SSL_CONTEXT) as response:

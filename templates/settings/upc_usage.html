@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}UPC Lookup Usage · Settings · Meal Planner{% endblock %}
+
+{% block content %}
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <span class="vp-eyebrow">Settings</span>
+        <h1 class="vp-display-secondary">UPC lookup usage.</h1>
+        <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">
+            Daily and historical outbound call counts against the third-party
+            barcode services that back the lookup on the inventory add page.
+        </p>
+    </div>
+</section>
+
+<section class="vp-section" style="max-width: 880px;">
+    <div class="vp-card" style="padding: 40px; margin-bottom: 32px;">
+        <div style="display: grid; gap: 32px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+            <div>
+                <span class="vp-label-mono">Today &middot; UPC Item DB</span>
+                <p class="vp-display-secondary" style="font-size: 2.5rem; margin-top: 8px;">
+                    {{ today_count_upcitemdb }}
+                </p>
+                <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 8px; font-size: 0.75rem;">Trial plan &middot; {{ daily_quota }} req/day</p>
+            </div>
+            <div>
+                <span class="vp-label-mono">Today &middot; Open Food Facts</span>
+                <p class="vp-display-secondary" style="font-size: 2.5rem; margin-top: 8px;">
+                    {{ today_count_openfoodfacts }}
+                </p>
+                <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 8px; font-size: 0.75rem;">Free / community</p>
+            </div>
+            <div>
+                <span class="vp-label-mono">Quota remaining</span>
+                <p class="vp-display-secondary" style="font-size: 2.5rem; margin-top: 8px;">
+                    {{ quota_remaining }}
+                </p>
+                <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 8px; font-size: 0.75rem;">Resets at 00:00 UTC</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 32px;">
+            <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 8px;">
+                <span class="vp-label-mono">UPC Item DB trial</span>
+                <span style="font-family: var(--font-mono); font-size: 0.875rem;">{{ today_count_upcitemdb }} / {{ daily_quota }}</span>
+            </div>
+            <div style="background: var(--bg-elevated); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: var(--text-primary); width: {{ quota_percentage }}%; height: 100%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="vp-card-tight">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-subtle);">
+            <span class="vp-label-mono">Recent activity &middot; last {{ history_days }} days</span>
+        </div>
+        <table class="vp-table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Service</th>
+                    <th style="text-align: right;">Calls</th>
+                    <th style="text-align: right;">Last call</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in history %}
+                <tr>
+                    <td>{{ row.date|date:"M j, Y"|default:"—" }}</td>
+                    <td>{% if row.service == "upcitemdb" %}UPC Item DB{% else %}Open Food Facts{% endif %}</td>
+                    <td style="text-align: right; font-family: var(--font-mono);">{{ row.count }}</td>
+                    <td style="text-align: right; font-family: var(--font-mono); color: var(--text-muted);">{% if row.last_call_at %}{{ row.last_call_at|date:"H:i" }}{% else %}—{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No UPC lookups recorded yet — try scanning a new barcode on the inventory page.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 24px; font-size: 0.75rem;">
+        Last refreshed {{ today|date:"M j, Y" }}.
+        The UPC Item DB free trial enforces a per-server limit per rolling day; Open Food Facts is unlimited but IP-throttled.
+    </p>
+</section>
+{% endblock %}
