@@ -3,162 +3,153 @@
 {% block title %}{% if object %}Edit{% else %}New{% endif %} Recipe - Meal Planner{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="card-dark">
-        <div class="p-6">
-            <h1 class="text-2xl font-medium mb-4">
-                {% if object %}Edit Recipe{% else %}New Recipe{% endif %}
-            </h1>
+<section class="vp-section" style="max-width: 880px;">
+    <a href="{% if object %}{% url 'recipes:recipe_detail' object.pk %}{% else %}{% url 'recipes:recipe_list' %}{% endif %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Recipes</a>
 
-            <form method="post" enctype="multipart/form-data" class="space-y-6">
-                {% csrf_token %}
+    <span class="vp-eyebrow">{% if object %}Edit{% else %}New{% endif %}</span>
+    <h1 class="vp-display-secondary">{% if object %}Edit recipe{% else %}New recipe{% endif %}</h1>
 
-                {% if form.non_field_errors %}
-                <div class="alert-dark">
-                    {% for error in form.non_field_errors %}
-                    <span>{{ error }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
+    <form method="post" enctype="multipart/form-data" class="vp-card" style="margin-top: 40px;">
+        {% csrf_token %}
 
-                {% for field in form %}
-                <div>
-                    <label class="label-dark" for="{{ field.id_for_label }}">
-                        <span>{{ field.label }}</span>
-                    </label>
-                    {{ field }}
-                    {% if field.help_text %}
-                    <label class="label">
-                        <span style="font-size: 12px; color: var(--text-mid-gray);">{{ field.help_text }}</span>
-                    </label>
-                    {% endif %}
-                    {% if field.errors %}
-                    <label class="label">
-                        {% for error in field.errors %}
-                        <span style="font-size: 12px; color: #fc7981;">{{ error }}</span>
-                        {% endfor %}
-                    </label>
-                    {% endif %}
-                </div>
-                {% endfor %}
-
-                <hr class="divider-dark">
-
-                <h3 class="text-lg font-medium">Ingredients</h3>
-                {% if has_youtube_import %}
-                <p class="text-sm mb-2" style="color: var(--brand-green);">Imported from YouTube:</p>
-                {% endif %}
-                <div id="ingredients-section" class="space-y-2">
-                    {% if has_youtube_import and youtube_ingredients %}
-                    {% for ing in youtube_ingredients %}
-                    <div class="flex gap-2 items-center ingredient-row">
-                        <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.name }}" class="input-dark">
-                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity|default:'1' }}" class="input-dark" style="width: 80px;" step="0.01">
-                        <select name="ingredient_unit" class="input-dark" style="width: auto;">
-                            {% for code, name in unit_choices %}
-                            <option value="{{ code }}" {% if ing.unit == code %}selected{% endif %}>{{ name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
-                    </div>
-                    {% endfor %}
-                    {% elif ingredients %}
-                    {% for ing in ingredients %}
-                    <div class="flex gap-2 items-center ingredient-row">
-                        <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.ingredient.name }}" class="input-dark">
-                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity }}" class="input-dark" style="width: 80px;" step="0.01">
-                        <select name="ingredient_unit" class="input-dark" style="width: auto;">
-                            {% for code, name in unit_choices %}
-                            <option value="{{ code }}" {% if ing.unit == code %}selected{% endif %}>{{ name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="flex gap-2 items-center ingredient-row">
-                        <input type="text" name="ingredient_name" placeholder="Ingredient name" class="input-dark">
-                        <input type="number" name="ingredient_quantity" placeholder="Qty" value="1" class="input-dark" style="width: 80px;" step="0.01">
-                        <select name="ingredient_unit" class="input-dark" style="width: auto;">
-                            {% for code, name in unit_choices %}
-                            <option value="{{ code }}">{{ name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
-                    </div>
-                    {% endif %}
-                </div>
-                <button type="button" class="btn-ghost" onclick="addIngredient()">+ Add Ingredient</button>
-
-                <hr class="divider-dark">
-
-                <h3 class="text-lg font-medium">Instructions</h3>
-                {% if has_youtube_import %}
-                <p class="text-sm mb-2" style="color: var(--brand-green);">Imported from YouTube:</p>
-                {% endif %}
-                <div id="instructions-section" class="space-y-2">
-                    {% if has_youtube_import and youtube_instructions %}
-                    {% for inst in youtube_instructions %}
-                    <div class="flex gap-2 items-start instruction-row">
-                        <div style="width: 80px;">
-                            <span style="font-size: 12px; color: var(--text-mid-gray);">Step</span>
-                            <input type="number" name="instruction_{{ forloop.counter }}_order" min="1" value="{{ inst.step_number }}" class="input-dark" style="width: 80px;">
-                        </div>
-                        <textarea name="instruction_text" placeholder="Instruction text" class="input-dark" style="height: 80px;">{{ inst.text }}</textarea>
-                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
-                    </div>
-                    {% endfor %}
-                    <p class="text-xs" style="color: var(--text-mid-gray);">Edit or add more steps below.</p>
-                    {% elif instructions %}
-                    {% for inst in instructions %}
-                    <div class="flex gap-2 items-start instruction-row">
-                        <div style="width: 80px;">
-                            <span style="font-size: 12px; color: var(--text-mid-gray);">Order</span>
-                            <input type="number" name="instruction_{{ inst.id }}_order" min="1" value="{{ inst.step_number }}" class="input-dark" style="width: 80px;">
-                        </div>
-                        <textarea name="instruction_text" placeholder="Instruction text" class="input-dark" style="height: 80px;">{{ inst.text }}</textarea>
-                        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
-                    </div>
-                    {% endfor %}
-                    <p class="text-xs" style="color: var(--text-mid-gray);">Set order values and save to persist instruction sequence.</p>
-                    {% endif %}
-                </div>
-                <button type="button" class="btn-ghost" onclick="addInstruction()">+ Add Step</button>
-
-                <hr class="divider-dark">
-
-                <h3 class="text-lg font-medium">Tags</h3>
-                <div class="flex gap-2 flex-wrap">
-                    {% if available_tags %}
-                    {% for tag in available_tags %}
-                    <label class="cursor-pointer flex items-center gap-1">
-                        <input type="checkbox" name="tags" value="{{ tag.pk }}" 
-                            {% for rt in tags %}{% if rt.tag.pk == tag.pk %}checked{% endif %}{% endfor %}
-                            style="width: 18px; height: 18px;">
-                        <span class="badge-dark">{{ tag.name }}</span>
-                    </label>
-                    {% endfor %}
-                    {% endif %}
-                </div>
-                <div class="flex gap-2 mt-2">
-                    <input type="text" name="new_tag_name" placeholder="New tag name" class="input-dark" style="max-width: 200px;">
-                    <input type="color" name="new_tag_color" value="#6B7280" class="input-dark" style="width: 50px; padding: 2px;">
-                    <span class="text-xs" style="color: var(--text-mid-gray); align-self: center;">New tag is created on Save.</span>
-                </div>
-                {% if form.new_tag_name.errors %}
-                <p style="color: #fc7981; font-size: 14px;">{{ form.new_tag_name.errors|join:", " }}</p>
-                {% endif %}
-
-                <div class="flex justify-end gap-2 mt-6">
-                    <a href="{% if object %}{% url 'recipes:recipe_detail' object.pk %}{% else %}{% url 'recipes:recipe_list' %}{% endif %}" class="btn-ghost">Cancel</a>
-                    <button type="submit" class="btn-pill">
-                        {% if object %}Save Changes{% else %}Create Recipe{% endif %}
-                    </button>
-                </div>
-            </form>
+        {% if form.non_field_errors %}
+        <div class="alert" style="margin-bottom: 24px;">
+            {% for error in form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
         </div>
-    </div>
-</div>
+        {% endif %}
+
+        <div style="display: flex; flex-direction: column; gap: 32px;">
+            {% for field in form %}
+            <div>
+                <label class="vp-label-mono mb-2" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0.05em; font-size: 0.75rem; font-family: var(--font-primary);">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.errors %}
+                <p class="vp-label-mono mt-2" style="color: #212529;">{% for error in field.errors %}{{ error }}{% endfor %}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr class="vp-divider" style="margin: 48px 0 32px;">
+
+        <h2 class="vp-section-header-title" style="margin-bottom: 16px;">Ingredients</h2>
+        {% if has_youtube_import %}
+        <p class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 16px;">Imported from YouTube</p>
+        {% endif %}
+        <div id="ingredients-section" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+            {% if has_youtube_import and youtube_ingredients %}
+            {% for ing in youtube_ingredients %}
+            <div style="display: flex; gap: 12px; align-items: center;" class="ingredient-row">
+                <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.name }}" class="vp-input" style="flex: 1;">
+                <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity|default:'1' }}" class="vp-input" style="width: 90px; flex-shrink: 0;" step="0.01">
+                <select name="ingredient_unit" class="vp-input input-select" style="width: auto; background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                    {% for code, name in unit_choices %}
+                    <option value="{{ code }}" {% if ing.unit == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
+            </div>
+            {% endfor %}
+            {% elif ingredients %}
+            {% for ing in ingredients %}
+            <div style="display: flex; gap: 12px; align-items: center;" class="ingredient-row">
+                <input type="text" name="ingredient_name" placeholder="Ingredient name" value="{{ ing.ingredient.name }}" class="vp-input" style="flex: 1;">
+                <input type="number" name="ingredient_quantity" placeholder="Qty" value="{{ ing.quantity }}" class="vp-input" style="width: 90px; flex-shrink: 0;" step="0.01">
+                <select name="ingredient_unit" class="vp-input input-select" style="width: auto; background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                    {% for code, name in unit_choices %}
+                    <option value="{{ code }}" {% if ing.unit == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="display: flex; gap: 12px; align-items: center;" class="ingredient-row">
+                <input type="text" name="ingredient_name" placeholder="Ingredient name" class="vp-input" style="flex: 1;">
+                <input type="number" name="ingredient_quantity" placeholder="Qty" value="1" class="vp-input" style="width: 90px; flex-shrink: 0;" step="0.01">
+                <select name="ingredient_unit" class="vp-input input-select" style="width: auto; background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                    {% for code, name in unit_choices %}
+                    <option value="{{ code }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
+            </div>
+            {% endif %}
+        </div>
+        <button type="button" class="vp-btn-ghost" onclick="addIngredient()" style="align-self: flex-start;">+ Add Ingredient</button>
+
+        <hr class="vp-divider" style="margin: 48px 0 32px;">
+
+        <h2 class="vp-section-header-title" style="margin-bottom: 16px;">Instructions</h2>
+        {% if has_youtube_import %}
+        <p class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 16px;">Imported from YouTube</p>
+        {% endif %}
+        <div id="instructions-section" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+            {% if has_youtube_import and youtube_instructions %}
+            {% for inst in youtube_instructions %}
+            <div style="display: flex; gap: 12px; align-items: flex-start;" class="instruction-row">
+                <div style="width: 90px; flex-shrink: 0;">
+                    <span class="vp-label-mono" style="margin-bottom: 4px;">Step</span>
+                    <input type="number" name="instruction_{{ forloop.counter }}_order" min="1" value="{{ inst.step_number }}" class="vp-input" style="width: 90px;">
+                </div>
+                <textarea name="instruction_text" placeholder="Instruction text" class="vp-input" style="flex: 1; height: 80px; padding: 12px 16px; background-color: var(--bg-elevated);">{{ inst.text }}</textarea>
+                <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
+            </div>
+            {% endfor %}
+            <p class="vp-label-mono" style="color: var(--text-muted); text-transform: none; letter-spacing: 0.05em;">Edit or add more steps below.</p>
+            {% elif instructions %}
+            {% for inst in instructions %}
+            <div style="display: flex; gap: 12px; align-items: flex-start;" class="instruction-row">
+                <div style="width: 90px; flex-shrink: 0;">
+                    <span class="vp-label-mono" style="margin-bottom: 4px;">Order</span>
+                    <input type="number" name="instruction_{{ inst.id }}_order" min="1" value="{{ inst.step_number }}" class="vp-input" style="width: 90px;">
+                </div>
+                <textarea name="instruction_text" placeholder="Instruction text" class="vp-input" style="flex: 1; height: 80px; padding: 12px 16px; background-color: var(--bg-elevated);">{{ inst.text }}</textarea>
+                <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
+            </div>
+            {% endfor %}
+            <p class="vp-label-mono" style="color: var(--text-muted); text-transform: none; letter-spacing: 0.05em;">Set order values and save to persist instruction sequence.</p>
+            {% endif %}
+        </div>
+        <button type="button" class="vp-btn-ghost" onclick="addInstruction()" style="align-self: flex-start;">+ Add Step</button>
+
+        <hr class="vp-divider" style="margin: 48px 0 32px;">
+
+        <h2 class="vp-section-header-title" style="margin-bottom: 16px;">Tags</h2>
+        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+            {% if available_tags %}
+            {% for tag in available_tags %}
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" class="cursor-pointer">
+                <input type="checkbox" name="tags" value="{{ tag.pk }}"
+                    {% for rt in tags %}{% if rt.tag.pk == tag.pk %}checked{% endif %}{% endfor %}
+                    style="width: 18px; height: 18px; accent-color: var(--text-primary);">
+                <span class="badge">{{ tag.name }}</span>
+            </label>
+            {% endfor %}
+            {% endif %}
+        </div>
+        <div style="display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <input type="text" name="new_tag_name" placeholder="New tag name" class="vp-input" style="max-width: 220px;">
+            <input type="color" name="new_tag_color" value="#6c757d" style="width: 48px; height: 40px; padding: 2px; border: 1px solid var(--border-medium); border-radius: 4px; background: transparent;">
+            <span class="vp-label-mono" style="color: var(--text-muted);">New tag is created on Save.</span>
+        </div>
+        {% if form.new_tag_name.errors %}
+        <p class="vp-label-mono mt-2" style="color: #212529;">{{ form.new_tag_name.errors|join:", " }}</p>
+        {% endif %}
+
+        <hr class="vp-divider" style="margin: 48px 0 24px;">
+
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% if object %}{% url 'recipes:recipe_detail' object.pk %}{% else %}{% url 'recipes:recipe_list' %}{% endif %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">
+                {% if object %}Save Changes{% else %}Create Recipe{% endif %}
+            </button>
+        </div>
+    </form>
+</section>
 
 <script>
 const unitChoices = [
@@ -171,17 +162,18 @@ const unitChoices = [
 function addIngredient() {
     const container = document.getElementById('ingredients-section');
     const row = document.createElement('div');
-    row.className = 'flex gap-2 items-center ingredient-row';
-    
-    let options = unitChoices.map(([code, name]) => 
+    row.className = 'ingredient-row';
+    row.style.cssText = 'display: flex; gap: 12px; align-items: center;';
+
+    let options = unitChoices.map(([code, name]) =>
         `<option value="${code}">${name}</option>`
     ).join('');
-    
+
     row.innerHTML = `
-        <input type="text" name="ingredient_name" placeholder="Ingredient name" class="input-dark">
-        <input type="number" name="ingredient_quantity" placeholder="Qty" value="1" class="input-dark" style="width: 80px;" step="0.01">
-        <select name="ingredient_unit" class="input-dark" style="width: auto;">${options}</select>
-        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
+        <input type="text" name="ingredient_name" placeholder="Ingredient name" class="vp-input" style="flex: 1;">
+        <input type="number" name="ingredient_quantity" placeholder="Qty" value="1" class="vp-input" style="width: 90px; flex-shrink: 0;" step="0.01">
+        <select name="ingredient_unit" class="vp-input input-select" style="width: auto; background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">${options}</select>
+        <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
     `;
     container.appendChild(row);
 }
@@ -190,14 +182,15 @@ function addInstruction() {
     const container = document.getElementById('instructions-section');
     const stepNum = container.children.length + 1;
     const row = document.createElement('div');
-    row.className = 'flex gap-2 items-start instruction-row';
+    row.className = 'instruction-row';
+    row.style.cssText = 'display: flex; gap: 12px; align-items: flex-start;';
     row.innerHTML = `
-        <div style="width: 80px;">
-            <span style="font-size: 12px; color: var(--text-mid-gray);">Order</span>
-            <input type="number" name="instruction_step" placeholder="Step #" value="${stepNum}" class="input-dark" style="width: 80px;">
+        <div style="width: 90px; flex-shrink: 0;">
+            <span class="vp-label-mono" style="margin-bottom: 4px;">Order</span>
+            <input type="number" name="instruction_step" placeholder="Step #" value="${stepNum}" class="vp-input" style="width: 90px;">
         </div>
-        <textarea name="instruction_text" placeholder="Instruction text" class="input-dark" style="height: 80px;"></textarea>
-        <button type="button" class="btn-ghost" style="color: #fc7981; padding: 8px 12px;" onclick="this.parentElement.remove()">X</button>
+        <textarea name="instruction_text" placeholder="Instruction text" class="vp-input" style="flex: 1; height: 80px; padding: 12px 16px; background-color: var(--bg-elevated);"></textarea>
+        <button type="button" class="vp-btn-ghost" style="padding: 8px 12px; color: var(--text-muted);" onclick="this.parentElement.remove()">Remove</button>
     `;
     container.appendChild(row);
 }

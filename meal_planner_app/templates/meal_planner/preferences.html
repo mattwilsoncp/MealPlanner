@@ -3,105 +3,84 @@
 {% block title %}Meal Preferences{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 max-w-2xl">
-    <div class="card-dark">
-        <div class="p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-medium">Meal Preferences</h2>
-                <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">Back to Planner</a>
+<section class="vp-section" style="max-width: 720px;">
+    <a href="{% url 'meal_planner:planner' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Planner</a>
+
+    <span class="vp-eyebrow">Preferences</span>
+    <h1 class="vp-display-secondary">Tune the<br>suggestions.</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Tell the AI what you like and avoid so the meal plan fits you.</p>
+
+    <form method="post" class="vp-card" style="margin-top: 40px;">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 40px;">
+            <span class="vp-label-mono mb-2">Cuisine Preferences</span>
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.875rem; margin-bottom: 16px;">Select your preferred cuisines.</p>
+            <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
+                {% for value, label in form.cuisine_preferences.field.choices %}
+                <label style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 16px; display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" name="cuisine_preferences" value="{{ value }}"
+                           {% if value in form.cuisine_preferences.value %}checked{% endif %}
+                           style="width: 18px; height: 18px; accent-color: var(--text-primary);">
+                    <span style="font-size: 0.875rem;">{{ label }}</span>
+                </label>
+                {% endfor %}
             </div>
-
-            <form method="post">
-                {% csrf_token %}
-
-                <div class="mb-6">
-                    <label class="label-dark">Cuisine Preferences</label>
-                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">Select your preferred cuisines</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                        {% for value, label in form.cuisine_preferences.field.choices %}
-                        <label class="flex items-center gap-2 p-2 rounded cursor-pointer text-sm"
-                               style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
-                            <input type="checkbox" name="cuisine_preferences" value="{{ value }}"
-                                   {% if value in form.cuisine_preferences.value %}checked{% endif %}
-                                   class="rounded">
-                            {{ label }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                    {% if form.cuisine_preferences.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.cuisine_preferences.errors }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="mb-6">
-                    <label class="label-dark">Dietary Restrictions</label>
-                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">Select any dietary restrictions</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {% for value, label in form.dietary_restrictions.field.choices %}
-                        <label class="flex items-center gap-2 p-2 rounded cursor-pointer text-sm"
-                               style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
-                            <input type="checkbox" name="dietary_restrictions" value="{{ value }}"
-                                   {% if value in form.dietary_restrictions.value %}checked{% endif %}
-                                   class="rounded">
-                            {{ label }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                    {% if form.dietary_restrictions.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.dietary_restrictions.errors }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="mb-6">
-                    <label class="label-dark">Cooking Effort</label>
-                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">How much time are you willing to spend?</p>
-                    <div class="flex flex-wrap gap-3">
-                        {% for value, label in form.cooking_effort.field.choices %}
-                        <label class="flex items-center gap-2 px-4 py-2 rounded cursor-pointer text-sm"
-                               style="background: var(--bg-near-black); border: 1px solid var(--border-dark);">
-                            <input type="radio" name="cooking_effort" value="{{ value }}"
-                                   {% if form.cooking_effort.value == value %}checked{% endif %}>
-                            {{ label }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                    {% if form.cooking_effort.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.cooking_effort.errors }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="mb-6">
-                    <label class="label-dark" for="id_servings_per_meal">Servings Per Meal</label>
-                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">How many servings per meal?</p>
-                    {{ form.servings_per_meal }}
-                    {% if form.servings_per_meal.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.servings_per_meal.errors }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="mb-6">
-                    <label class="label-dark" for="id_excluded_ingredients">Excluded Ingredients</label>
-                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">{{ form.excluded_ingredients.help_text }}</p>
-                    {{ form.excluded_ingredients }}
-                    {% if form.excluded_ingredients.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.excluded_ingredients.errors }}</p>
-                    {% endif %}
-                </div>
-
-                {% if form.non_field_errors %}
-                <div class="alert-dark mt-4">
-                    {% for error in form.non_field_errors %}
-                    <span>{{ error }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                <div class="flex justify-end gap-2 mt-6 pt-4" style="border-top: 1px solid var(--border-dark);">
-                    <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">Cancel</a>
-                    <button type="submit" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">Save Preferences</button>
-                </div>
-            </form>
         </div>
-    </div>
-</div>
+
+        <div style="margin-bottom: 40px;">
+            <span class="vp-label-mono mb-2">Dietary Restrictions</span>
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.875rem; margin-bottom: 16px;">Select any dietary restrictions.</p>
+            <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+                {% for value, label in form.dietary_restrictions.field.choices %}
+                <label style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 16px; display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" name="dietary_restrictions" value="{{ value }}"
+                           {% if value in form.dietary_restrictions.value %}checked{% endif %}
+                           style="width: 18px; height: 18px; accent-color: var(--text-primary);">
+                    <span style="font-size: 0.875rem;">{{ label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 40px;">
+            <span class="vp-label-mono mb-2">Cooking Effort</span>
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.875rem; margin-bottom: 16px;">How much time are you willing to spend?</p>
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                {% for value, label in form.cooking_effort.field.choices %}
+                <label style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 20px; display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="radio" name="cooking_effort" value="{{ value }}"
+                           {% if form.cooking_effort.value == value %}checked{% endif %}
+                           style="width: 18px; height: 18px; accent-color: var(--text-primary);">
+                    <span style="font-size: 0.875rem;">{{ label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 40px;">
+            <label class="vp-label-mono mb-2" for="id_servings_per_meal">Servings Per Meal</label>
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.875rem; margin-bottom: 16px;">How many servings per meal?</p>
+            {{ form.servings_per_meal }}
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label class="vp-label-mono mb-2" for="id_excluded_ingredients">Excluded Ingredients</label>
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.875rem; margin-bottom: 16px;">{{ form.excluded_ingredients.help_text }}</p>
+            {{ form.excluded_ingredients }}
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert" style="margin-bottom: 24px;">
+            {% for error in form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
+        </div>
+        {% endif %}
+
+        <hr class="vp-divider" style="margin: 32px 0 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'meal_planner:planner' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Save Preferences</button>
+        </div>
+    </form>
+</section>
 {% endblock %}

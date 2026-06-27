@@ -174,9 +174,9 @@ class InventoryViewTests(TestCase):
         self.assertContains(response, "csrfmiddlewaretoken")
         self.assertContains(response, "js-inventory-delete-form")
         self.assertContains(response, f'data-item-id="{item.id}"')
+        self.assertContains(response, 'js-inventory-delete-btn')
         content = response.content.decode()
         self.assertIn("Quick Delete Apples", content)
-        self.assertIn("var(--text-light-gray)", content)
 
     def test_list_page_includes_ajax_delete_handler(self):
         response = self.client.get(reverse("inventory:inventory_list"))

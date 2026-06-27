@@ -3,22 +3,20 @@
 {% block title %}Delete Recipe - Meal Planner{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div class="card-dark">
-        <div class="p-6">
-            <h1 class="text-2xl font-medium">Delete Recipe?</h1>
-            <p class="py-4">
-                Are you sure you want to delete "<strong>{{ object.title }}</strong>"?
-                This action cannot be undone.
-            </p>
-            <form method="post">
-                {% csrf_token %}
-                <div class="flex justify-end gap-2">
-                    <a href="{% url 'recipes:recipe_detail' object.pk %}" class="btn-ghost">Cancel</a>
-                    <button type="submit" class="btn-ghost" style="color: #fc7981;">Delete</button>
-                </div>
-            </form>
+<section class="vp-section" style="max-width: 640px;">
+    <a href="{% url 'recipes:recipe_detail' object.pk %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Recipe</a>
+
+    <span class="vp-eyebrow">Delete Recipe</span>
+    <h1 class="vp-display-secondary">Delete &ldquo;{{ object.title }}&rdquo;?</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">This action cannot be undone.</p>
+
+    <form method="post" class="vp-card" style="margin-top: 40px;">
+        {% csrf_token %}
+        <hr class="vp-divider" style="margin: 0 0 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'recipes:recipe_detail' object.pk %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Delete Recipe</button>
         </div>
-    </div>
-</div>
+    </form>
+</section>
 {% endblock %}

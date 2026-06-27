@@ -3,93 +3,99 @@
 {% block title %}Register - Meal Planner{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-center min-h-[60vh]">
-    <div class="card-dark p-8" style="max-width: 400px; width: 100%;">
-        <h2 class="text-2xl font-medium text-center mb-6">Register</h2>
-        
-        {% if form.errors %}
-        <div class="alert-dark mb-6">
-            {% for err in form.non_field_errors %}
-            <div>{{ err }}</div>
-            {% endfor %}
-            {% for field in form %}
-                {% for err in field.errors %}
-                <div>{{ field.label }}: {{ err }}</div>
-                {% endfor %}
-            {% endfor %}
+<section class="vp-hero">
+    <div class="vp-hero-inner grid md:grid-cols-2 gap-16 items-end">
+        <div>
+            <span class="vp-eyebrow">Register</span>
+            <h1 class="vp-display">Start planning<br>your week.</h1>
+            <p class="vp-subhead">Track what you have, discover what to cook, and never wonder what to shop for again.</p>
         </div>
-        {% endif %}
-        
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="mb-4">
-                <label class="label-dark" for="id_email">Email</label>
-                <input type="email" name="email" id="id_email" class="input-dark" required>
-            </div>
-            
-            <div class="mb-4">
-                <label class="label-dark" for="id_username">Username</label>
-                <input type="text" name="username" id="id_username" class="input-dark" required>
-            </div>
-            
-            <div class="mb-4">
-                <label class="label-dark" for="id_password1">Password</label>
-                <input type="password" name="password1" id="id_password1" class="input-dark" required>
-            </div>
-            
-            <div class="mb-4">
-                <label class="label-dark" for="id_password2">Confirm Password</label>
-                <input type="password" name="password2" id="id_password2" class="input-dark" required>
-            </div>
-            
-            <div class="mb-4">
-                <label class="label-dark" for="id_household_name">Household <span style="color: var(--text-mid-gray); font-weight: normal;">(optional)</span></label>
 
-                <div id="household-select-wrapper">
-                    <select name="household_name" id="id_household_name" class="input-dark">
-                        <option value="">--- Select a household ---</option>
-                        {% for h in households %}
-                        <option value="{{ h }}">{{ h }}</option>
-                        {% endfor %}
-                        <option value="__other__">Other (type a new one)...</option>
-                    </select>
+        <div class="vp-card">
+            {% if form.errors %}
+            <div class="alert mb-6">
+                {% for err in form.non_field_errors %}
+                <div>{{ err }}</div>
+                {% endfor %}
+                {% for field in form %}
+                    {% for err in field.errors %}
+                    <div>{{ field.label }}: {{ err }}</div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-6">
+                    <label class="vp-label-mono mb-2" for="id_email">Email</label>
+                    <input type="email" name="email" id="id_email" class="vp-input" required>
                 </div>
 
-                <div id="household-text-wrapper" style="display: none;">
-                    <input type="text" name="household_name" id="id_household_name_text" class="input-dark" placeholder="Type a new household name">
-                    <button type="button" id="household-back-btn" class="text-sm link-green" style="background: none; border: none; cursor: pointer; padding: 4px 0; display: block;">&larr; Back to list</button>
+                <div class="mb-6">
+                    <label class="vp-label-mono mb-2" for="id_username">Username</label>
+                    <input type="text" name="username" id="id_username" class="vp-input" required>
                 </div>
 
-                <p class="text-sm mt-1" style="color: var(--text-mid-gray);">Pick an existing household or choose "Other" to type a new one</p>
-            </div>
-            
-            <button type="submit" class="btn-pill w-full" style="background: var(--brand-green); border-color: var(--brand-green);">Register</button>
-        </form>
+                <div class="mb-6">
+                    <label class="vp-label-mono mb-2" for="id_password1">Password</label>
+                    <input type="password" name="password1" id="id_password1" class="vp-input" required>
+                </div>
 
-        <script>
-        document.getElementById('id_household_name').addEventListener('change', function() {
-            if (this.value === '__other__') {
-                document.getElementById('household-select-wrapper').style.display = 'none';
-                document.getElementById('household-text-wrapper').style.display = 'block';
-                document.getElementById('id_household_name').disabled = true;
-                document.getElementById('id_household_name_text').focus();
-            }
-        });
-        document.getElementById('household-back-btn').addEventListener('click', function() {
-            document.getElementById('household-text-wrapper').style.display = 'none';
-            document.getElementById('household-select-wrapper').style.display = 'block';
-            document.getElementById('id_household_name').disabled = false;
-            document.getElementById('id_household_name').value = '';
-        });
-        </script>
-        
-        <hr class="divider-dark">
-        
-        <p class="text-center" style="color: var(--text-light-gray);">
-            Already have an account?
-            <a href="{% url 'login' %}" class="link-green">Login</a>
-        </p>
+                <div class="mb-6">
+                    <label class="vp-label-mono mb-2" for="id_password2">Confirm Password</label>
+                    <input type="password" name="password2" id="id_password2" class="vp-input" required>
+                </div>
+
+                <div class="mb-8">
+                    <label class="vp-label-mono mb-2" for="id_household_name">Household <span style="color: var(--text-muted);">(optional)</span></label>
+
+                    <div id="household-select-wrapper">
+                        <select name="household_name" id="id_household_name" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
+                            <option value="">Select a household</option>
+                            {% for h in households %}
+                            <option value="{{ h }}">{{ h }}</option>
+                            {% endfor %}
+                            <option value="__other__">Other (type a new one)</option>
+                        </select>
+                    </div>
+
+                    <div id="household-text-wrapper" style="display: none;">
+                        <input type="text" name="household_name" id="id_household_name_text" class="vp-input" placeholder="Type a new household name">
+                        <button type="button" id="household-back-btn" class="vp-label-mono" style="background: none; border: none; cursor: pointer; padding: 8px 0; color: var(--text-secondary);">&larr; Back to list</button>
+                    </div>
+
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">Pick an existing household or choose "Other" to type a new one</p>
+                </div>
+
+                <script>
+                document.getElementById('id_household_name').addEventListener('change', function() {
+                    if (this.value === '__other__') {
+                        document.getElementById('household-select-wrapper').style.display = 'none';
+                        document.getElementById('household-text-wrapper').style.display = 'block';
+                        document.getElementById('id_household_name').disabled = true;
+                        document.getElementById('id_household_name_text').focus();
+                    }
+                });
+                document.getElementById('household-back-btn').addEventListener('click', function() {
+                    document.getElementById('household-text-wrapper').style.display = 'none';
+                    document.getElementById('household-select-wrapper').style.display = 'block';
+                    document.getElementById('id_household_name').disabled = false;
+                    document.getElementById('id_household_name').value = '';
+                });
+                </script>
+
+                <button type="submit" class="vp-btn-primary w-full">Create Account</button>
+            </form>
+
+            <hr class="vp-divider" style="margin: 32px 0 24px;">
+
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">
+                Already have an account?
+                <a href="{% url 'login' %}" class="link" style="font-size: 0.875rem;">Sign in</a>
+            </p>
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}

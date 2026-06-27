@@ -3,109 +3,91 @@
 {% block title %}On-Hand Ideas{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-medium" style="letter-spacing: -0.64px;">On-Hand Ideas</h1>
-        <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">
-            Close
-        </a>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">On-Hand Ideas</span>
+                <h1 class="vp-display">What's<br>available.</h1>
+                <p class="vp-subhead">Recipes marked as on-hand ideas that match your kitchen.</p>
+            </div>
+            <a href="{% url 'meal_planner:planner' %}" class="vp-btn-ghost">Close</a>
+        </div>
     </div>
+</section>
 
+<section class="vp-section">
     {% if on_hand_recipes %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for recipe in on_hand_recipes %}
-            <div class="card-dark cursor-pointer"
-                 onclick="selectOnHandRecipe({{ recipe.id }})"
-                 style="cursor: pointer;">
-                <div class="p-4">
-                    <h2 class="text-lg font-medium">{{ recipe.title }}</h2>
-                    {% if recipe.description %}
-                    <p class="text-sm line-clamp-2" style="color: var(--text-light-gray);">{{ recipe.description }}</p>
-                    {% endif %}
-                    <div class="flex items-center gap-2 mt-2">
-                        <div>
-                            {% for i in "12345" %}
-                            <span style="{% if i|add:0 <= recipe.rating %}color: var(--brand-green);{% else %}color: var(--border-dark);{% endif %}">★</span>
-                            {% endfor %}
-                        </div>
-                        <button onclick="event.stopPropagation(); toggleOnHandIdea({{ recipe.id }})" 
-                                class="btn-ghost"
-                                style="padding: 4px 8px; font-size: 12px;"
-                                title="Remove from ideas">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-                            </svg>
-                        </button>
-                    </div>
+    <div style="display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        {% for recipe in on_hand_recipes %}
+        <div class="vp-card-tight" style="cursor: pointer;" onclick="selectOnHandRecipe({{ recipe.id }})">
+            <div style="padding: 20px 24px;">
+                <h2 class="vp-display-secondary" style="font-size: 1.25rem; margin: 0 0 12px;">{{ recipe.title }}</h2>
+                {% if recipe.description %}
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 16px;" class="line-clamp-2">{{ recipe.description }}</p>
+                {% endif %}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <span class="vp-label-mono">{{ recipe.rating }}/5</span>
+                    <button onclick="event.stopPropagation(); toggleOnHandIdea({{ recipe.id }})" class="vp-btn-ghost" style="padding: 6px 10px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Remove from ideas">Remove</button>
                 </div>
             </div>
-            {% endfor %}
         </div>
-    {% else %}
-        <div class="card-dark p-8 text-center">
-            <p class="font-medium mb-4">No on-hand ideas yet.</p>
-            <p class="text-sm" style="color: var(--text-light-gray);">Mark recipes as ideas to see them here.</p>
-            <a href="{% url 'recipes:recipe_list' %}" class="btn-pill mt-4" style="display: inline-block;">
-                Browse Recipes
-            </a>
-        </div>
-    {% endif %}
-</div>
-
-<div id="add-to-meal-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center" style="background: rgba(0,0,0,0.7);">
-    <div class="card-dark p-6" style="max-width: 400px;">
-        <h3 class="font-medium text-xl mb-4">Add to Meal</h3>
-        
-        <form id="add-to-meal-form" method="POST" action="{% url 'meal_planner:add_on_hand_to_meal' %}">
-            {% csrf_token %}
-            <input type="hidden" name="recipe_id" id="selected-recipe-id" value="">
-            
-            <div class="mb-4">
-                <label class="label-dark">Date</label>
-                <input type="date" name="meal_date" class="input-dark" required>
-            </div>
-            
-            <div class="mb-4">
-                <label class="label-dark">Meal Type</label>
-                <select name="meal_type" class="input-dark" style="width: auto;" required>
-                    <option value="">Select meal type</option>
-                    <option value="breakfast">Breakfast</option>
-                    <option value="lunch">Lunch</option>
-                    <option value="dinner">Dinner</option>
-                    <option value="snack">Snack</option>
-                </select>
-            </div>
-            
-            <div class="flex gap-2 mt-4">
-                <button type="submit" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">Add to Meal</button>
-                <button type="button" onclick="closeAddToMealModal()" class="btn-ghost">Cancel</button>
-            </div>
-        </form>
+        {% endfor %}
     </div>
-</div>
+    {% else %}
+    <div class="vp-card text-center" style="padding: 64px 32px;">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">No on-hand ideas yet.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px; margin-bottom: 32px;">Mark recipes as ideas to see them here.</p>
+        <a href="{% url 'recipes:recipe_list' %}" class="vp-btn-primary">Browse Recipes</a>
+    </div>
+    {% endif %}
+</section>
 
-{% endblock %}
+<dialog id="add-to-meal-modal" class="vp-card" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 32px; max-width: 480px; border-radius: 6px;">
+    <h3 class="vp-display-secondary" style="font-size: 1.25rem; margin-bottom: 24px;">Add to Meal</h3>
 
-{% block extra_js %}
+    <form id="add-to-meal-form" method="POST" action="{% url 'meal_planner:add_on_hand_to_meal' %}">
+        {% csrf_token %}
+        <input type="hidden" name="recipe_id" id="selected-recipe-id" value="">
+
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="meal_date">Date</label>
+            <input type="date" name="meal_date" id="meal_date" class="vp-input" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;" required>
+        </div>
+
+        <div class="mb-8">
+            <label class="vp-label-mono mb-2" for="meal_type">Meal Type</label>
+            <select name="meal_type" id="meal_type" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;" required>
+                <option value="">Select meal type</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
+            </select>
+        </div>
+
+        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+            <button type="submit" class="vp-btn-primary">Add to Meal</button>
+            <button type="button" onclick="closeAddToMealModal()" class="vp-btn-ghost" style="border-color: transparent;">Cancel</button>
+        </div>
+    </form>
+</dialog>
+
 <script>
-let onHandRecipeId = null;
-
 function selectOnHandRecipe(recipeId) {
     document.getElementById('selected-recipe-id').value = recipeId;
-    document.getElementById('add-to-meal-modal').classList.remove('hidden');
-    document.getElementById('add-to-meal-modal').style.display = 'flex';
+    document.getElementById('add-to-meal-modal').showModal();
 }
 
 function closeAddToMealModal() {
-    document.getElementById('add-to-meal-modal').classList.add('hidden');
-    document.getElementById('add-to-meal-modal').style.display = 'none';
+    document.getElementById('add-to-meal-modal').close();
 }
 
 async function toggleOnHandIdea(recipeId) {
     try {
         const formData = new FormData();
         formData.append('recipe_id', recipeId);
-        
+
         const response = await fetch(`/planner/api/recipe/${recipeId}/toggle-on-hand/`, {
             method: 'POST',
             body: formData,
@@ -113,7 +95,7 @@ async function toggleOnHandIdea(recipeId) {
                 'X-CSRFToken': getCookie('csrftoken'),
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             if (data.on_hand_idea === false) {

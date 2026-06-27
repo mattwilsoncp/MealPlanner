@@ -6,161 +6,134 @@
 {% block content %}
 <style>
     .planner-drop-zone.is-drag-over {
-        outline: 2px dashed var(--brand-primary);
-        outline-offset: 2px;
-        background: rgba(95, 157, 255, 0.08);
+        outline: 1px dashed var(--border-strong);
+        outline-offset: 4px;
+        background: var(--bg-elevated);
     }
-
     .planner-meal-card.is-dragging {
         opacity: 0.5;
     }
 </style>
 
-<div class="mb-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=-1" 
-               class="btn-secondary" style="padding: 8px 16px;">
-                ← Previous
-            </a>
-            <h1 class="text-xl font-semibold">
-                {{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}
-            </h1>
-            <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=1" 
-               class="btn-secondary" style="padding: 8px 16px;">
-                Next →
-            </a>
-        </div>
-        
-        <div class="flex items-center gap-3 flex-wrap">
-            <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">
-                Today
-            </a>
-            
-            <label class="flex items-center gap-2 cursor-pointer" style="color: var(--text-secondary);">
-                <input type="checkbox" id="leftover-filter" onchange="toggleLeftovers()" 
-                       style="width: 18px; height: 18px; accent-color: var(--brand-primary);">
-                <span style="font-size: 0.875rem;">Leftovers</span>
-            </label>
-            
-            <a href="{% url 'meal_planner:on_hand_ideas' %}" class="btn-primary">
-                On-Hand Ideas
-            </a>
-
-            <a href="{% url 'shopping:week' %}?week_start={{ start_date|date:'Y-m-d' }}" class="btn-secondary">
-                Shopping List
-            </a>
-
-            <a href="{% url 'meal_planner:preferences' %}" class="btn-secondary">
-                Preferences
-            </a>
-
-            <form method="post" action="{% url 'meal_planner:generate_ai_plan' %}" 
-                  onsubmit="return confirm('Generate AI meal suggestions for this week? You will be able to review, accept, or reject each day before saving.');"
-                  style="display: inline;">
-                {% csrf_token %}
-                <input type="hidden" name="week_start" value="{{ start_date|date:'Y-m-d' }}">
-                <button type="submit" class="btn-primary" id="generate-ai-btn">
-                    ✨ AI Plan
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div id="recipe-modal" class="fixed inset-0 z-50 hidden" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
-    <div class="card m-auto p-6" style="max-width: 32rem; max-height: 85vh; overflow-y: auto; margin: auto;">
-        <div class="flex justify-between items-start mb-4">
-            <h3 id="recipe-modal-title" class="text-xl font-semibold"></h3>
-            <button type="button" id="recipe-modal-close-icon" class="btn-ghost" style="padding: 4px;">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-        <p id="recipe-modal-description" class="mb-4" style="color: var(--text-secondary);"></p>
-        
-        <div class="mb-4">
-            <span class="code-label">Ingredients</span>
-            <ul id="recipe-modal-ingredients" class="mt-2 space-y-1" style="color: var(--text-secondary);"></ul>
-        </div>
-        
-        <div class="mb-4">
-            <span class="code-label">Instructions</span>
-            <ol id="recipe-modal-instructions" class="mt-2 space-y-2" style="color: var(--text-secondary);"></ol>
-        </div>
-        
-        <div class="flex gap-3">
-            <a id="recipe-modal-full-link" href="" class="btn-secondary">View Full Recipe</a>
-            <button type="button" id="recipe-modal-close-button" class="btn-ghost">Close</button>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
-    {% for day in week_days %}
-    <div class="card p-4" style="min-height: 280px;">
-        <div class="text-center mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
-            <div class="font-semibold text-sm" style="color: var(--text-secondary);">{{ day.day_name }}</div>
-            <div class="text-lg font-semibold">{{ day.date|date:"M d" }}</div>
-        </div>
-
-        {% for meal_type in planner_meal_types %}
-        <div class="mb-4 planner-drop-zone" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}">
-            <div class="font-medium text-xs mb-2 uppercase tracking-wide" style="color: var(--text-muted); text-transform: capitalize;">{{ meal_type }}</div>
-            {% for meal in day.meals|get_item:meal_type %}
-            <div class="p-2 mb-2 rounded-lg planner-meal-card" draggable="true" data-meal-id="{{ meal.pk }}" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="background: var(--bg-page); border: 1px solid var(--border-subtle); cursor: grab;">
-                {% if meal.recipe %}
-                <div class="flex items-center justify-between gap-1">
-                    <div class="font-medium text-sm mb-1">{{ meal.recipe.title }}</div>
-                    <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-ghost" style="padding: 2px; color: var(--text-muted);" title="Delete meal">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
-                    </form>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Meal Plan</span>
+                <h1 class="vp-display">This week.</h1>
+                <div style="margin-top: 24px; display: inline-flex; align-items: center; gap: 16px;">
+                    <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=-1" class="vp-btn-ghost">&larr; Previous</a>
+                    <span class="vp-display-secondary" style="font-size: 1.5rem;">{{ start_date|date:"M d" }} &mdash; {{ end_date|date:"M d, Y" }}</span>
+                    <a href="{% url 'meal_planner:planner_navigate' %}?current={{ start_date|date:'Y-m-d' }}&offset=1" class="vp-btn-ghost">Next &rarr;</a>
                 </div>
-                <div class="flex gap-2">
-                    <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link text-xs js-open-recipe-modal">View</button>
-                    <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link text-xs">Cook</a>
-                </div>
-                {% else %}
-                <div class="flex items-center justify-between gap-1">
-                    <div class="text-sm" style="color: var(--text-muted);">{{ meal.custom_meal|default:meal.notes|truncatechars:30 }}</div>
-                    <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-ghost" style="padding: 2px; color: var(--text-muted);" title="Delete meal">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
-                    </form>
-                </div>
-                {% endif %}
-                {% if meal_type == "dinner" %}
-                {% if meal.side_dishes.all %}
-                <div class="mt-2 p-2 rounded-md" style="background: rgba(95, 157, 255, 0.10); border: 1px solid rgba(95, 157, 255, 0.25);">
-                    {% for side in meal.side_dishes.all %}
-                    <div class="text-xs" style="color: var(--brand-primary);">+ {{ side.recipe.title|default:side.custom_side }}</div>
-                    {% endfor %}
-                    <a href="{% url 'meal_planner:edit_meal' meal.pk %}" class="link text-xs">Edit sides</a>
-                </div>
-                {% else %}
-                <a href="{% url 'meal_planner:edit_meal' meal.pk %}" class="link text-xs" style="color: var(--text-muted);">+ Add sides</a>
-                {% endif %}
-                {% endif %}
             </div>
-            {% endfor %}
 
-            <a href="{% url 'meal_planner:add_meal' %}?date={{ day.date|date:'Y-m-d' }}&type={{ meal_type }}"
-               class="link text-xs">+ Add {{ meal_type }}</a>
+            <div style="display: inline-flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                <a href="{% url 'meal_planner:planner' %}" class="vp-btn-ghost" style="border-color: transparent;">Today</a>
+                <label style="display: inline-flex; gap: 8px; align-items: center; cursor: pointer; color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.18em;">
+                    <input type="checkbox" id="leftover-filter" onchange="toggleLeftovers()" class="checkbox">
+                    <span>Leftovers</span>
+                </label>
+                <a href="{% url 'meal_planner:on_hand_ideas' %}" class="vp-btn-ghost">On-Hand Ideas</a>
+                <a href="{% url 'shopping:week' %}?week_start={{ start_date|date:'Y-m-d' }}" class="vp-btn-ghost">Shopping List</a>
+                <a href="{% url 'meal_planner:preferences' %}" class="vp-btn-ghost">Preferences</a>
+                <form method="post" action="{% url 'meal_planner:generate_ai_plan' %}" onsubmit="return confirm('Generate AI meal suggestions for this week? You will be able to review, accept, or reject each day before saving.');" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ start_date|date:'Y-m-d' }}">
+                    <button type="submit" class="vp-btn-primary" id="generate-ai-btn">Generate AI Plan</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="vp-section">
+    <div id="recipe-modal" class="modal-backdrop" style="display: none;">
+        <div class="vp-card" style="max-width: 32rem; max-height: 85vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle);">
+                <h3 id="recipe-modal-title" class="vp-section-header-title" style="margin: 0;"></h3>
+                <button type="button" id="recipe-modal-close-icon" class="vp-btn-ghost" style="padding: 6px 10px; border-color: transparent;">
+                    Close
+                </button>
+            </div>
+            <p id="recipe-modal-description" style="color: var(--text-secondary); margin-bottom: 24px;"></p>
+
+            <div class="vp-label-mono" style="margin-bottom: 12px;">Ingredients</div>
+            <ul id="recipe-modal-ingredients" style="color: var(--text-secondary); margin-bottom: 32px; padding-left: 16px;"></ul>
+
+            <div class="vp-label-mono" style="margin-bottom: 12px;">Instructions</div>
+            <ol id="recipe-modal-instructions" style="color: var(--text-secondary); margin-bottom: 32px; padding-left: 16px;"></ol>
+
+            <div style="display: inline-flex; gap: 12px;">
+                <a id="recipe-modal-full-link" href="" class="vp-btn-ghost">View Full Recipe</a>
+                <button type="button" id="recipe-modal-close-button" class="vp-btn-ghost" style="border-color: transparent;">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        {% for day in week_days %}
+        <div class="vp-card-tight" style="min-height: 280px; padding: 0;">
+            <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 4px;">
+                <span class="vp-label-mono">{{ day.day_name }}</span>
+                <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1.0;">{{ day.date|date:"M d" }}</span>
+            </div>
+
+            <div style="padding: 16px 24px 24px;">
+                {% for meal_type in planner_meal_types %}
+                <div class="planner-drop-zone" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="padding: 12px 0; {% if not forloop.last %}border-bottom: 1px solid var(--border-subtle);{% endif %}">
+                    <div class="vp-label-mono" style="text-transform: capitalize; margin-bottom: 12px;">{{ meal_type }}</div>
+                    {% for meal in day.meals|get_item:meal_type %}
+                    <div class="vp-card-tight planner-meal-card" draggable="true" data-meal-id="{{ meal.pk }}" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="padding: 12px 16px; margin-bottom: 8px; cursor: grab; background: var(--bg-elevated);">
+                        {% if meal.recipe %}
+                        <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
+                            <div style="font-weight: 500; font-size: 0.9375rem; margin-bottom: 8px;">{{ meal.recipe.title }}</div>
+                            <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                        <div style="display: inline-flex; gap: 12px;">
+                            <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link js-open-recipe-modal" style="font-size: 0.75rem;">View</button>
+                            <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link" style="font-size: 0.75rem;">Cook</a>
+                        </div>
+                        {% else %}
+                        <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
+                            <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ meal.custom_meal|default:meal.notes|truncatechars:30 }}</div>
+                            <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                        {% if meal_type == "dinner" %}
+                        {% if meal.side_dishes.all %}
+                        <div style="margin-top: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 4px;">
+                            {% for side in meal.side_dishes.all %}
+                            <div class="vp-label-mono" style="margin-bottom: 4px;">+ {{ side.recipe.title|default:side.custom_side }}</div>
+                            {% endfor %}
+                            <a href="{% url 'meal_planner:edit_meal' meal.pk %}" class="link" style="font-size: 0.75rem;">Edit sides</a>
+                        </div>
+                        {% else %}
+                        <a href="{% url 'meal_planner:edit_meal' meal.pk %}" class="link" style="font-size: 0.75rem; display: inline-block; margin-top: 8px; color: var(--text-muted);">+ Add sides</a>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <a href="{% url 'meal_planner:add_meal' %}?date={{ day.date|date:'Y-m-d' }}&type={{ meal_type }}" class="link" style="font-size: 0.75rem; display: inline-block; margin-top: 8px;">+ Add {{ meal_type }}</a>
+                </div>
+                {% endfor %}
+            </div>
         </div>
         {% endfor %}
     </div>
-    {% endfor %}
-</div>
+</section>
+{% endblock %}
 
 {% block extra_js %}
 <script>
@@ -193,18 +166,16 @@ function openRecipeModal(recipeId) {
             ingredientsEl.innerHTML = data.ingredients.map(i => `<li>${i.quantity} ${i.unit} ${i.name}</li>`).join('');
             
             const instructionsEl = document.getElementById('recipe-modal-instructions');
-            instructionsEl.innerHTML = data.instructions.map((i, idx) => `<li class="ml-2">${idx + 1}. ${i.step}</li>`).join('');
+            instructionsEl.innerHTML = data.instructions.map((i, idx) => `<li>${idx + 1}. ${i.step}</li>`).join('');
             
             document.getElementById('recipe-modal-full-link').href = recipeDetailPageTemplate.replace('999999', recipeId);
             
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            modal.style.display = 'flex';
         });
 }
 
 function closeModal() {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    modal.style.display = 'none';
 }
 
 function handleMealDragStart(event) {
@@ -316,5 +287,4 @@ function toggleLeftovers() {
     });
 }
 </script>
-{% endblock %}
 {% endblock %}

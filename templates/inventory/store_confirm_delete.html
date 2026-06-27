@@ -3,18 +3,20 @@
 {% block title %}Delete Store{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto">
-    <h1 class="text-2xl font-medium mb-6">Delete Store</h1>
+<section class="vp-section" style="max-width: 640px;">
+    <a href="{% url 'inventory:store_list' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Stores</a>
 
-    <div class="card-dark p-6 space-y-4">
-        <p>Are you sure you want to delete <strong>{{ object.name }}</strong>?</p>
-        <p style="color: var(--text-light-gray);">Inventory items currently linked to this store will be unlinked (their store will be set to none). This cannot be undone.</p>
+    <span class="vp-eyebrow">Delete Store</span>
+    <h1 class="vp-display-secondary">Delete &ldquo;{{ object.name }}&rdquo;?</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Inventory items currently linked to this store will be unlinked (their store will be set to none). This cannot be undone.</p>
 
-        <form method="post" class="flex justify-between mt-4" onsubmit="return confirm('Delete &quot;{{ object.name|escapejs }}&quot;?');">
-            {% csrf_token %}
-            <a href="{% url 'inventory:store_list' %}" class="btn-ghost">Cancel</a>
-            <button type="submit" class="btn-pill" style="background: #fc7981;">Delete Store</button>
-        </form>
-    </div>
-</div>
+    <form method="post" class="vp-card" style="margin-top: 40px;" onsubmit="return confirm('Delete &quot;{{ object.name|escapejs }}&quot;?');">
+        {% csrf_token %}
+        <hr class="vp-divider" style="margin: 0 0 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'inventory:store_list' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Delete Store</button>
+        </div>
+    </form>
+</section>
 {% endblock %}

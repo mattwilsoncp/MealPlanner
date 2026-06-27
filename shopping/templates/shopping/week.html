@@ -3,37 +3,32 @@
 {% block title %}Shopping List{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold">Shopping List</h1>
-            <p style="color: var(--text-secondary);">Week of {{ week_start }}</p>
-        </div>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <span class="vp-eyebrow">Shopping</span>
+        <h1 class="vp-display">What's left<br>to buy.</h1>
+        <p class="vp-subhead">Week of {{ week_start }}</p>
     </div>
+</section>
 
+<section class="vp-section">
     {% if shopping_items %}
-    <div class="grid gap-3">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
         {% for item in shopping_items %}
-        <div class="card px-5 py-3 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 min-w-0">
-                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--brand-primary);"></span>
-                <span class="font-medium">{{ item.name }}</span>
+        <div class="vp-card-tight" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px;">
+            <div style="display: inline-flex; align-items: center; gap: 16px;">
+                <span style="width: 6px; height: 6px; background: var(--text-primary); flex-shrink: 0;"></span>
+                <span style="font-weight: 500;">{{ item.name }}</span>
             </div>
-            <div class="flex items-center gap-3 flex-shrink-0">
-                <span class="text-sm" style="color: var(--text-secondary);">
-                    {{ item.quantity }} {{ item.unit }}
-                </span>
-            </div>
+            <span class="vp-label-mono" style="color: var(--text-secondary);">{{ item.quantity }} {{ item.unit }}</span>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty">
-        <h2 class="text-xl font-semibold mb-2">Nothing to buy</h2>
-        <p style="color: var(--text-secondary);">
-            No shopping items this week. Plan some meals or add items to your inventory to generate a list.
-        </p>
+    <div class="vp-card text-center" style="padding: 64px 32px;">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">Nothing to buy.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px;">No shopping items this week. Plan some meals to generate a list.</p>
     </div>
     {% endif %}
-</div>
+</section>
 {% endblock %}

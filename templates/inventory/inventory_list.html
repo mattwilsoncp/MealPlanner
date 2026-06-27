@@ -3,32 +3,37 @@
 {% block title %}Inventory{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div id="js-inventory-feedback" class="alert alert-success" role="status" style="display: none;"></div>
+<div id="js-inventory-feedback" class="alert" role="status" style="display: none;"></div>
 
-    <div class="flex flex-wrap justify-between gap-4 items-center">
-        <div>
-            <h1 class="text-2xl font-medium">Inventory</h1>
-            <p style="color: var(--text-light-gray);">Browse by category, filter quickly, and maintain household stock.</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'inventory:receipt_import' %}" class="btn-ghost">Import Receipt</a>
-            <a href="{% url 'inventory:inventory_expiring' %}" class="btn-ghost">Expiring Soon</a>
-            <a href="{% url 'inventory:inventory_expired' %}" class="btn-ghost">Expired</a>
-            <a href="{% url 'inventory:store_list' %}" class="btn-ghost">Stores</a>
-            <a href="{% url 'inventory:inventory_add' %}" class="btn-pill">+ Add Item</a>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div class="flex flex-wrap justify-between items-end gap-8">
+            <div>
+                <span class="vp-eyebrow">Inventory</span>
+                <h1 class="vp-display">What's in<br>your pantry.</h1>
+                <p class="vp-subhead">Browse by category, filter quickly, maintain household stock.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'inventory:inventory_add' %}" class="vp-btn-primary">+ Add Item</a>
+                <a href="{% url 'inventory:receipt_import' %}" class="vp-btn-ghost">Import Receipt</a>
+                <a href="{% url 'inventory:inventory_expiring' %}" class="vp-btn-ghost">Expiring</a>
+                <a href="{% url 'inventory:inventory_expired' %}" class="vp-btn-ghost">Expired</a>
+                <a href="{% url 'inventory:store_list' %}" class="vp-btn-ghost">Stores</a>
+            </div>
         </div>
     </div>
+</section>
 
-    <form method="get" class="card-dark p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+<section class="vp-section">
+    <form method="get" class="vp-card-tight mb-8">
+        <div class="grid md:grid-cols-4 gap-6">
             <div>
-                <label class="label-dark" for="q">Search</label>
-                <input id="q" type="text" name="q" value="{{ filters.q }}" class="input-dark" placeholder="Name, notes, barcode">
+                <label class="vp-label-mono mb-2" for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ filters.q }}" class="vp-input" placeholder="Name, notes, barcode">
             </div>
             <div>
-                <label class="label-dark" for="category">Category</label>
-                <select id="category" name="category" class="input-dark" style="width: auto;">
+                <label class="vp-label-mono mb-2" for="category">Category</label>
+                <select id="category" name="category" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                     <option value="">All categories</option>
                     {% for value,label in category_choices %}
                     <option value="{{ value }}" {% if filters.category == value %}selected{% endif %}>{{ label }}</option>
@@ -36,38 +41,40 @@
                 </select>
             </div>
             <div>
-                <label class="label-dark" for="location">Location</label>
-                <select id="location" name="location" class="input-dark" style="width: auto;">
+                <label class="vp-label-mono mb-2" for="location">Location</label>
+                <select id="location" name="location" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                     <option value="">All locations</option>
                     {% for value,label in location_choices %}
                     <option value="{{ value }}" {% if filters.location == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-        </div>
-        <div class="flex gap-4 mt-4">
-            <button type="submit" class="btn-pill-muted">Apply Filters</button>
-            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Clear</a>
+            <div class="flex items-end gap-3">
+                <button type="submit" class="vp-btn-ghost" style="flex: 1;">Apply</button>
+                <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost" style="flex: 1; border-color: transparent;">Clear</a>
+            </div>
         </div>
     </form>
 
     {% if not items %}
-    <div class="card-dark p-8 text-center">
-        <p class="text-lg font-medium">No inventory items found.</p>
-        <p style="color: var(--text-light-gray); margin-top: 8px;">Try relaxing filters or add an item.</p>
+    <div class="vp-card text-center">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">No inventory items.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px;">Try relaxing filters or add an item to get started.</p>
     </div>
     {% else %}
-        <div id="js-inventory-list">
+    <div id="js-inventory-list">
         {% for category, category_items in grouped_items.items %}
-        <div class="card-dark js-inventory-category">
-            <div class="p-4" style="border-bottom: 1px solid var(--border-dark);">
-                <h2 class="text-lg font-medium">
+        <div class="vp-card-tight js-inventory-category" style="margin-bottom: 24px; padding: 0;">
+            <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: baseline; justify-content: space-between;">
+                <h2 class="vp-section-header-title">
                     {% if category == "other" or not category %}Uncategorized{% else %}{{ category }}{% endif %}
-                    <span class="js-category-count" style="color: var(--text-mid-gray); font-weight: 400;" data-count="{{ category_items|length }}">({{ category_items|length }} {% if category_items|length == 1 %}item{% else %}items{% endif %})</span>
                 </h2>
+                <span class="vp-label-mono js-category-count" data-count="{{ category_items|length }}">
+                    {{ category_items|length }} {% if category_items|length == 1 %}ITEM{% else %}ITEMS{% endif %}
+                </span>
             </div>
-            <div class="p-4">
-                <table class="table-dark">
+            <div style="padding: 0 28px 24px;">
+                <table class="vp-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -76,15 +83,15 @@
                             <th>Store</th>
                             <th>Location</th>
                             <th>Expires</th>
-                            <th style="width: 100px; text-align: right;">Actions</th>
+                            <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in category_items %}
                         <tr>
                             <td>
-                                <div class="font-medium">{{ item.name }}</div>
-                                {% if item.barcode %}<div style="font-size: 12px; color: var(--text-mid-gray);">Barcode: {{ item.barcode }}</div>{% endif %}
+                                <div style="font-weight: 500;">{{ item.name }}</div>
+                                {% if item.barcode %}<div class="vp-label-mono" style="margin-top: 4px;">{{ item.barcode }}</div>{% endif %}
                             </td>
                             <td>{{ item.quantity }} {{ item.unit }}</td>
                             <td style="text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;">
@@ -94,21 +101,21 @@
                             <td>{{ item.location|default:"—" }}</td>
                             <td>
                                 {% if item.expiration_date %}
-                                    <span style="{% if item.expired %}color: #fc7981;{% elif item.expiring_soon %}color: var(--lemon-500);{% endif %}">
+                                    <span style="{% if item.expired %}color: var(--text-primary); font-weight: 600;{% elif item.expiring_soon %}color: var(--text-secondary);{% endif %}">
                                         {{ item.expiration_date|date:"M d, Y" }}
                                     </span>
                                 {% else %}—{% endif %}
                             </td>
                             <td style="text-align: right; white-space: nowrap;">
-                                <a href="{% url 'inventory:inventory_edit' item.pk %}" class="link-green">Edit</a>
-                                <form method="post" action="{% url 'inventory:inventory_delete' item.pk %}" class="js-inventory-delete-form" data-item-id="{{ item.pk }}" data-item-name="{{ item.name|escapejs }}" style="display: inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-ghost js-inventory-delete-btn" style="padding: 2px 6px; margin-left: 4px; color: var(--text-light-gray);" title="Delete {{ item.name }}" aria-label="Delete {{ item.name }}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <div class="vp-table-actions">
+                                    <a href="{% url 'inventory:inventory_edit' item.pk %}" class="link">Edit</a>
+                                    <form method="post" action="{% url 'inventory:inventory_delete' item.pk %}" class="js-inventory-delete-form" data-item-id="{{ item.pk }}" data-item-name="{{ item.name|escapejs }}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="vp-btn-ghost js-inventory-delete-btn" style="padding: 6px 10px; font-size: 0.6875rem; letter-spacing: 0.18em; color: var(--text-muted);" title="Delete {{ item.name }}" aria-label="Delete {{ item.name }}">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -117,14 +124,14 @@
             </div>
         </div>
         {% endfor %}
-        </div>
+    </div>
     {% endif %}
 
-    <div id="js-inventory-empty" class="card-dark p-8 text-center" style="display: none;">
-        <p class="text-lg font-medium">No inventory items found.</p>
-        <p style="color: var(--text-light-gray); margin-top: 8px;">Try relaxing filters or add an item.</p>
+    <div id="js-inventory-empty" class="vp-card text-center" style="display: none;">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">No inventory items.</p>
+        <p style="color: var(--text-secondary); margin-top: 16px;">Try relaxing filters or add an item to get started.</p>
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
@@ -149,7 +156,7 @@
         if (!countSpan) return;
         const next = Math.max(0, parseInt(countSpan.dataset.count || '0', 10) + delta);
         countSpan.dataset.count = String(next);
-        countSpan.textContent = '(' + next + (next === 1 ? ' item)' : ' items)');
+        countSpan.textContent = next + (next === 1 ? ' ITEM' : ' ITEMS');
     }
 
     function refreshEmptyState() {

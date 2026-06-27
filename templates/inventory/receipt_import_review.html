@@ -3,69 +3,74 @@
 {% block title %}Review Receipt Import{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="flex flex-wrap justify-between gap-4 items-center">
-        <div>
-            <h1 class="text-2xl font-medium">Review Receipt Items</h1>
-            <p style="color: var(--text-light-gray);">
-                {% if receipt.store_override %}
-                    Store: <strong>{{ receipt.store_override.name }}</strong>
-                    {% if receipt.store and receipt.store != receipt.store_override.name %}<span title="AI detected {{ receipt.store }} on the receipt, but you overrode it.">(overrode AI: "{{ receipt.store }}")</span>{% endif %}
-                {% elif receipt.store %}Store: {{ receipt.store }} (auto-detected)
-                {% else %}Store: not detected
-                {% endif %}
-                {% if receipt.purchased_at %} · Date: {{ receipt.purchased_at }}{% endif %}
-            </p>
-        </div>
-        <a href="{% url 'inventory:receipt_import' %}" class="btn-ghost">Start Over</a>
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <a href="{% url 'inventory:receipt_import' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Start over</a>
+        <span class="vp-eyebrow">Receipt Review</span>
+        <h1 class="vp-display">Review your<br>receipt.</h1>
+        <p class="vp-subhead">
+            {% if receipt.store_override %}
+                <span class="vp-label-mono" style="color: var(--text-secondary); margin-right: 16px;">Store</span>{{ receipt.store_override.name }}
+                {% if receipt.store and receipt.store != receipt.store_override.name %}<span style="color: var(--text-muted); margin-left: 16px;">overrode AI: "{{ receipt.store }}"</span>{% endif %}
+            {% elif receipt.store %}
+                <span class="vp-label-mono" style="color: var(--text-secondary); margin-right: 16px;">Store</span>{{ receipt.store }} <span style="color: var(--text-muted);">· auto-detected</span>
+            {% else %}
+                <span class="vp-label-mono" style="color: var(--text-secondary); margin-right: 16px;">Store</span>Not detected
+            {% endif %}
+            {% if receipt.purchased_at %}
+                <span class="vp-label-mono" style="color: var(--text-secondary); margin: 0 16px;">Date</span>{{ receipt.purchased_at }}
+            {% endif %}
+        </p>
     </div>
+</section>
 
+<section class="vp-section">
     {% if not items %}
-    <div class="card-dark p-8 text-center">
-        <p class="text-lg font-medium">No grocery items were extracted.</p>
-        <a href="{% url 'inventory:receipt_import' %}" class="btn-pill mt-4 inline-block">Try Another Receipt</a>
+    <div class="vp-card text-center">
+        <p class="vp-display-secondary" style="font-size: 1.5rem;">No items detected.</p>
+        <a href="{% url 'inventory:receipt_import' %}" class="vp-btn-ghost mt-6 inline-block">Try Another Receipt</a>
     </div>
     {% else %}
-    <form method="post" class="space-y-4">
+    <form method="post">
         {% csrf_token %}
         {% for item in items %}
-        <div class="card-dark p-4" {% if item.confidence == "low" or not item.name %}style="border: 1px solid rgba(251, 189, 65, 0.45);"{% endif %}>
-            <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" name="items-{{ forloop.counter0 }}-include" checked style="width: 18px; height: 18px; accent-color: var(--brand-primary);">
-                    <span class="font-medium">Include</span>
+        <div class="vp-card-tight" style="margin-bottom: 24px; {% if item.confidence == 'low' or not item.name %}border-color: var(--border-strong);{% endif %}">
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 24px;">
+                <label style="display: inline-flex; gap: 12px; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="items-{{ forloop.counter0 }}-include" checked class="checkbox">
+                    <span class="vp-label-mono" style="color: var(--text-primary); margin: 0;">Include</span>
                 </label>
-                <div class="flex flex-wrap gap-2 items-center">
+                <div style="display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                     {% if item.barcode_enrichment.status == "local" %}
-                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(62, 207, 142, 0.12); color: var(--brand-primary); border: 1px solid rgba(62, 207, 142, 0.3);" title="Barcode matches an item already in your inventory.">UPC · already in inventory</span>
+                    <span class="badge" title="Barcode matches an item already in your inventory.">UPC · in inventory</span>
                     {% elif item.barcode_enrichment.status == "upc" %}
-                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(95, 157, 255, 0.12); color: var(--brand-primary); border: 1px solid rgba(95, 157, 255, 0.3);" title="Verified via {{ item.barcode_enrichment.source }}">UPC verified{% if item.barcode_enrichment.source %} · {{ item.barcode_enrichment.source }}{% endif %}</span>
+                    <span class="badge" title="Verified via {{ item.barcode_enrichment.source }}">UPC verified{% if item.barcode_enrichment.source %} · {{ item.barcode_enrichment.source }}{% endif %}</span>
                     {% elif item.barcode_enrichment.status == "not_found" %}
-                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(251, 189, 65, 0.12); color: var(--lemon-500); border: 1px solid rgba(251, 189, 65, 0.3);" title="{{ item.barcode_enrichment.message }}">UPC not found</span>
+                    <span class="badge" title="{{ item.barcode_enrichment.message }}">UPC not found</span>
                     {% elif item.barcode_enrichment.status == "error" %}
-                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(252, 121, 129, 0.12); color: #fc7981; border: 1px solid rgba(252, 121, 129, 0.3);" title="{{ item.barcode_enrichment.message }}">UPC lookup error</span>
+                    <span class="badge" title="{{ item.barcode_enrichment.message }}">UPC lookup error</span>
                     {% endif %}
-                    <span class="text-xs px-2 py-1 rounded-full" style="background: rgba(95, 157, 255, 0.12); color: var(--brand-primary);">{{ item.confidence }} confidence</span>
+                    <span class="badge">{{ item.confidence }} confidence</span>
                 </div>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-4">
+            <div class="grid md:grid-cols-3 gap-x-12 gap-y-6">
                 <div class="md:col-span-3">
-                    <label class="label-dark">Receipt Description</label>
-                    <input type="text" name="items-{{ forloop.counter0 }}-receipt_description" value="{{ item.receipt_description }}" class="input-dark">
+                    <label class="vp-label-mono mb-2">Receipt Description</label>
+                    <input type="text" name="items-{{ forloop.counter0 }}-receipt_description" value="{{ item.receipt_description }}" class="vp-input">
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="label-dark">Inventory Name</label>
-                    <input type="text" name="items-{{ forloop.counter0 }}-name" value="{% if item.name %}{{ item.name }}{% elif item.barcode_enrichment.title %}{{ item.barcode_enrichment.title }}{% endif %}" class="input-dark" placeholder="Create or correct item name">
+                    <label class="vp-label-mono mb-2">Inventory Name</label>
+                    <input type="text" name="items-{{ forloop.counter0 }}-name" value="{% if item.name %}{{ item.name }}{% elif item.barcode_enrichment.title %}{{ item.barcode_enrichment.title }}{% endif %}" class="vp-input" placeholder="Create or correct item name">
                     {% if not item.name and item.barcode_enrichment.title %}
-                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">Suggested from UPC: {{ item.barcode_enrichment.title }}{% if item.barcode_enrichment.brand %} ({{ item.barcode_enrichment.brand }}{% if item.barcode_enrichment.size %}, {{ item.barcode_enrichment.size }}{% endif %}){% elif item.barcode_enrichment.size %} ({{ item.barcode_enrichment.size }}){% endif %}</p>
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">Suggested from UPC: {{ item.barcode_enrichment.title }}{% if item.barcode_enrichment.brand %} ({{ item.barcode_enrichment.brand }}{% if item.barcode_enrichment.size %}, {{ item.barcode_enrichment.size }}{% endif %}){% elif item.barcode_enrichment.size %} ({{ item.barcode_enrichment.size }}){% endif %}</p>
                     {% endif %}
                 </div>
 
                 <div>
-                    <label class="label-dark">Match Existing Item</label>
-                    <select name="items-{{ forloop.counter0 }}-existing_item" class="input-dark">
+                    <label class="vp-label-mono mb-2">Match Existing Item</label>
+                    <select name="items-{{ forloop.counter0 }}-existing_item" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                         <option value="">Create new item</option>
                         {% for existing in existing_items %}
                         <option value="{{ existing.pk }}">{{ existing.name }} ({{ existing.quantity }} {{ existing.unit }})</option>
@@ -74,13 +79,13 @@
                 </div>
 
                 <div>
-                    <label class="label-dark">Quantity</label>
-                    <input type="number" step="0.01" min="0" name="items-{{ forloop.counter0 }}-quantity" value="{{ item.quantity }}" class="input-dark">
+                    <label class="vp-label-mono mb-2">Quantity</label>
+                    <input type="number" step="0.01" min="0" name="items-{{ forloop.counter0 }}-quantity" value="{{ item.quantity }}" class="vp-input">
                 </div>
 
                 <div>
-                    <label class="label-dark">Unit</label>
-                    <select name="items-{{ forloop.counter0 }}-unit" class="input-dark">
+                    <label class="vp-label-mono mb-2">Unit</label>
+                    <select name="items-{{ forloop.counter0 }}-unit" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                         {% for value,label in unit_choices %}
                         <option value="{{ value }}" {% if item.unit == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -88,25 +93,25 @@
                 </div>
 
                 <div>
-                    <label class="label-dark">Price</label>
-                    <input type="text" name="items-{{ forloop.counter0 }}-price" value="{{ item.price }}" class="input-dark" placeholder="0.00">
+                    <label class="vp-label-mono mb-2">Price</label>
+                    <input type="text" name="items-{{ forloop.counter0 }}-price" value="{{ item.price }}" class="vp-input" placeholder="0.00">
                 </div>
 
                 <div>
-                    <label class="label-dark">Category</label>
-                    <select name="items-{{ forloop.counter0 }}-category" class="input-dark">
+                    <label class="vp-label-mono mb-2">Category</label>
+                    <select name="items-{{ forloop.counter0 }}-category" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                         {% for value,label in category_choices %}
                         <option value="{{ value }}" {% if item.category == value %}selected{% endif %}>{{ label }}{% if value == item.barcode_enrichment.category and item.category == "other" %} (suggested){% endif %}</option>
                         {% endfor %}
                     </select>
                     {% if item.category == "other" and item.barcode_enrichment.category %}
-                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">UPC suggests category: {{ item.barcode_enrichment.category }}.</p>
+                    <p class="vp-label-mono mt-2" style="color: var(--text-muted);">UPC suggests category: {{ item.barcode_enrichment.category }}.</p>
                     {% endif %}
                 </div>
 
                 <div>
-                    <label class="label-dark">Location</label>
-                    <select name="items-{{ forloop.counter0 }}-location" class="input-dark">
+                    <label class="vp-label-mono mb-2">Location</label>
+                    <select name="items-{{ forloop.counter0 }}-location" class="vp-input input-select" style="background-color: var(--bg-elevated); padding: 12px 16px; border: 1px solid var(--border-medium); border-radius: 4px;">
                         {% for value,label in location_choices %}
                         <option value="{{ value }}" {% if item.location == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -114,18 +119,18 @@
                 </div>
 
                 <div>
-                    <label class="label-dark">Barcode</label>
-                    <input type="text" name="items-{{ forloop.counter0 }}-barcode" value="{{ item.barcode }}" class="input-dark" placeholder="If visible on receipt">
+                    <label class="vp-label-mono mb-2">Barcode</label>
+                    <input type="text" name="items-{{ forloop.counter0 }}-barcode" value="{{ item.barcode }}" class="vp-input" placeholder="If visible on receipt">
                 </div>
             </div>
         </div>
         {% endfor %}
 
-        <div class="flex justify-end gap-3">
-            <a href="{% url 'inventory:inventory_list' %}" class="btn-ghost">Cancel</a>
-            <button type="submit" class="btn-pill">Add Selected Items</button>
+        <div class="flex justify-between gap-3 flex-wrap" style="margin-top: 32px;">
+            <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Add Selected Items</button>
         </div>
     </form>
     {% endif %}
-</div>
+</section>
 {% endblock %}

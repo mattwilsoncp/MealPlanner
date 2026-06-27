@@ -3,103 +3,74 @@
 {% block title %}{% if object %}Edit Meal{% else %}Add Meal{% endif %}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 max-w-lg">
-    <div class="card-dark">
-        <div class="p-6">
-            <h2 class="text-xl font-medium mb-4">
-                {% if object %}Edit Meal{% else %}Add Meal{% endif %}
-            </h2>
-            
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="mb-4">
-                    <label class="label-dark" for="id_meal_date">Date</label>
-                    {{ form.meal_date }}
-                    {% if form.meal_date.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.meal_date.errors }}</p>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-4">
-                    <label class="label-dark" for="id_meal_type">Meal Type</label>
-                    {{ form.meal_type }}
-                    {% if form.meal_type.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.meal_type.errors }}</p>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-4">
-                    <label class="label-dark" for="id_recipe">Recipe (optional)</label>
-                    {{ form.recipe }}
-                    {% if form.recipe.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.recipe.errors }}</p>
-                    {% endif %}
-                </div>
+<section class="vp-section" style="max-width: 640px;">
+    <a href="{% url 'meal_planner:planner' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Planner</a>
 
-                <div id="expiring-section" class="mb-4" style="display: none;">
-                    <div class="p-3 rounded" style="background: rgba(251, 189, 65, 0.08); border: 1px solid rgba(251, 189, 65, 0.25);">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="#fbbd41" viewBox="0 0 24 24" style="flex-shrink: 0;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                </svg>
-                                <span class="text-sm font-medium" style="color: #fbbd41;">Use Before It Spoils</span>
-                            </div>
-                            <span id="expiring-count" class="text-xs px-2 py-0.5 rounded-full" style="background: rgba(251,189,65,0.15); color: #fbbd41;"></span>
-                        </div>
-                        <div id="expiring-recipes" class="space-y-2"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="label-dark" for="id_custom_meal">Or Custom Meal Name</label>
-                    <p class="text-sm mb-2" style="color: var(--text-mid-gray);">Enter a custom meal if not using a recipe</p>
-                    {{ form.custom_meal }}
-                    {% if form.custom_meal.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.custom_meal.errors }}</p>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-4">
-                    <label class="label-dark" for="id_notes">Notes (optional)</label>
-                    {{ form.notes }}
-                    {% if form.notes.errors %}
-                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.notes.errors }}</p>
-                    {% endif %}
-                </div>
-                
-                <div class="border-t pt-4 mt-4" style="border-color: var(--border-subtle);">
-                    <h3 class="font-medium text-lg mb-3">Side Dishes</h3>
-                    
-                    <div id="side-dishes-container" class="space-y-3">
-                    </div>
-                    
-                    <button type="button" id="add-side-dish" class="btn-ghost mt-2" style="padding: 6.4px 12.8px; font-size: 14px;">
-                        + Add Side Dish
-                    </button>
-                </div>
-                
-                {% if form.non_field_errors %}
-                <div class="alert-dark mt-4">
-                    {% for error in form.non_field_errors %}
-                    <span>{{ error }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                
-                <div class="flex justify-end gap-2 mt-6">
-                    <a href="{% url 'meal_planner:planner' %}" class="btn-ghost">Cancel</a>
-                    <button type="submit" class="btn-pill" style="background: var(--brand-green); border-color: var(--brand-green);">Save Meal</button>
-                </div>
-            </form>
+    <span class="vp-eyebrow">{% if object %}Edit Meal{% else %}Add Meal{% endif %}</span>
+    <h1 class="vp-display-secondary">{% if object %}Edit meal{% else %}Add a meal{% endif %}</h1>
+
+    <form method="post" class="vp-card" style="margin-top: 40px;">
+        {% csrf_token %}
+
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="id_meal_date">Date</label>
+            {{ form.meal_date }}
+            {% if form.meal_date.errors %}<p class="vp-label-mono mt-2">{{ form.meal_date.errors }}</p>{% endif %}
         </div>
-    </div>
-</div>
 
-{% endblock %}
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="id_meal_type">Meal Type</label>
+            {{ form.meal_type }}
+            {% if form.meal_type.errors %}<p class="vp-label-mono mt-2">{{ form.meal_type.errors }}</p>{% endif %}
+        </div>
 
-{% block extra_js %}
+        <div class="mb-2">
+            <label class="vp-label-mono mb-2" for="id_recipe">Recipe <span style="color: var(--text-muted);">(optional)</span></label>
+            {{ form.recipe }}
+            {% if form.recipe.errors %}<p class="vp-label-mono mt-2">{{ form.recipe.errors }}</p>{% endif %}
+        </div>
+
+        <div id="expiring-section" style="display: none; margin-bottom: 24px; padding: 16px; background: var(--bg-elevated); border: 1px solid var(--border-medium); border-radius: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="vp-label-mono">Use Before It Spoils</span>
+                <span id="expiring-count" class="badge"></span>
+            </div>
+            <div id="expiring-recipes" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="id_custom_meal">Or Custom Meal Name</label>
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.875rem; margin-bottom: 12px;">Enter a custom meal if not using a recipe.</p>
+            {{ form.custom_meal }}
+            {% if form.custom_meal.errors %}<p class="vp-label-mono mt-2">{{ form.custom_meal.errors }}</p>{% endif %}
+        </div>
+
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="id_notes">Notes <span style="color: var(--text-muted);">(optional)</span></label>
+            {{ form.notes }}
+            {% if form.notes.errors %}<p class="vp-label-mono mt-2">{{ form.notes.errors }}</p>{% endif %}
+        </div>
+
+        <hr class="vp-divider" style="margin: 40px 0 24px;">
+
+        <h2 class="vp-section-header-title" style="margin-bottom: 16px; font-size: 1.25rem;">Side Dishes</h2>
+        <div id="side-dishes-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        <button type="button" id="add-side-dish" class="vp-btn-ghost" style="margin-top: 16px; align-self: flex-start;">+ Add Side Dish</button>
+
+        {% if form.non_field_errors %}
+        <div class="alert" style="margin-top: 24px;">
+            {% for error in form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
+        </div>
+        {% endif %}
+
+        <hr class="vp-divider" style="margin: 32px 0 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'meal_planner:planner' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Save Meal</button>
+        </div>
+    </form>
+</section>
+
 <script>
 let sideDishCount = 0;
 let recipes = [];
@@ -138,24 +109,18 @@ async function loadExpiringRecipes() {
             const ingredientBadges = recipe.matched_ingredients.map(i => {
                 const days = i.days_until_expiry;
                 const urgencyLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`;
-                return `<span class="inline-flex items-center gap-1" style="font-size: 0.7rem; padding: 1px 6px; border-radius: 9999px; background: rgba(251,189,65,0.12); color: #fbbd41; border: 1px solid rgba(251,189,65,0.25);">
-                    ${i.name}
-                    <span style="opacity: 0.6;">(${urgencyLabel})</span>
-                 </span>`;
+                return `<span class="badge" style="margin-right: 4px;">${i.name} <span style="color: var(--text-muted);">(${urgencyLabel})</span></span>`;
             }).join(' ');
 
             container.innerHTML += `
-                <div class="flex items-center justify-between gap-2 p-2 rounded cursor-pointer"
-                     style="background: var(--bg-near-black); border: 1px solid var(--border-dark);"
+                <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer;"
                      onclick="selectExpiringRecipe(${recipe.id})"
                      title="Uses: ${recipe.matched_ingredients.map(i => i.name).join(', ')}">
-                    <div>
-                        <div class="text-sm font-medium">${recipe.title}</div>
-                        <div class="flex flex-wrap gap-1 mt-1">${ingredientBadges}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 500; font-size: 0.9375rem;">${recipe.title}</div>
+                        <div style="margin-top: 8px; display: inline-flex; flex-wrap: wrap; gap: 4px;">${ingredientBadges}</div>
                     </div>
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-muted);">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
+                    <span style="color: var(--text-muted); font-family: var(--font-mono);">&rarr;</span>
                 </div>
             `;
         });
@@ -169,54 +134,52 @@ function selectExpiringRecipe(recipeId) {
     if (recipeSelect) {
         recipeSelect.value = recipeId;
         recipeSelect.dispatchEvent(new Event('change'));
-        // Scroll recipe select into view
         recipeSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
 
-function createSideDishForm(index, initialData = {}) {
+function createSideDishForm(index, initialData) {
+    initialData = initialData || {};
     const div = document.createElement('div');
-    div.className = 'p-3 rounded';
-    div.style.cssText = 'background: var(--bg-near-black); border: 1px solid var(--border-dark);';
+    div.className = 'side-dish-form';
+    div.style.cssText = 'background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 16px 20px;';
     div.dataset.index = index;
-    
+
     let recipeOptions = '<option value="">-- Select Recipe --</option>';
     recipes.forEach(r => {
         const selected = initialData.recipe_id === r.id ? 'selected' : '';
         recipeOptions += `<option value="${r.id}" ${selected}>${r.title}</option>`;
     });
-    
+
     div.innerHTML = `
-        <div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-medium">Side Dish ${index + 1}</span>
-            <button type="button" class="btn-ghost" onclick="removeSideDish(${index})" style="padding: 2px 6px; font-size: 12px; color: #fc7981;">Remove</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="vp-label-mono">Side Dish ${index + 1}</span>
+            <button type="button" class="vp-btn-ghost" style="padding: 6px 10px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" onclick="removeSideDish(${index})">Remove</button>
         </div>
-        <div class="mb-2">
-            <label class="label-dark" style="font-size: 0.75rem;">Recipe</label>
-            <select name="side_dishes-${index}-recipe" class="input-dark" style="font-size: 0.875rem;">
+        <div style="margin-bottom: 12px;">
+            <label class="vp-label-mono mb-2">Recipe</label>
+            <select name="side_dishes-${index}-recipe" class="vp-input input-select" style="width: 100%; background-color: var(--bg-card); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;">
                 ${recipeOptions}
             </select>
         </div>
-        <div class="mb-2">
-            <label class="label-dark" style="font-size: 0.75rem;">Or Custom Side Dish</label>
-            <input type="text" name="side_dishes-${index}-custom_side" 
-                   class="input-dark" style="font-size: 0.875rem;"
+        <div style="margin-bottom: 12px;">
+            <label class="vp-label-mono mb-2">Or Custom Side Dish</label>
+            <input type="text" name="side_dishes-${index}-custom_side"
+                   class="vp-input" style="background-color: var(--bg-card); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;"
                    value="${initialData.custom_side || ''}"
                    placeholder="Enter custom side dish">
         </div>
-        <div class="flex gap-2">
-            <div class="w-20">
-                <label class="label-dark" style="font-size: 0.75rem;">Order</label>
-                <input type="number" name="side_dishes-${index}-order" 
-                       class="input-dark" style="font-size: 0.875rem;"
-                       value="${initialData.order || index}">
-            </div>
+        <div>
+            <label class="vp-label-mono mb-2">Order</label>
+            <input type="number" name="side_dishes-${index}-order"
+                   class="vp-input" style="width: 90px; background-color: var(--bg-card); padding: 10px 14px; border: 1px solid var(--border-medium); border-radius: 4px;"
+                   value="${initialData.order || index}">
         </div>
     `;
     return div;
 }
 
-function addSideDish(initialData = {}) {
+function addSideDish(initialData) {
     const container = document.getElementById('side-dishes-container');
     const form = createSideDishForm(sideDishCount, initialData);
     container.appendChild(form);
@@ -225,7 +188,7 @@ function addSideDish(initialData = {}) {
 
 function removeSideDish(index) {
     const container = document.getElementById('side-dishes-container');
-    const form = container.querySelector(`[data-index="${index}"]`);
+    const form = container.querySelector('[data-index="' + index + '"]');
     if (form) {
         const deleteInput = document.createElement('input');
         deleteInput.type = 'hidden';
@@ -240,10 +203,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const recipeSelect = document.getElementById('id_recipe');
     const customMealInput = document.getElementById('id_custom_meal');
     const addSideDishBtn = document.getElementById('add-side-dish');
-    
+
     function toggleCustomMeal() {
         if (recipeSelect && customMealInput) {
-            const formControl = customMealInput.closest('.mb-4');
+            const formControl = customMealInput.closest('div');
             if (formControl) {
                 formControl.style.display = recipeSelect.value ? 'none' : 'block';
                 if (recipeSelect.value) {
@@ -252,15 +215,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     if (recipeSelect) {
         recipeSelect.addEventListener('change', toggleCustomMeal);
         toggleCustomMeal();
     }
-    
+
     if (addSideDishBtn) {
         loadRecipes().then(() => {
-            addSideDishBtn.addEventListener('click', () => addSideDish());
+            addSideDishBtn.addEventListener('click', function() { addSideDish(); });
         });
     }
 
