@@ -51,10 +51,51 @@
                 </button>
             </div>
 
-            {% if recipe.description %}
+            {% if recipe_description_display %}
             <div style="margin-top: 40px;">
                 <span class="vp-label-mono">Description</span>
-                <p style="margin-top: 12px; color: var(--text-secondary); white-space: pre-wrap; line-height: 1.6;">{{ recipe.description }}</p>
+                <p style="margin-top: 12px; color: var(--text-secondary); white-space: pre-wrap; line-height: 1.6;">{{ recipe_description_display }}</p>
+            </div>
+            {% endif %}
+
+            {% if transcript_log_path %}
+            <div style="margin-top: 24px;"
+                 x-data="transcriptDialog()">
+                <div class="vp-card-tight" style="padding: 16px 20px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span class="vp-label-mono">Source transcript</span>
+                            <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; word-break: break-all;">{{ transcript_log_path }}</p>
+                        </div>
+                        <button type="button"
+                                class="vp-btn-ghost"
+                                style="font-size: 0.75rem; padding: 8px 14px;"
+                                @click='openTranscript("{% url "recipes:recipe_transcript" recipe.pk %}")'>
+                            Read Full Transcript
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="transcriptOpen"
+                     x-cloak
+                     @keydown.escape.window="closeTranscript()"
+                     style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(33, 37, 41, 0.5); z-index: 50; padding: 16px;">
+                    <div @click.outside="closeTranscript()"
+                         class="vp-card"
+                         style="padding: 32px; max-width: 720px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; border-radius: 6px; box-shadow: 0 16px 48px rgba(33, 37, 41, 0.32);">
+                        <span class="vp-eyebrow">Transcript</span>
+                        <h2 class="vp-display-secondary" style="font-size: 1.25rem; margin: 8px 0 8px;">{{ recipe.title }}</h2>
+                        <p class="vp-label-mono" x-show="transcriptLoading" x-cloak style="color: var(--text-muted); margin-top: 16px;">Loading transcript&hellip;</p>
+                        <p class="vp-label-mono" x-show="!transcriptLoading && transcriptError" x-cloak style="color: var(--text-primary); padding: 12px 16px; background: var(--bg-elevated); border-radius: 4px; margin-top: 8px;"
+                           x-text="transcriptError"></p>
+                        <pre x-show="!transcriptLoading && !transcriptError" x-cloak
+                             style="font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.55; color: var(--text-primary); background: var(--bg-elevated); padding: 16px; border-radius: 4px; margin: 12px 0 0; white-space: pre-wrap; overflow-y: auto; max-height: 60vh; flex: 1 1 auto; min-height: 0;"
+                             x-text="transcriptContent"></pre>
+                        <div style="display: inline-flex; gap: 12px; margin-top: 20px;">
+                            <button type="button" class="vp-btn-ghost" @click="closeTranscript()">Close</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             {% endif %}
 
@@ -191,6 +232,50 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+function transcriptDialog() {
+    return {
+        transcriptOpen: false,
+        transcriptLoading: false,
+        transcriptError: '',
+        transcriptContent: '',
+        transcriptUrl: '',
+
+        openTranscript(url) {
+            this.transcriptUrl = url;
+            this.transcriptOpen = true;
+            this.transcriptLoading = true;
+            this.transcriptError = '';
+            this.transcriptContent = '';
+            const self = this;
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (response) {
+                    if (!response.ok) {
+                        return response.json().then(function (data) {
+                            throw new Error(data && data.message ? data.message : ('HTTP ' + response.status));
+                        }).catch(function () {
+                            throw new Error('HTTP ' + response.status);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    self.transcriptContent = data && data.content ? data.content : '';
+                    self.transcriptLoading = false;
+                })
+                .catch(function (err) {
+                    self.transcriptError = 'Could not load transcript: ' + (err && err.message ? err.message : 'unknown error');
+                    self.transcriptLoading = false;
+                });
+        },
+
+        closeTranscript() {
+            this.transcriptOpen = false;
+            this.transcriptError = '';
+            this.transcriptContent = '';
+        }
+    };
 }
 </script>
 {% endblock %}
