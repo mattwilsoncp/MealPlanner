@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from household.models import Household
-from inventory.models import InventoryItem
+from inventory.models import InventoryItem, Store
 from inventory.services.receipt_barcode_enrichment import (
     BARCODE_PATTERN,
     enrich_receipt_items,
@@ -502,3 +502,247 @@ class ReceiptImportViewCallsEnrichmentTests(TestCase):
         self.assertEqual(positional_args[0], [
             {"receipt_description": "X", "name": "Milk", "barcode": "012345678905"}
         ])
+
+
+class ReceiptImportStoreOverrideTests(TestCase):
+    """Verify the receipt-import <store> override behaves end-to-end:
+    chosen Store is honored at review-submit time; AI-extracted name is
+    used as fallback; out-of-household stores are ignored."""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Override Home")
+        self.other_household = Household.objects.create(name="Override Other")
+        self.user = user_model.objects.create_user(
+            username="override-user",
+            password="pass1234",
+            household=self.household,
+        )
+        self.chosen_store = Store.objects.create(
+            household=self.household, name="My Closest Mart"
+        )
+        Store.objects.create(
+            household=self.other_household, name="Foreign Mart"
+        )
+        self.client.force_login(self.user)
+
+    def _post_receipt_import(self, payload):
+        from inventory.views import ReceiptImportView
+        from PIL import Image as PILImage
+        from io import BytesIO
+
+        image_file = BytesIO()
+        PILImage.new("RGB", (10, 10), "white").save(image_file, format="JPEG")
+        image_file.name = "receipt.jpg"
+        image_file.seek(0)
+        data = {"image": image_file, "model": "google/gemini-2.0-flash-001"}
+        data.update(payload)
+        normalized_item = {
+            "receipt_description": "MLK",
+            "name": "Milk",
+            "quantity": "1",
+            "unit": "piece",
+            "category": "dairy",
+            "location": "refrigerator",
+            "price": "4.50",
+            "barcode": "012345678905",
+            "confidence": "high",
+        }
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}), patch(
+            "inventory.views.OpenAI"
+        ) as mock_openai, patch(
+            "inventory.views.enrich_receipt_items"
+        ) as mock_enrich, patch.object(
+            ReceiptImportView, "_normalize_items"
+        ) as mock_normalize:
+            fake_response = type(
+                "R",
+                (),
+                {
+                    "choices": [
+                        type(
+                            "C",
+                            (),
+                            {"message": type("M", (), {"content": "{}"})()},
+                        )()
+                    ]
+                },
+            )()
+            mock_openai.return_value.chat.completions.create.return_value = fake_response
+            mock_normalize.return_value = [normalized_item]
+            mock_enrich.return_value = ({}, [normalized_item])
+            return self.client.post(reverse("inventory:receipt_import"), data=data)
+
+    def _seed_session_with_parsed_store(self, store_name, store_override_id=None):
+        self.client.session["receipt_import"] = {
+            "store": store_name,
+            "purchased_at": "",
+            "items": [
+                {
+                    "receipt_description": "MLK",
+                    "name": "Milk",
+                    "quantity": "1",
+                    "unit": "piece",
+                    "category": "dairy",
+                    "location": "refrigerator",
+                    "price": "4.50",
+                    "barcode": "012345678905",
+                    "confidence": "high",
+                }
+            ],
+            "barcode_enrichment": {},
+            "store_override_id": store_override_id,
+        }
+        self.client.session.save()
+
+    def test_form_writes_chosen_store_as_session_override(self):
+        response = self._post_receipt_import({"store": str(self.chosen_store.pk)})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            self.client.session["receipt_import"]["store_override_id"],
+            self.chosen_store.pk,
+        )
+
+    def test_form_left_on_auto_detect_does_not_set_override(self):
+        response = self._post_receipt_import({})
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNone(self.client.session["receipt_import"]["store_override_id"])
+
+    def test_form_ignores_chosen_store_from_other_household(self):
+        foreign_store = Store.objects.get(household=self.other_household)
+        with patch("inventory.forms.ReceiptImportForm.__init__") as _:
+            pass  # form ignores out-of-household via queryset filtering
+        # Manually post a foreign pk via QS override — Django's ModelChoiceField
+        # validates the chosen value against queryset, so an invalid pk is rejected.
+        from inventory.forms import ReceiptImportForm
+        form = ReceiptImportForm(
+            data={"store": str(foreign_store.pk)},
+            household=self.household,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("store", form.errors)
+
+    def test_review_post_links_imported_items_to_chosen_store(self):
+        import_response = self._post_receipt_import({"store": str(self.chosen_store.pk)})
+        self.assertEqual(import_response.status_code, 302)
+        response = self.client.post(
+            reverse("inventory:receipt_import_review"),
+            data={
+                "items-0-include": "on",
+                "items-0-name": "Milk",
+                "items-0-receipt_description": "MLK",
+                "items-0-quantity": "1",
+                "items-0-unit": "piece",
+                "items-0-category": "dairy",
+                "items-0-location": "refrigerator",
+                "items-0-barcode": "012345678905",
+                "items-0-price": "4.50",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = InventoryItem.objects.get(name="Milk")
+        self.assertEqual(created.store, self.chosen_store)
+
+    def test_review_post_falls_back_to_ai_store_when_no_override(self):
+        # AI returns a non-empty store name; with no override, the AI store
+        # should be resolved (created) and applied to the imported item.
+        from inventory.views import ReceiptImportView
+
+        normalized_item = {
+            "receipt_description": "MLK",
+            "name": "Milk",
+            "quantity": "1",
+            "unit": "piece",
+            "category": "dairy",
+            "location": "refrigerator",
+            "price": "4.50",
+            "barcode": "012345678905",
+            "confidence": "high",
+        }
+        from PIL import Image as PILImage
+        from io import BytesIO
+
+        image_file = BytesIO()
+        PILImage.new("RGB", (10, 10), "white").save(image_file, format="JPEG")
+        image_file.name = "receipt.jpg"
+        image_file.seek(0)
+
+        ai_response_content = (
+            '{"store": "From AI Receipt", "items": [{"receipt_description": "MLK"}]}'
+        )
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}), patch(
+            "inventory.views.OpenAI"
+        ) as mock_openai, patch(
+            "inventory.views.enrich_receipt_items"
+        ) as mock_enrich, patch.object(
+            ReceiptImportView, "_normalize_items"
+        ) as mock_normalize:
+            fake_response = type(
+                "R",
+                (),
+                {
+                    "choices": [
+                        type(
+                            "C",
+                            (),
+                            {"message": type("M", (), {"content": ai_response_content})()},
+                        )()
+                    ]
+                },
+            )()
+            mock_openai.return_value.chat.completions.create.return_value = fake_response
+            mock_normalize.return_value = [normalized_item]
+            mock_enrich.return_value = ({}, [normalized_item])
+            self.client.post(
+                reverse("inventory:receipt_import"),
+                data={"image": image_file, "model": "google/gemini-2.0-flash-001"},
+            )
+
+        self.assertFalse(
+            Store.objects.filter(household=self.household, name="From AI Receipt").exists()
+        )
+        response = self.client.post(
+            reverse("inventory:receipt_import_review"),
+            data={
+                "items-0-include": "on",
+                "items-0-name": "Milk",
+                "items-0-receipt_description": "MLK",
+                "items-0-quantity": "1",
+                "items-0-unit": "piece",
+                "items-0-category": "dairy",
+                "items-0-location": "refrigerator",
+                "items-0-barcode": "012345678905",
+                "items-0-price": "4.50",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = InventoryItem.objects.get(name="Milk")
+        self.assertIsNotNone(created.store)
+        self.assertEqual(created.store.name, "From AI Receipt")
+        self.assertEqual(created.store.household, self.household)
+
+    def test_review_post_with_override_blocks_ai_extracted_store_creation(self):
+        # When user picks a store, the AI-extracted store name should NOT
+        # silently create a new Store row.
+        import_response = self._post_receipt_import(
+            {"store": str(self.chosen_store.pk)}
+        )
+        self.assertEqual(import_response.status_code, 302)
+        response = self.client.post(
+            reverse("inventory:receipt_import_review"),
+            data={
+                "items-0-include": "on",
+                "items-0-name": "Milk",
+                "items-0-receipt_description": "MLK",
+                "items-0-quantity": "1",
+                "items-0-unit": "piece",
+                "items-0-category": "dairy",
+                "items-0-location": "refrigerator",
+                "items-0-barcode": "012345678905",
+                "items-0-price": "4.50",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            Store.objects.filter(household=self.household).count(), 1
+        )

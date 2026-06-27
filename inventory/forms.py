@@ -99,3 +99,18 @@ class ReceiptImportForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={"class": "input-dark"}),
     )
+    store = forms.ModelChoiceField(
+        label="Receipt From (Optional)",
+        queryset=Store.objects.none(),
+        required=False,
+        empty_label="Auto-detect from receipt",
+        widget=forms.Select(attrs={"class": "input-dark"}),
+        help_text="Override the AI-detected store; leave on auto-detect to trust the receipt.",
+    )
+
+    def __init__(self, *args, household=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if household is not None:
+            self.fields["store"].queryset = Store.objects.filter(household=household)
+        else:
+            self.fields["store"].queryset = Store.objects.none()

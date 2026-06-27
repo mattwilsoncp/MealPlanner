@@ -37,6 +37,17 @@
                     {% endif %}
                 </div>
 
+                <div class="mb-6">
+                    <label class="label-dark" for="id_store">Receipt From</label>
+                    {{ form.store }}
+                    {% if form.store.errors %}
+                    <p class="text-sm mt-1" style="color: #fc7981;">{{ form.store.errors|join:", " }}</p>
+                    {% endif %}
+                    {% if form.store.help_text %}
+                    <p class="text-xs mt-1" style="color: var(--text-light-gray);">{{ form.store.help_text }}</p>
+                    {% endif %}
+                </div>
+
                 {% if form.non_field_errors %}
                 <div class="alert-dark mb-4">{{ form.non_field_errors }}</div>
                 {% endif %}

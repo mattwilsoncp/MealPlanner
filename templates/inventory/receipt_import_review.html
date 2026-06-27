@@ -8,7 +8,12 @@
         <div>
             <h1 class="text-2xl font-medium">Review Receipt Items</h1>
             <p style="color: var(--text-light-gray);">
-                {% if receipt.store %}Store: {{ receipt.store }}{% endif %}
+                {% if receipt.store_override %}
+                    Store: <strong>{{ receipt.store_override.name }}</strong>
+                    {% if receipt.store and receipt.store != receipt.store_override.name %}<span title="AI detected {{ receipt.store }} on the receipt, but you overrode it.">(overrode AI: "{{ receipt.store }}")</span>{% endif %}
+                {% elif receipt.store %}Store: {{ receipt.store }} (auto-detected)
+                {% else %}Store: not detected
+                {% endif %}
                 {% if receipt.purchased_at %} · Date: {{ receipt.purchased_at }}{% endif %}
             </p>
         </div>
