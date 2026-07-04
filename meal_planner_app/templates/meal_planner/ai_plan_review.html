@@ -418,6 +418,16 @@
         const previousDayStatus = dayCard ? dayCard.dataset.dayStatus : null;
         return submitViaFetch(form).then(function (payload) {
             if (!payload.success) {
+                if (payload && typeof payload.error === "string" &&
+                        payload.error.toLowerCase().indexOf("no pending ai plan") === 0) {
+                    // The session lost the plan between the page load and
+                    // this POST (expired, cleared, or different browser
+                    // profile). Reload so the messages framework can show
+                    // the proper flash and redirect — same UX the
+                    // non-AJAX flow gives the user.
+                    window.location.reload();
+                    return;
+                }
                 if (button) {
                     button.disabled = false;
                 }
@@ -461,6 +471,13 @@
         button.disabled = true;
         return submitViaFetch(form).then(function (payload) {
             if (!payload.success) {
+                if (payload && typeof payload.error === "string" &&
+                        payload.error.toLowerCase().indexOf("no pending ai plan") === 0) {
+                    // Session lost the plan — reload so messages framework
+                    // can route the user to the planner with a flash.
+                    window.location.reload();
+                    return;
+                }
                 button.disabled = false;
                 window.alert(
                     (payload && payload.error) || "Could not update the day."
