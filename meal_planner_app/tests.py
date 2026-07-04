@@ -497,10 +497,14 @@ class PlannerHomeViewTests(TestCase):
         expected_href = reverse(
             "recipes:recipe_detail", args=[self.recipe.pk]
         )
-        # Find every <a…>View</a> in the actions row and check the View
-        # link points at the recipe detail and is ``draggable="false"``.
+        # The actions row carries a ``View`` anchor that points at the
+        # recipe detail page and is ``draggable="false"`` so its parent
+        # card's drag handler cannot suppress its click. It uses the
+        # vp-btn-ghost class — small but unmistakable button shape —
+        # sat inside a dashed-border divider so users don't miss it.
         pattern = (
             rf'<a\s+href="{re.escape(expected_href)}"\s+draggable="false"'
+            rf'[^>]*class="vp-btn-ghost planner-meal-action"'
             rf'[^>]*>\s*View\s*</a>'
         )
         self.assertRegex(
@@ -509,7 +513,9 @@ class PlannerHomeViewTests(TestCase):
             "Expected a View link in the planner actions row pointing "
             "at recipe_detail with draggable=\"false\".",
         )
-        # The recipe title is still rendered (it's just plain text now).
+        # The divider line is rendered above the action row.
+        self.assertIn("border-top: 1px dashed var(--border-subtle)", body)
+        # The recipe title is still rendered.
         self.assertIn("Test Recipe", body)
 
 
