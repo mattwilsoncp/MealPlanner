@@ -145,6 +145,12 @@
                         </div>
                         {# Visual divider so the action row is unmistakable. #}
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); display: flex; flex-wrap: wrap; gap: 10px;">
+                            <a href="{% url 'recipes:recipe_detail' meal.recipe.pk %}"
+                               draggable="false"
+                               class="vp-btn-ghost planner-meal-action"
+                               style="padding: 4px 12px; font-size: 0.75rem; font-weight: 500;">
+                                View
+                            </a>
                             <button type="button"
                                     draggable="false"
                                     data-recipe-id="{{ meal.recipe.pk }}"

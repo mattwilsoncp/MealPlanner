@@ -474,14 +474,15 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("dinner", response.context["meal_types"])
         self.assertIn("snack", response.context["meal_types"])
 
-    def test_recipe_meal_actions_are_preview_and_cook(self):
-        """The action row on a recipe-linked meal is exactly two buttons:
-        ``Preview`` (modal) + ``Cook`` (cooking-reconcile). The noisy
-        ``View`` direct link is gone — opening the modal already
-        includes a ``View Full Recipe`` anchor pointing at
-        ``recipes:recipe_detail``, so an extra top-level button is
-        redundant. All action controls are ``draggable="false"`` so the
-        parent planner-meal-card's drag handler can't suppress clicks."""
+    def test_recipe_meal_actions_are_view_preview_and_cook(self):
+        """The action row on a recipe-linked meal is three controls:
+        ``View`` (full recipe page), ``Preview`` (modal summary), and
+        ``Cook`` (cooking-reconcile). All three carry
+        ``draggable="false"`` so the parent planner-meal-card's drag
+        handler can't suppress clicks. The user explicitly asked for
+        the direct ``View`` link back after dropping it in the previous
+        commit: Preview shows the same content in a modal, but the
+        full page is the canonical place to read the recipe."""
         import re
         self.client.login(username="alice", password="pass1234")
         MealPlan.objects.create(
@@ -494,55 +495,68 @@ class PlannerHomeViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.content.decode()
 
-        # Whitespace-tolerant assertions — the template renders each
-        # attribute on its own line for readability.
         def compact_attr(tag):
             return re.sub(r"\s+", " ", tag)
 
-        # Preview button: opens the modal by binding to
-        # ``js-open-recipe-modal`` and carrying a ``data-recipe-id``.
-        preview_re = re.compile(
-            r'<button[^>]*class="vp-btn-ghost planner-meal-action '
-            r'js-open-recipe-modal"[^>]*>'
+        # Anchors / buttons in the recipe-meal actions row carry the
+        # ``planner-meal-action`` class and ``draggable="false"``.
+        action_re = re.compile(
+            r'<(a|button)\b[^>]*class="vp-btn-ghost planner-meal-action'
+            r'[^"]*"[^>]*>[^<]*</\1>'
         )
-        preview_open = preview_re.search(body)
-        self.assertIsNotNone(preview_open, "Preview button not found.")
-        self.assertIn(
-            f'data-recipe-id="{self.recipe.pk}"',
-            compact_attr(preview_open.group(0)),
-        )
-        self.assertIn("draggable=\"false\"", compact_attr(preview_open.group(0)))
+        actions = []
+        for m in action_re.finditer(body):
+            actions.append((m.group(1), compact_attr(m.group(0)).strip()))
 
-        # Cook button: anchors straight at the cooking-reconcile screen.
-        meal = MealPlan.objects.get(recipe=self.recipe)
-        cook_href = reverse(
-            "meal_planner:cooking_reconcile", args=[meal.pk]
-        )
-        cook_re = re.compile(
-            r'<a[^>]*class="vp-btn-ghost planner-meal-action"[^>]*>'
-        )
-        cook_match = cook_re.search(body)
-        self.assertIsNotNone(cook_match, "Cook anchor not found.")
-        self.assertIn(
-            f'href="{cook_href}"', compact_attr(cook_match.group(0))
-        )
-        self.assertIn("draggable=\"false\"", compact_attr(cook_match.group(0)))
-
-        # No ``View`` anchor pointing at recipe_detail from the
-        # actions row — that was the drop. Reject any anchor that
-        # uses the planner-meal-action class and hrefs at recipes.
-        recipe_href = reverse(
+        # Locator helpers scoped to the recipe card's three buttons.
+        view_href = reverse(
             "recipes:recipe_detail", args=[self.recipe.pk]
         )
-        meta_re = re.compile(
-            r'<a[^>]*class="vp-btn-ghost planner-meal-action"[^>]*>'
+        cook_meal = MealPlan.objects.get(recipe=self.recipe)
+        cook_href = reverse(
+            "meal_planner:cooking_reconcile", args=[cook_meal.pk]
         )
-        for m in meta_re.finditer(body):
-            self.assertNotIn(
-                f'href="{recipe_href}"',
-                compact_attr(m.group(0)),
-                msg="The redundant View anchor must stay dropped.",
-            )
+
+        view_present = any(
+            tag == "a"
+            and f'href="{view_href}"' in compact_attr(action_html)
+            and "View" in compact_attr(action_html)
+            and 'draggable="false"' in compact_attr(action_html)
+            for tag, action_html in actions
+        )
+        cookbook_button_present = any(
+            tag == "button"
+            and "js-open-recipe-modal" in compact_attr(action_html)
+            and f'data-recipe-id="{self.recipe.pk}"' in compact_attr(action_html)
+            and "Preview" in compact_attr(action_html)
+            and 'draggable="false"' in compact_attr(action_html)
+            for tag, action_html in actions
+        )
+        cook_present = any(
+            tag == "a"
+            and f'href="{cook_href}"' in compact_attr(action_html)
+            and "Cook" in compact_attr(action_html)
+            and 'draggable="false"' in compact_attr(action_html)
+            for tag, action_html in actions
+        )
+
+        # One prev test mistakenly anchored `meal-edit` URLs here; that
+        # isn't currently wired. If a future commit adds Edit Meal to
+        # the recipe-meal branch, loosen the negative assertion below.
+        meal_edit_href_prefix = reverse(
+            "meal_planner:edit_meal", args=[0]
+        ).rsplit("/", 1)[0]
+        actions_in_lines = "\n".join(
+            compact_attr(html) for _, html in actions
+        )
+        # The action row carries View + Preview + Cook, all drag-locked.
+        self.assertTrue(view_present, "Missing View link to recipe_detail.")
+        self.assertTrue(
+            cookbook_button_present, "Missing Preview modal button."
+        )
+        self.assertTrue(cook_present, "Missing Cook anchor.")
+        # And, for now, no Edit Meal anchor on the recipe-meal branch.
+        self.assertNotIn(meal_edit_href_prefix, actions_in_lines)
 
         # Divider is still drawn above the action row.
         self.assertIn("border-top: 1px dashed var(--border-subtle)", body)
