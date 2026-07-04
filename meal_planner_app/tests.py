@@ -3232,6 +3232,70 @@ class AiPlanDayActionViewTests(TestCase):
         # Did not include a single-meal sub-payload.
         self.assertNotIn("meal", body)
 
+    def test_ajax_reject_meal_iso_week_start_matches_session_key(self):
+        """Regression: the review page used to send the long-format
+        ``{{ week_start }}`` ``value`` (e.g. "June 29, 2026"), which
+        diverged from the ISO ``2026-06-29`` written by the generator's
+        ``date:'Y-m-d'`` filter. The session lookup then failed even
+        though the plan was present. The form now serializes with the
+        ISO filter; this test pins the contract."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                # ISO — must match the session key the generator wrote.
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+
+    def test_ajax_reject_meal_long_format_week_start_does_not_match(self):
+        """The long format that the buggy {{ week_start }} used to send
+        (e.g. ``June 29, 2026``) should *not* match the session key —
+        if this ever changes, the AJAX path will silently regress to
+        "No pending AI plan found" errors. Locked in to fail loud."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                # Same date as str(self.week_start) but in Django's long
+                # default format — exactly what ``{{ week_start }}``
+                # rendered before the render-side filter was added.
+                "week_start": self.week_start.strftime("%B %-d, %Y"),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["success"])
+
+    def test_review_page_renders_iso_week_start_in_all_hidden_inputs(self):
+        """Every ``week_start`` hidden input on the rendered review page
+        must use ISO ``YYYY-MM-DD`` — otherwise the AJAX POST sends the
+        wrong key and looks like a session-loss bug."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.get(
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        iso_value = str(self.week_start)
+        long_value = self.week_start.strftime("%B %-d, %Y")
+        # The ISO value appears in the markup; the long format must NOT.
+        self.assertIn(f'value="{iso_value}"', body)
+        # Make sure no form-value still ships the legacy long format.
+        self.assertNotIn(f'value="{long_value}"', body)
+
 
 class AiPlanSaveViewTests(TestCase):
     """Tests for AiPlanSaveView (POST /ai-plan/save/)."""
