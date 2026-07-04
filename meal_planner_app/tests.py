@@ -8,7 +8,7 @@ import httpx
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.test import TestCase, RequestFactory
+from django.test import TestCase, RequestFactory, TransactionTestCase
 from django.urls import reverse
 
 from household.models import Household
@@ -2388,8 +2388,50 @@ class ResponseParserTests(TestCase):
 # =============================================================================
 
 
-class GenerateAiPlanViewTests(TestCase):
-    """Tests for GenerateAiPlanView."""
+def _consume_events(response):
+    """Drain a ``StreamingHttpResponse`` from the test client into JSON events.
+
+    The AI plan view streams ``text/event-stream`` with one ``data: {...}``
+    payload per line, separated by blank lines. The test client returns a
+    normal ``HttpResponse`` whose ``streaming_content`` holds the body;
+    this helper joins decoded chunks and feeds each ``data:`` line to
+    ``json.loads``.
+    """
+    raw = b"".join(
+        chunk if isinstance(chunk, bytes) else chunk.encode("utf-8")
+        for chunk in response.streaming_content
+    ).decode("utf-8")
+    events = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if line.startswith("data:"):
+            payload = line.split(":", 1)[1].strip()
+            try:
+                events.append(json_loads(payload))
+            except ValueError:
+                continue
+    return events
+
+
+def _run_progress_then_return(payload, sink):
+    """Append a couple of fake progress labels so tests can assert streaming."""
+    sink.append("Reading model response")
+    sink.append("Saving review data")
+    return payload
+
+
+class GenerateAiPlanViewTests(TransactionTestCase):
+    """Tests for GenerateAiPlanView.
+
+    Uses ``TransactionTestCase`` rather than plain ``TestCase`` because the
+    view runs the AI service on a worker ``threading.Thread`` whose reads
+    would otherwise deadlock on the test class's outer transaction
+    (SQLite holds a write lock for the duration of the parent's BEGIN).
+    """
+
+    # Reset between tests so threads left over from a previous run cannot
+    # leak into the next case's MealPlan state.
+    reset_sequences = False
 
     def setUp(self):
         self.household = Household.objects.create(name="AI View Test Household")
@@ -2463,7 +2505,7 @@ class GenerateAiPlanViewTests(TestCase):
 
     @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
     def test_post_redirects_to_review_on_success(self, mock_api_call):
-        """Successful AI generation redirects to review page and stores in session."""
+        """Successful AI generation streams a ready event + redirect URL and stores in session."""
         mock_api_call.return_value = self.valid_ai_response
 
         self.client.login(username="aiview", password="pass1234")
@@ -2472,24 +2514,43 @@ class GenerateAiPlanViewTests(TestCase):
             {"week_start": str(self.week_start)},
         )
 
-        # Should redirect to review page (not directly create meals)
+        # Streaming response: 200 OK with text/event-stream body.
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response["Content-Type"].startswith("text/event-stream"))
+        self.assertEqual(response["Cache-Control"], "no-cache")
+        # No MealPlan rows should have been created (saved later on review).
         meals = MealPlan.objects.filter(household=self.household)
         self.assertEqual(meals.count(), 0)
-        self.assertRedirects(
-            response,
+
+        # Drain the stream and parse events.
+        events = _consume_events(response)
+        terminal = events[-1]
+        self.assertEqual(terminal["kind"], "ready")
+        self.assertEqual(
+            terminal["redirect_url"],
             f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
-            fetch_redirect_response=False,
         )
 
-        # Session data should exist
+        # The session generator persists the plan via
+        # ``request.session.save()`` because the SessionMiddleware save
+        # already ran before the WSGI worker iterated the body. Verify the
+        # DB-backed session store has the right payload for the next
+        # request (the review page) to pick up.
+        from django.contrib.sessions.models import Session
+
         session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
-        self.assertIn(session_key, self.client.session)
-        plan_data = self.client.session[session_key]
+        matching = []
+        for session_obj in Session.objects.all():
+            decoded = session_obj.get_decoded()
+            if session_key in decoded:
+                matching.append(decoded[session_key])
+        self.assertEqual(len(matching), 1)
+        plan_data = matching[0]
         self.assertEqual(plan_data["week_start"], str(self.week_start))
 
     @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
     def test_post_handles_api_error(self, mock_api_call):
-        """API error shows message and redirects."""
+        """API error streams an error event so the client can surface it."""
         mock_api_call.side_effect = ValueError("API connection failed")
 
         self.client.login(username="aiview", password="pass1234")
@@ -2498,9 +2559,14 @@ class GenerateAiPlanViewTests(TestCase):
             {"week_start": str(self.week_start)},
         )
 
+        self.assertEqual(response.status_code, 200)
         meals = MealPlan.objects.filter(household=self.household)
         self.assertEqual(meals.count(), 0)
-        self.assertEqual(response.status_code, 302)
+
+        events = _consume_events(response)
+        terminal = events[-1]
+        self.assertEqual(terminal["kind"], "error")
+        self.assertIn("API connection failed", terminal["message"])
 
     @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
     def test_marks_skipped_for_filled_days(self, mock_api_call):
@@ -2522,17 +2588,48 @@ class GenerateAiPlanViewTests(TestCase):
             {"week_start": str(self.week_start)},
         )
 
-        self.assertRedirects(
-            response,
-            f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
-            fetch_redirect_response=False,
-        )
+        events = _consume_events(response)
+        self.assertEqual(events[-1]["kind"], "ready")
 
-        # Check session: day 0 should be skipped, day 1 should be pending
+        # Read the persisted plan via Session.objects; same DB session that
+        # the next request (review page GET) would load.
+        from django.contrib.sessions.models import Session
+
         session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
-        plan_data = self.client.session[session_key]
+        plan_data = next(
+            (
+                s.get_decoded()[session_key]
+                for s in Session.objects.all()
+                if session_key in s.get_decoded()
+            ),
+            None,
+        )
+        self.assertIsNotNone(plan_data)
         self.assertEqual(plan_data["days"][0]["status"], "skipped")
         self.assertEqual(plan_data["days"][1]["status"], "pending")
+
+    @patch("meal_planner_app.services.ai_service.AIService._make_api_call")
+    def test_post_emits_progress_events_before_terminal(self, mock_api_call):
+        """Each AIService-side label reaches the client before the terminal."""
+        mock_api_call.return_value = self.valid_ai_response
+
+        self.client.login(username="aiview", password="pass1234")
+        response = self.client.post(
+            reverse("meal_planner:generate_ai_plan"),
+            {"week_start": str(self.week_start)},
+        )
+        events = _consume_events(response)
+
+        # Wire-side coverage: every AIService-emitted label surfaces as a
+        # "progress" event in the stream before the terminal.
+        progress_labels = [e["label"] for e in events if e["kind"] == "progress"]
+        self.assertIn("Preparing prompt", progress_labels)
+        self.assertIn("Talking to the model", progress_labels)
+        self.assertIn("Reading model response", progress_labels)
+        self.assertIn("Saving review data", progress_labels)
+
+        # Terminal event must come LAST.
+        self.assertEqual(events[-1]["kind"], "ready")
 
 
 class AiPlanReviewViewTests(TestCase):
@@ -3448,7 +3545,7 @@ class AiPlanCancelViewTests(TestCase):
         self.assertEqual(MealPlan.objects.filter(household=self.household).count(), 0)
 
 
-class AiPlanWorkflowIntegrationTests(TestCase):
+class AiPlanWorkflowIntegrationTests(TransactionTestCase):
     """Integration tests for the complete AI plan workflow end-to-end."""
 
     def setUp(self):
@@ -3491,11 +3588,10 @@ class AiPlanWorkflowIntegrationTests(TestCase):
             reverse("meal_planner:generate_ai_plan"),
             {"week_start": str(self.week_start)},
         )
-        self.assertRedirects(
-            response,
-            f"{reverse('meal_planner:ai_plan_review')}?week_start={self.week_start}",
-            fetch_redirect_response=False,
-        )
+        # Drain the SSE body so the generator's session.write runs and the
+        # DB-backed session is persisted for the next request to load.
+        events = _consume_events(response)
+        self.assertEqual(events[-1]["kind"], "ready")
 
         response = self.client.post(
             reverse("meal_planner:ai_plan_day_action"),
@@ -3527,10 +3623,14 @@ class AiPlanWorkflowIntegrationTests(TestCase):
 
         self.client.login(username="workflow", password="pass1234")
 
-        self.client.post(
+        response = self.client.post(
             reverse("meal_planner:generate_ai_plan"),
             {"week_start": str(self.week_start)},
         )
+        # Drain the SSE body so the worker thread commits its session write
+        # to the DB before the next request loads it.
+        events = _consume_events(response)
+        self.assertEqual(events[-1]["kind"], "ready")
 
         self.client.post(
             reverse("meal_planner:ai_plan_day_action"),
@@ -3541,8 +3641,20 @@ class AiPlanWorkflowIntegrationTests(TestCase):
             },
         )
 
+        # Read the persisted plan via Session.objects so we look at the
+        # same DB row the next page view (or test assert_*) is reading.
+        from django.contrib.sessions.models import Session
+
         session_key = f"ai_pending_plan_{self.household.pk}_{self.week_start}"
-        plan_data = self.client.session[session_key]
+        plan_data = next(
+            (
+                s.get_decoded()[session_key]
+                for s in Session.objects.all()
+                if session_key in s.get_decoded()
+            ),
+            None,
+        )
+        self.assertIsNotNone(plan_data)
         self.assertEqual(plan_data["days"][0]["status"], "rejected")
 
 

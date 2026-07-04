@@ -1,4 +1,5 @@
 import calendar
+import json
 from datetime import date, datetime, timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -985,6 +986,56 @@ def _normalize_meal_type(raw_type: str) -> str:
     return "dinner"
 
 
+def _build_ai_review_days(result, household) -> list[dict]:
+    """Project an AIServiceResult into the session-payload shape.
+
+    Skips meals whose ``MealPlan`` slot was already filled in by the
+    user, marks a whole day ``skipped`` when every slot was already
+    taken, and defaults every surviving suggestion to ``accepted``
+    (the reviewer can flip individual meals on the review page).
+    """
+    days: list[dict] = []
+    for i, day_data in enumerate(result.meals):
+        meal_date_str = day_data.get("date")
+        try:
+            meal_date = date.fromisoformat(meal_date_str)
+        except (ValueError, TypeError):
+            continue
+
+        meals_for_day = []
+        all_skipped = True
+        for meal_data in day_data.get("meals", []):
+            meal_type = _normalize_meal_type(meal_data.get("meal_type", "dinner"))
+            slot_exists = MealPlan.objects.filter(
+                household=household,
+                meal_date=meal_date,
+                meal_type=meal_type,
+            ).exists()
+            if slot_exists:
+                continue
+            all_skipped = False
+            meals_for_day.append({
+                "meal_type": meal_type,
+                "title": meal_data.get("title", "AI Meal"),
+                "description": meal_data.get("description", ""),
+                "cook_time_minutes": meal_data.get("cook_time_minutes", 30),
+                "ingredients": meal_data.get("ingredients", []),
+                # Per-meal default: every suggestion is accepted until the
+                # reviewer flips it. Saving skips meals with status=="rejected".
+                "status": meal_data.get("status") or "accepted",
+            })
+
+        days.append({
+            "index": i,
+            "date": str(meal_date),
+            "status": "skipped" if all_skipped else "pending",
+            "meals": meals_for_day,
+            "day_name": meal_date.strftime("%A"),
+            "formatted_date": meal_date.strftime("%b %-d"),
+        })
+    return days
+
+
 class GenerateAiPlanView(LoginRequiredMixin, View):
     """View for generating weekly meal plans using AI \u2014 stores in session for review."""
 
@@ -1038,71 +1089,96 @@ class GenerateAiPlanView(LoginRequiredMixin, View):
         # Generate the plan
         from meal_planner_app.services.ai_service import AIService
 
-        service = AIService()
-        result = service.generate_meal_plan(
-            household=household,
-            start_date=start_date,
-            end_date=end_date,
-            preferences=preferences,
-            inventory_items=inventory_items,
+        from django.http import StreamingHttpResponse
+        from queue import Queue
+        from threading import Thread
+
+        # Build the streaming response. The generator runs on the request
+        # thread so writing to request.session is safe; the AI call itself
+        # runs on a sibling thread that pushes progress events into a queue.
+        def event_stream():
+            queue: "Queue[dict | None]" = Queue()
+            outcome: dict = {}
+
+            def progress(label, detail=None, kind="progress"):
+                queue.put({"kind": kind, "label": label, "detail": detail or ""})
+
+            def run_ai():
+                service = AIService(progress_callback=progress)
+                try:
+                    result = service.generate_meal_plan(
+                        household=household,
+                        start_date=start_date,
+                        end_date=end_date,
+                        preferences=preferences,
+                        inventory_items=inventory_items,
+                    )
+                except Exception as exc:  # pragma: no cover - defensive
+                    progress("Unexpected failure", str(exc), kind="error")
+                    outcome["error"] = f"Unexpected failure: {exc}"
+                    queue.put(None)
+                    return
+
+                if not result.success:
+                    progress("Generation failed", result.error, kind="error")
+                    outcome["error"] = result.error
+                    queue.put(None)
+                    return
+
+                outcome["days"] = _build_ai_review_days(result, household)
+                progress(
+                    "Saving review data",
+                    f"{sum(len(d['meals']) for d in outcome['days'])} meal(s) "
+                    f"across {len(outcome['days'])} day(s)",
+                )
+                queue.put(None)
+
+            # Sibling worker thread — daemon so the WSGI worker exits
+            # cleanly even if the client hangs up mid-stream.
+            worker = Thread(target=run_ai, daemon=True)
+            worker.start()
+
+            while True:
+                event = queue.get()
+                if event is None:
+                    break
+                yield f"data: {json.dumps(event)}\n\n"
+
+            if "error" in outcome:
+                yield (
+                    f"data: {json.dumps({'kind': 'error', 'message': outcome['error']})}\n\n"
+                )
+                return
+
+            plan_data = {
+                "week_start": str(start_date),
+                "days": outcome["days"],
+            }
+            session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
+            # The SessionMiddleware's session save already ran in
+            # ``process_response`` (with the pre-generator state) before the
+            # WSGI worker began iterating ``streaming_content``. Save
+            # explicitly here so the DB carries our new key, then clear the
+            # modified flag so middleware won't double-save later.
+            request.session[session_key] = plan_data
+            request.session.save()
+            request.session.modified = False
+
+            redirect_url = (
+                f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}"
+            )
+            yield (
+                f"data: {json.dumps({'kind': 'ready', 'redirect_url': redirect_url})}\n\n"
+            )
+
+        response = StreamingHttpResponse(
+            event_stream(), content_type="text/event-stream"
         )
-
-        if not result.success:
-            messages.error(request, f"AI generation failed: {result.error}")
-            return redirect("meal_planner:planner_week", year=start_date.year, week=start_date.isocalendar()[1])
-
-        # Build plan data for session (no direct DB creation)
-        days = []
-        for i, day_data in enumerate(result.meals):
-            meal_date_str = day_data.get("date")
-            try:
-                meal_date = date.fromisoformat(meal_date_str)
-            except (ValueError, TypeError):
-                continue
-
-            meals_for_day = []
-            all_skipped = True
-            for meal_data in day_data.get("meals", []):
-                meal_type = _normalize_meal_type(meal_data.get("meal_type", "dinner"))
-                slot_exists = MealPlan.objects.filter(
-                    household=household,
-                    meal_date=meal_date,
-                    meal_type=meal_type,
-                ).exists()
-                if slot_exists:
-                    continue
-                all_skipped = False
-                meals_for_day.append({
-                    "meal_type": meal_type,
-                    "title": meal_data.get("title", "AI Meal"),
-                    "description": meal_data.get("description", ""),
-                    "cook_time_minutes": meal_data.get("cook_time_minutes", 30),
-                    "ingredients": meal_data.get("ingredients", []),
-                    # Per-meal default: every suggestion is accepted until the
-                    # reviewer flips it. Saving skips meals with status=="rejected".
-                    "status": meal_data.get("status") or "accepted",
-                })
-
-            days.append({
-                "index": i,
-                "date": str(meal_date),
-                "status": "skipped" if all_skipped else "pending",
-                "meals": meals_for_day,
-                "day_name": meal_date.strftime("%A"),
-                "formatted_date": meal_date.strftime("%b %-d"),
-            })
-
-        plan_data = {
-            "week_start": str(start_date),
-            "days": days,
-        }
-
-        # Store in session
-        session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
-        request.session[session_key] = plan_data
-        request.session.modified = True
-
-        return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+        # Prevent buffering at proxies that would otherwise wait for the
+        # whole 7-day plan before sending the headers.
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 class AiPlanReviewView(LoginRequiredMixin, TemplateView):

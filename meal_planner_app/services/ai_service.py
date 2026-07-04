@@ -64,6 +64,7 @@ class AIService:
         *,
         feature: str = "meal_plan_generation",
         model_override: str | None = None,
+        progress_callback=None,
     ) -> None:
         self.base_url = settings.AI_API_BASE_URL
         self.timeout = settings.AI_REQUEST_TIMEOUT
@@ -71,6 +72,25 @@ class AIService:
         self.household = household
         self.feature = feature
         self.model_override = model_override
+        # Optional callback the view wires up so the generator can
+        # stream progress events to the planner page as the model runs.
+        # Signature: ``progress_callback(label, detail=None, kind="progress")``
+        # — ``kind`` lets the view distinguish progress from terminal states
+        # if it wants a single callback for both.
+        self._progress = progress_callback
+
+    def _report(self, label: str, detail: str | None = None, kind: str = "progress") -> None:
+        """Push a progress event to the optional callback.
+
+        All exceptions inside the callback are swallowed so a bad listener
+        cannot fail the underlying generation.
+        """
+        if self._progress is None:
+            return
+        try:
+            self._progress(label, detail, kind)
+        except Exception:  # pragma: no cover - defensive
+            logger.debug("progress callback raised", exc_info=True)
 
     def generate_meal_plan(
         self,
@@ -107,6 +127,11 @@ class AIService:
                 preferences = None
 
         # Build the prompt
+        num_days = (end_date - start_date).days + 1 if start_date and end_date else 7
+        self._report(
+            "Preparing prompt",
+            f"{num_days} day(s) of meals with your preferences and pantry",
+        )
         prompt = self._build_prompt(
             preferences=preferences,
             start_date=start_date,
@@ -114,7 +139,12 @@ class AIService:
             inventory_items=inventory_items or [],
         )
 
-        # Call API with retry
+        # Call API with retry — long-running stage, the caller gets
+        # sub-progress updates from inside the retry loop.
+        self._report(
+            "Talking to the model",
+            f"Asking the model for a {num_days}-day plan",
+        )
         return self._call_api_with_retry(prompt)
 
     def _build_prompt(
@@ -221,7 +251,12 @@ class AIService:
                 response_data = self._make_api_call(
                     messages, max_tokens=max_tokens, household=self.household
                 )
+                self._report("Reading model response", "HTTP 200 received")
                 meals = parse_weekly_plan(response_data)
+                self._report(
+                    "Saving review data",
+                    f"Parsed {len(meals)} day(s) of meals",
+                )
                 return AIServiceResult(success=True, meals=meals)
 
             except httpx.HTTPStatusError as e:
@@ -232,6 +267,10 @@ class AIService:
                         attempt,
                         self.max_retries,
                         e,
+                    )
+                    self._report(
+                        "Transient error, retrying",
+                        f"HTTP {e.response.status_code}; backing off and retrying",
                     )
                     if attempt < self.max_retries:
                         time.sleep(2 ** attempt)
@@ -249,6 +288,10 @@ class AIService:
                     self.max_retries,
                     e,
                 )
+                self._report(
+                    "Network hiccup, retrying",
+                    f"{type(e).__name__}: {e}",
+                )
                 if attempt < self.max_retries:
                     time.sleep(2 ** attempt)
 
@@ -264,7 +307,12 @@ class AIService:
                         max_tokens,
                         e,
                     )
+                    self._report(
+                        "Model ran out of room, retrying",
+                        f"Bumping max_tokens to {max_tokens}",
+                    )
                     continue
+                self._report("Model ran out of room", "Fatal after retries", kind="error")
                 return AIServiceResult(
                     success=False,
                     error=(
@@ -275,11 +323,21 @@ class AIService:
                 )
 
             except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+                self._report(
+                    "Could not parse response",
+                    f"{type(e).__name__}: {e}",
+                    kind="error",
+                )
                 return AIServiceResult(
                     success=False,
                     error=f"Failed to parse AI response: {e}",
                 )
 
+        self._report(
+            "AI unreachable",
+            f"All {self.max_retries} attempts failed",
+            kind="error",
+        )
         return AIServiceResult(
             success=False,
             error=f"AI API request failed after {self.max_retries} attempts: {last_error}",
