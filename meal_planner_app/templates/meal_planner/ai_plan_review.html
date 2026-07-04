@@ -354,7 +354,11 @@
 
     function submitViaFetch(form) {
         // Pull CSRF + form fields and POST as x-www-form-urlencoded.
-        const action = form.action;
+        // ``form.action`` IDL is shadowed when the form contains a named
+        // control called ``action`` (we have one — the hidden action
+        // input) so we must read the underlying attribute directly to get
+        // the URL string instead of ``[object HTMLInputElement]``.
+        const action = form.getAttribute("action");
         const data = new URLSearchParams();
         for (let i = 0; i < form.elements.length; i++) {
             const el = form.elements[i];
