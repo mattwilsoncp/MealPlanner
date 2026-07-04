@@ -96,12 +96,19 @@ UNCONVERTIBLE_UNITS = frozenset(COUNT_UNITS)
 
 @dataclass
 class LinkedNutritionSummary:
-    """Per-100g-style totals rolled up across all USDA-linked rows."""
+    """Per-100g-style totals rolled up across all USDA-linked rows.
+
+    ``rows`` is the per-IngredientLink breakdown (every ingredient in the
+    recipe, in input order) with the same scaling the totals card uses,
+    so the UI can render a "by ingredient" table under the headline card
+    without re-running the math.
+    """
 
     linked_count: int = 0                     # contributed to the totals
     needs_attention_count: int = 0            # linked row that could not be measured
     total_count: int = 0                      # every IngredientLink in the recipe
     skipped: list = field(default_factory=list)
+    rows: list = field(default_factory=list)
     calories_kcal: Decimal = Decimal("0")
     protein_g: Decimal = Decimal("0")
     carbs_g: Decimal = Decimal("0")
@@ -133,15 +140,46 @@ def summarize_linked_nutrition(ingredient_links) -> LinkedNutritionSummary:
     (``piece``, ``clove``, ``slice``, etc.) are listed under
     :pyattr:`LinkedNutritionSummary.skipped` so the UI can surface
     them as out-of-scope instead of silently dropping them.
+
+    Every IngredientLink — linked or not — is mirrored into
+    :pyattr:`LinkedNutritionSummary.rows` with the same per-100g scaling
+    applied to its individual macros, so the recipe page can show a
+    "by ingredient" table under the headline totals card.
     """
     summary = LinkedNutritionSummary()
     for link in ingredient_links:
         summary.total_count += 1
         ingredient = getattr(link, "ingredient", None)
-        if ingredient is None or not getattr(ingredient, "usda_food_id", ""):
-            continue
         unit = (link.unit or "").strip().lower()
+
+        row = {
+            "name": getattr(ingredient, "name", "") if ingredient is not None else "",
+            "quantity": link.quantity,
+            "unit": unit,
+            "usda_food_id": "",
+            "linked": False,
+            "included": False,
+            "reason": None,
+            "calories_kcal": None,
+            "protein_g": None,
+            "carbs_g": None,
+            "fat_g": None,
+        }
+
+        if ingredient is None:
+            row["reason"] = "missing ingredient"
+            summary.rows.append(row)
+            continue
+
+        row["usda_food_id"] = getattr(ingredient, "usda_food_id", "") or ""
+        if not row["usda_food_id"]:
+            row["reason"] = "not linked"
+            summary.rows.append(row)
+            continue
+        row["linked"] = True
+
         if unit in UNCONVERTIBLE_UNITS:
+            row["reason"] = "count unit"
             summary.skipped.append(
                 {
                     "name": ingredient.name,
@@ -151,11 +189,14 @@ def summarize_linked_nutrition(ingredient_links) -> LinkedNutritionSummary:
                 }
             )
             summary.needs_attention_count += 1
+            summary.rows.append(row)
             continue
+
         # Weight + volume arrive as grams via convert_to_grams; unknown
         # units return value unchanged — treat them as a no-op skip.
         grams = convert_to_grams(link.quantity, unit)
         if grams is None or grams == 0:
+            row["reason"] = "unconvertible unit"
             summary.skipped.append(
                 {
                     "name": ingredient.name,
@@ -165,17 +206,14 @@ def summarize_linked_nutrition(ingredient_links) -> LinkedNutritionSummary:
                 }
             )
             summary.needs_attention_count += 1
+            summary.rows.append(row)
             continue
+
         # Per-100g scaling: each macro is reported per 100 g of food.
         factor = grams / Decimal("100")
         # Count this row as contributing only when at least one macro is known.
         contributed = False
-        for attr, dest in (
-            ("calories_kcal", "calories_kcal"),
-            ("protein_g", "protein_g"),
-            ("carbs_g", "carbs_g"),
-            ("fat_g", "fat_g"),
-        ):
+        for attr in ("calories_kcal", "protein_g", "carbs_g", "fat_g"):
             value = getattr(ingredient, attr, None)
             if value is None:
                 continue
@@ -185,11 +223,14 @@ def summarize_linked_nutrition(ingredient_links) -> LinkedNutritionSummary:
                 )
             except Exception:
                 continue
-            setattr(summary, dest, getattr(summary, dest) + contribution)
+            setattr(summary, attr, getattr(summary, attr) + contribution)
+            row[attr] = contribution
             contributed = True
         if contributed:
             summary.linked_count += 1
+            row["included"] = True
         else:
+            row["reason"] = "no macros on file"
             summary.skipped.append(
                 {
                     "name": ingredient.name,
@@ -199,5 +240,6 @@ def summarize_linked_nutrition(ingredient_links) -> LinkedNutritionSummary:
                 }
             )
             summary.needs_attention_count += 1
+        summary.rows.append(row)
     return summary
 

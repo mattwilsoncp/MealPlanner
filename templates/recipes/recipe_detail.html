@@ -167,6 +167,74 @@
                         </div>
                         {% endif %}
                     </div>
+
+                    {% if nutrition_summary.rows %}
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">Per-ingredient breakdown</span>
+                        <table style="margin-top: 10px; width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.8125rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-strong); text-align: left;">
+                                    <th style="padding: 8px 12px 8px 0; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400;">Ingredient</th>
+                                    <th style="padding: 8px 12px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; text-align: right;">Amount</th>
+                                    <th style="padding: 8px 12px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; text-align: right;">kcal</th>
+                                    <th style="padding: 8px 12px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; text-align: right;">P&nbsp;g</th>
+                                    <th style="padding: 8px 12px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; text-align: right;">C&nbsp;g</th>
+                                    <th style="padding: 8px 12px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; text-align: right;">F&nbsp;g</th>
+                                    <th style="padding: 8px 0 8px 12px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); font-weight: 400;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in nutrition_summary.rows %}
+                                <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                    <td style="padding: 8px 12px 8px 0; color: var(--text-primary);">
+                                        {{ r.name }}
+                                    </td>
+                                    <td style="padding: 8px 12px; color: var(--text-secondary); text-align: right;">
+                                        {{ r.quantity }} {{ r.unit }}
+                                    </td>
+                                    <td style="padding: 8px 12px; text-align: right; color: {% if r.calories_kcal is not None %}var(--text-primary){% else %}var(--text-muted){% endif %};">
+                                        {% if r.calories_kcal is not None %}
+                                        {{ r.calories_kcal|floatformat:2 }}
+                                        {% else %}
+                                        &mdash;
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 8px 12px; text-align: right; color: {% if r.protein_g is not None %}var(--text-primary){% else %}var(--text-muted){% endif %};">
+                                        {% if r.protein_g is not None %}
+                                        {{ r.protein_g|floatformat:2 }}
+                                        {% else %}
+                                        &mdash;
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 8px 12px; text-align: right; color: {% if r.carbs_g is not None %}var(--text-primary){% else %}var(--text-muted){% endif %};">
+                                        {% if r.carbs_g is not None %}
+                                        {{ r.carbs_g|floatformat:2 }}
+                                        {% else %}
+                                        &mdash;
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 8px 12px; text-align: right; color: {% if r.fat_g is not None %}var(--text-primary){% else %}var(--text-muted){% endif %};">
+                                        {% if r.fat_g is not None %}
+                                        {{ r.fat_g|floatformat:2 }}
+                                        {% else %}
+                                        &mdash;
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 8px 0 8px 12px; color: var(--text-muted); font-size: 0.75rem;">
+                                        {% if r.included %}
+                                        <span style="color: var(--text-secondary);">in totals</span>
+                                        {% elif r.linked %}
+                                        {{ r.reason|default:"linked" }}
+                                        {% else %}
+                                        {% if r.usda_food_id %}linked (no data){% else %}not linked{% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
                     {% if nutrition_summary.skipped %}
                     <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
                         <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">Not in totals</span>
