@@ -110,7 +110,9 @@
                     <div class="vp-card-tight planner-meal-card" draggable="true" data-meal-id="{{ meal.pk }}" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="padding: 12px 16px; margin-bottom: 8px; cursor: grab; background: var(--bg-elevated);">
                         {% if meal.recipe %}
                         <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
-                            <div style="font-weight: 500; font-size: 0.9375rem; margin-bottom: 8px;">{{ meal.recipe.title }}</div>
+                            <a href="{% url 'recipes:recipe_detail' meal.recipe.pk %}"
+                               class="link"
+                               style="font-weight: 500; font-size: 0.9375rem; margin-bottom: 8px; flex: 1;">{{ meal.recipe.title }}</a>
                             <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
                                 {% csrf_token %}
                                 <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
@@ -119,7 +121,7 @@
                             </form>
                         </div>
                         <div style="display: inline-flex; gap: 12px;">
-                            <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link js-open-recipe-modal" style="font-size: 0.75rem;">View</button>
+                            <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link js-open-recipe-modal" style="font-size: 0.75rem;">Preview</button>
                             <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link" style="font-size: 0.75rem;">Cook</a>
                         </div>
                         {% else %}
