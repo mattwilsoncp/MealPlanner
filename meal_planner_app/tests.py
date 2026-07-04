@@ -3094,6 +3094,144 @@ class AiPlanDayActionViewTests(TestCase):
         for meal in plan_data["days"][0]["meals"]:
             self.assertEqual(meal["status"], "rejected")
 
+    def test_ajax_reject_meal_returns_json(self):
+        """AJAX POST rejects a meal in-place and reports the new state
+        so the page can animate the meal card out without a redirect."""
+        self._init_session()
+        # Day is accepted with two meals accepted; rejecting one keeps
+        # the day accepted (other meal still accepted).
+        self.session_data["days"][0]["status"] = "accepted"
+        self.session_data["days"][0]["meals"] = [
+            {
+                "meal_type": "breakfast",
+                "title": "Oatmeal",
+                "description": "",
+                "cook_time_minutes": 10,
+                "ingredients": ["oats"],
+                "status": "accepted",
+            },
+            {
+                "meal_type": "dinner",
+                "title": "Pasta",
+                "description": "",
+                "cook_time_minutes": 20,
+                "ingredients": ["pasta"],
+                "status": "accepted",
+            },
+        ]
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        body = response.json()
+        self.assertTrue(body["success"])
+        self.assertEqual(body["action"], "reject_meal")
+        self.assertEqual(body["day_index"], 0)
+        self.assertEqual(body["day_status"], "accepted")
+        self.assertEqual(body["meal_total"], 2)
+        self.assertEqual(body["meal_accepted"], 1)
+        self.assertEqual(body["meal_rejected"], 1)
+        self.assertEqual(body["meal"], {"meal_index": 0, "meal_status": "rejected"})
+
+    def test_ajax_reject_last_meal_flips_day_status(self):
+        """Rejecting the last accepted meal flips the day from accepted
+        to rejected and the JSON payload reports the new day_status so
+        the page can reload (and re-render the day footer)."""
+        self._init_session()
+        self.session_data["days"][0]["status"] = "accepted"
+        self.session_data["days"][0]["meals"][0]["status"] = "accepted"
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["day_status"], "rejected")
+        self.assertEqual(body["meal_total"], 1)
+        self.assertEqual(body["meal_accepted"], 0)
+        self.assertEqual(body["meal_rejected"], 1)
+
+    def test_ajax_bad_action_returns_400(self):
+        """AJAX unknown action returns 400 JSON error so the page can surface
+        it without a page reload."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "sideways",
+                "day_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response["Content-Type"], "application/json")
+        body = response.json()
+        self.assertFalse(body["success"])
+        self.assertIn("Unknown action", body["error"])
+
+    def test_ajax_missing_plan_returns_400(self):
+        """AJAX reject on a session that has no AI plan returns 400 JSON."""
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        body = response.json()
+        self.assertFalse(body["success"])
+        self.assertIn("No pending AI plan", body["error"])
+
+    def test_ajax_reject_day_returns_day_status(self):
+        """AJAX day-level reject reports the new day_status and counts."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject",
+                "day_index": "0",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["day_status"], "rejected")
+        # Did not include a single-meal sub-payload.
+        self.assertNotIn("meal", body)
+
 
 class AiPlanSaveViewTests(TestCase):
     """Tests for AiPlanSaveView (POST /ai-plan/save/)."""

@@ -50,6 +50,7 @@
         {% for day in days %}
         <div class="vp-card-tight day-card"
              data-day-index="{{ day.index }}"
+             data-day-status="{{ day.status }}"
              style="padding: 0;
                     {% if day.status == 'rejected' %}opacity: 0.55;
                     {% elif day.status == 'accepted' %}border-color: var(--border-strong);
@@ -60,12 +61,17 @@
                     <p class="vp-label-mono mt-2">{{ day.formatted_date }}</p>
                 </div>
                 <div style="text-align: right;">
-                    {% if day.status == "accepted" %}<span class="badge">Accepted</span>
-                    {% elif day.status == "rejected" %}<span class="badge">Rejected</span>
-                    {% elif day.status == "skipped" %}<span class="badge">Full &mdash; Skipped</span>
-                    {% else %}<span class="badge">Pending</span>{% endif %}
+                    {% if day.status == "accepted" %}<span class="badge" data-day-pill data-status="accepted">Accepted</span>
+                    {% elif day.status == "rejected" %}<span class="badge" data-day-pill data-status="rejected">Rejected</span>
+                    {% elif day.status == "skipped" %}<span class="badge" data-day-pill data-status="skipped">Full &mdash; Skipped</span>
+                    {% else %}<span class="badge" data-day-pill data-status="pending">Pending</span>{% endif %}
                     {% if day.meal_total %}
-                    <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 8px; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase;">
+                    <p class="vp-label-mono"
+                       data-day-count
+                       data-meal-accepted="{{ day.meal_accepted }}"
+                       data-meal-rejected="{{ day.meal_rejected }}"
+                       data-meal-total="{{ day.meal_total }}"
+                       style="color: var(--text-muted); margin-top: 8px; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase;">
                         {{ day.meal_accepted }} of {{ day.meal_total }} meal{{ day.meal_total|pluralize }}{% if day.meal_rejected %} &middot; {{ day.meal_rejected }} rejected{% endif %}
                     </p>
                     {% endif %}
@@ -116,7 +122,13 @@
 
                     <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-subtle); display: inline-flex; gap: 8px; flex-wrap: wrap;">
                         {% if meal_status == "accepted" %}
-                        <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                        <form method="post"
+                              action="{% url 'meal_planner:ai_plan_day_action' %}"
+                              class="meal-action-form"
+                              data-action="reject_meal"
+                              data-day-index="{{ day.index }}"
+                              data-meal-index="{{ forloop.counter0 }}"
+                              style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="week_start" value="{{ week_start }}">
                             <input type="hidden" name="day_index" value="{{ day.index }}">
@@ -125,7 +137,13 @@
                             <button type="submit" class="vp-btn-ghost" style="padding: 6px 14px; font-size: 0.75rem;">Reject this meal</button>
                         </form>
                         {% else %}
-                        <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                        <form method="post"
+                              action="{% url 'meal_planner:ai_plan_day_action' %}"
+                              class="meal-action-form"
+                              data-action="accept_meal"
+                              data-day-index="{{ day.index }}"
+                              data-meal-index="{{ forloop.counter0 }}"
+                              style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="week_start" value="{{ week_start }}">
                             <input type="hidden" name="day_index" value="{{ day.index }}">
@@ -147,14 +165,22 @@
 
             <div style="padding: 20px 28px; border-top: 1px solid var(--border-subtle); display: inline-flex; gap: 12px; flex-wrap: wrap;">
                 {% if day.status == "accepted" %}
-                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                <form method="post"
+                      action="{% url 'meal_planner:ai_plan_day_action' %}"
+                      class="day-action-form"
+                      data-day-index="{{ day.index }}"
+                      style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="reject">
                     <button type="submit" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject day</button>
                 </form>
-                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                <form method="post"
+                      action="{% url 'meal_planner:ai_plan_day_action' %}"
+                      class="day-action-form"
+                      data-day-index="{{ day.index }}"
+                      style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
@@ -162,7 +188,11 @@
                     <button type="submit" class="vp-btn-ghost">Regenerate day</button>
                 </form>
                 {% elif day.status == "rejected" %}
-                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                <form method="post"
+                      action="{% url 'meal_planner:ai_plan_day_action' %}"
+                      class="day-action-form"
+                      data-day-index="{{ day.index }}"
+                      style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
@@ -170,14 +200,22 @@
                     <button type="submit" class="vp-btn-primary">Undo reject &mdash; accept day</button>
                 </form>
                 {% elif day.status == "pending" or day.status == "skipped" %}
-                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                <form method="post"
+                      action="{% url 'meal_planner:ai_plan_day_action' %}"
+                      class="day-action-form"
+                      data-day-index="{{ day.index }}"
+                      style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="accept">
                     <button type="submit" class="vp-btn-primary">Accept day</button>
                 </form>
-                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                <form method="post"
+                      action="{% url 'meal_planner:ai_plan_day_action' %}"
+                      class="day-action-form"
+                      data-day-index="{{ day.index }}"
+                      style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
@@ -185,7 +223,11 @@
                     <button type="submit" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject day</button>
                 </form>
                 {% if day.status == "pending" %}
-                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                <form method="post"
+                      action="{% url 'meal_planner:ai_plan_day_action' %}"
+                      class="day-action-form"
+                      data-day-index="{{ day.index }}"
+                      style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ week_start }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
@@ -221,4 +263,202 @@
     </div>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    "use strict";
+
+    function getCookie(name) {
+        const value = "; " + document.cookie;
+        const parts = value.split("; " + name + "=");
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return "";
+    }
+
+    function findMealCard(dayIndex, mealIndex) {
+        const dayCard = document.querySelector(
+            '.day-card[data-day-index="' + dayIndex + '"]'
+        );
+        if (!dayCard) return null;
+        return dayCard.querySelector(
+            '.meal-card[data-meal-index="' + mealIndex + '"]'
+        );
+    }
+
+    function fadeAndRemove(node) {
+        if (!node) return;
+        node.style.transition = "opacity 240ms ease, max-height 240ms ease, padding 240ms ease, margin 240ms ease";
+        node.style.overflow = "hidden";
+        node.style.maxHeight = node.offsetHeight + "px";
+        // Force layout so the transition flushes.
+        // eslint-disable-next-line no-unused-expressions
+        node.offsetHeight;
+        node.style.opacity = "0";
+        node.style.maxHeight = "0";
+        node.style.paddingTop = "0";
+        node.style.paddingBottom = "0";
+        node.style.marginTop = "0";
+        node.style.marginBottom = "0";
+        window.setTimeout(function () {
+            if (node.parentNode) node.parentNode.removeChild(node);
+        }, 260);
+    }
+
+    function updateDayCounts(dayIndex, mealAccepted, mealRejected, mealTotal, dayStatus) {
+        const dayCard = document.querySelector(
+            '.day-card[data-day-index="' + dayIndex + '"]'
+        );
+        if (!dayCard) return;
+
+        // Update the meal-count sub-line below the day badge.
+        const countEl = dayCard.querySelector("[data-day-count]");
+        if (countEl) {
+            countEl.dataset.mealAccepted = String(mealAccepted);
+            countEl.dataset.mealRejected = String(mealRejected);
+            countEl.dataset.mealTotal = String(mealTotal);
+            const plural = mealTotal === 1 ? "" : "s";
+            let txt = mealAccepted + " of " + mealTotal + " meal" + plural;
+            if (mealRejected > 0) {
+                txt += " \u00b7 " + mealRejected + " rejected";
+            }
+            countEl.textContent = txt;
+        }
+
+        // Update the day pill.
+        const pillEl = dayCard.querySelector("[data-day-pill]");
+        if (pillEl) {
+            const labelMap = {
+                accepted: "Accepted",
+                rejected: "Rejected",
+                pending: "Pending",
+                skipped: "Full \u2014 Skipped",
+            };
+            pillEl.textContent = labelMap[dayStatus] || dayStatus;
+            pillEl.dataset.status = dayStatus;
+        }
+
+        // Day-level opacity when the view drives it inline.
+        if (dayStatus === "rejected") {
+            dayCard.style.opacity = "0.55";
+            dayCard.style.borderColor = "";
+        } else if (dayStatus === "accepted") {
+            dayCard.style.opacity = "";
+            dayCard.style.borderColor = "var(--border-strong)";
+        } else {
+            dayCard.style.opacity = "";
+            dayCard.style.borderColor = "";
+        }
+    }
+
+    function submitViaFetch(form) {
+        // Pull CSRF + form fields and POST as x-www-form-urlencoded.
+        const action = form.action;
+        const data = new URLSearchParams();
+        for (let i = 0; i < form.elements.length; i++) {
+            const el = form.elements[i];
+            if (!el.name) continue;
+            data.append(el.name, el.value);
+        }
+
+        return fetch(action, {
+            method: "POST",
+            body: data,
+            credentials: "same-origin",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        }).then(function (response) {
+            return response.json().then(function (payload) {
+                payload.__ok = response.ok;
+                return payload;
+            });
+        });
+    }
+
+    function handleMealForm(form) {
+        const mealIndex = form.dataset.mealIndex;
+        const dayIndex = form.dataset.dayIndex;
+        const button = form.querySelector("button[type='submit']");
+        const dayCard = document.querySelector(
+            '.day-card[data-day-index="' + dayIndex + '"]'
+        );
+        const previousDayStatus = dayCard ? dayCard.dataset.dayStatus : null;
+        return submitViaFetch(form).then(function (payload) {
+            if (!payload.success) {
+                if (button) {
+                    button.disabled = false;
+                }
+                window.alert(
+                    (payload && payload.error) || "Could not update the meal."
+                );
+                return;
+            }
+            // Animate-fade and remove the meal card so the list tightens up.
+            fadeAndRemove(findMealCard(dayIndex, mealIndex));
+            // Update day header (counts + pill + opacity).
+            updateDayCounts(
+                dayIndex,
+                payload.meal_accepted,
+                payload.meal_rejected,
+                payload.meal_total,
+                payload.day_status
+            );
+            if (dayCard) {
+                dayCard.dataset.dayStatus = payload.day_status;
+            }
+            // If the day-level status changed (e.g. accepted → rejected
+            // after rejecting the last accepted meal), the day footer
+            // buttons need to re-render too — reload for simplicity.
+            if (previousDayStatus && previousDayStatus !== payload.day_status) {
+                window.location.reload();
+            }
+        }).catch(function (err) {
+            if (button) {
+                button.disabled = false;
+            }
+            window.alert("Network error: " + (err && err.message ? err.message : err));
+        });
+    }
+
+    function handleDayForm(form) {
+        // Day-level state changes the available buttons in the footer, so
+        // reload the page to redraw them rather than try to mirror the full
+        // variant matrix in JS.
+        const button = form.querySelector("button[type='submit']");
+        button.disabled = true;
+        return submitViaFetch(form).then(function (payload) {
+            if (!payload.success) {
+                button.disabled = false;
+                window.alert(
+                    (payload && payload.error) || "Could not update the day."
+                );
+                return;
+            }
+            window.location.reload();
+        }).catch(function (err) {
+            button.disabled = false;
+            window.alert("Network error: " + (err && err.message ? err.message : err));
+        });
+    }
+
+    document.addEventListener("submit", function (e) {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.classList.contains("meal-action-form")) {
+            e.preventDefault();
+            const button = form.querySelector("button[type='submit']");
+            if (button) button.disabled = true;
+            handleMealForm(form);
+        } else if (form.classList.contains("day-action-form")) {
+            e.preventDefault();
+            handleDayForm(form);
+        }
+    });
+})();
+</script>
 {% endblock %}

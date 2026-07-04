@@ -1267,6 +1267,12 @@ class AiPlanDayActionView(LoginRequiredMixin, View):
         - ``accept_meal`` / ``reject_meal`` toggle a single meal; the parent
           day's status is then re-derived from its meals so the header pill
           stays consistent.
+
+    AJAX: requests with ``X-Requested-With: XMLHttpRequest`` get a JSON
+    payload describing the new state instead of a redirect + full page
+    reload. Non-AJAX requests continue to redirect so users without
+    JavaScript (or progressive-enhancement degradation) still see the
+    updated review page after a single round-trip.
     """
 
     http_method_names = ["post"]
@@ -1274,27 +1280,51 @@ class AiPlanDayActionView(LoginRequiredMixin, View):
     MEAL_ACTIONS = {"accept_meal", "reject_meal"}
     DAY_ACTIONS = {"accept", "reject", "regenerate"}
 
+    @staticmethod
+    def _is_ajax(request) -> bool:
+        return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    @staticmethod
+    def _day_counts(day: dict) -> dict:
+        meals = day.get("meals") or []
+        meal_accepted = sum(
+            1 for m in meals if (m.get("status") or "accepted") == "accepted"
+        )
+        meal_rejected = sum(1 for m in meals if m.get("status") == "rejected")
+        return {
+            "meal_total": len(meals),
+            "meal_accepted": meal_accepted,
+            "meal_rejected": meal_rejected,
+        }
+
     def post(self, request, *args, **kwargs):
+        ajax = self._is_ajax(request)
         week_start_str = request.POST.get("week_start")
         action = request.POST.get("action")
         day_index_str = request.POST.get("day_index")
         meal_index_str = request.POST.get("meal_index")
 
         if not all([week_start_str, action, day_index_str]):
-            messages.error(request, "Missing required parameters.")
-            return redirect("meal_planner:planner")
+            return self._bad_request(
+                request, ajax, "Missing required parameters.",
+                "meal_planner:planner",
+            )
 
         try:
             day_index = int(day_index_str)
         except (ValueError, TypeError):
-            messages.error(request, "Invalid day index.")
-            return redirect("meal_planner:planner")
+            return self._bad_request(
+                request, ajax, "Invalid day index.",
+                "meal_planner:planner",
+            )
 
         try:
             meal_index = int(meal_index_str) if meal_index_str not in (None, "") else None
         except (ValueError, TypeError):
-            messages.error(request, "Invalid meal index.")
-            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+            return self._bad_request(
+                request, ajax, "Invalid meal index.",
+                f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}",
+            )
 
         review_url = f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}"
 
@@ -1303,23 +1333,34 @@ class AiPlanDayActionView(LoginRequiredMixin, View):
         plan_data = request.session.get(session_key)
 
         if not plan_data:
-            messages.error(request, "No pending AI plan found.")
-            return redirect("meal_planner:planner")
+            return self._bad_request(
+                request, ajax, "No pending AI plan found.",
+                "meal_planner:planner",
+            )
 
         days = plan_data.get("days", [])
         if day_index < 0 or day_index >= len(days):
-            messages.error(request, "Invalid day index.")
-            return redirect(review_url)
+            return self._bad_request(
+                request, ajax, "Invalid day index.", review_url,
+            )
 
         day = days[day_index]
+        meal_payload = None
+        verb = None
 
         if action in self.MEAL_ACTIONS:
             ok = self._apply_meal_action(day, action, meal_index)
             if not ok:
-                messages.error(request, "Invalid meal selection.")
-                return redirect(review_url)
+                return self._bad_request(
+                    request, ajax, "Invalid meal selection.", review_url,
+                )
             self._reconcile_day_status(day)
             verb = "accepted" if action == "accept_meal" else "rejected"
+            if meal_index is not None and 0 <= meal_index < len(day.get("meals") or []):
+                meal_payload = {
+                    "meal_index": meal_index,
+                    "meal_status": day["meals"][meal_index]["status"],
+                }
             messages.success(request, f"Meal {verb}.")
         elif action in self.DAY_ACTIONS:
             if action == "accept":
@@ -1334,12 +1375,33 @@ class AiPlanDayActionView(LoginRequiredMixin, View):
                 day["status"] = "pending"
                 messages.success(request, "Day marked for regeneration.")
         else:
-            messages.error(request, f"Unknown action: {action}")
-            return redirect(review_url)
+            return self._bad_request(
+                request, ajax, f"Unknown action: {action}", review_url,
+            )
 
         request.session[session_key] = plan_data
         request.session.modified = True
+
+        if ajax:
+            payload = {
+                "success": True,
+                "action": action,
+                "day_index": day_index,
+                "day_status": day["status"],
+                **self._day_counts(day),
+            }
+            if meal_payload is not None:
+                payload["meal"] = meal_payload
+            return JsonResponse(payload)
         return redirect(review_url)
+
+    @staticmethod
+    def _bad_request(request, ajax: bool, message: str, redirect_url: str):
+        """Surface a validation error: JSON for AJAX, flash + redirect otherwise."""
+        if ajax:
+            return JsonResponse({"success": False, "error": message}, status=400)
+        messages.error(request, message)
+        return redirect(redirect_url)
 
     @staticmethod
     def _apply_meal_action(day: dict, action: str, meal_index: int | None) -> bool:
