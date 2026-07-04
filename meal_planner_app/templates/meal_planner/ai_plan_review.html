@@ -34,14 +34,14 @@
     <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px;">
         <form method="post" action="{% url 'meal_planner:ai_plan_save' %}">
             {% csrf_token %}
-            <input type="hidden" name="week_start" value="{{ week_start }}">
+            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             <button type="submit" class="vp-btn-primary" {% if not has_accepted %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
                 Save Accepted Meals
             </button>
         </form>
         <form method="post" action="{% url 'meal_planner:ai_plan_cancel' %}">
             {% csrf_token %}
-            <input type="hidden" name="week_start" value="{{ week_start }}">
+            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             <button type="submit" class="vp-btn-ghost">Discard &amp; Cancel</button>
         </form>
     </div>
@@ -130,7 +130,7 @@
                               data-meal-index="{{ forloop.counter0 }}"
                               style="display: inline;">
                             {% csrf_token %}
-                            <input type="hidden" name="week_start" value="{{ week_start }}">
+                            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                             <input type="hidden" name="day_index" value="{{ day.index }}">
                             <input type="hidden" name="meal_index" value="{{ forloop.counter0 }}">
                             <input type="hidden" name="action" value="reject_meal">
@@ -145,7 +145,7 @@
                               data-meal-index="{{ forloop.counter0 }}"
                               style="display: inline;">
                             {% csrf_token %}
-                            <input type="hidden" name="week_start" value="{{ week_start }}">
+                            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                             <input type="hidden" name="day_index" value="{{ day.index }}">
                             <input type="hidden" name="meal_index" value="{{ forloop.counter0 }}">
                             <input type="hidden" name="action" value="accept_meal">
@@ -171,7 +171,7 @@
                       data-day-index="{{ day.index }}"
                       style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="reject">
                     <button type="submit" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject day</button>
@@ -182,7 +182,7 @@
                       data-day-index="{{ day.index }}"
                       style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="regenerate">
                     <button type="submit" class="vp-btn-ghost">Regenerate day</button>
@@ -194,7 +194,7 @@
                       data-day-index="{{ day.index }}"
                       style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="accept">
                     <button type="submit" class="vp-btn-primary">Undo reject &mdash; accept day</button>
@@ -206,7 +206,7 @@
                       data-day-index="{{ day.index }}"
                       style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="accept">
                     <button type="submit" class="vp-btn-primary">Accept day</button>
@@ -217,7 +217,7 @@
                       data-day-index="{{ day.index }}"
                       style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="reject">
                     <button type="submit" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject day</button>
@@ -229,7 +229,7 @@
                       data-day-index="{{ day.index }}"
                       style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
                     <input type="hidden" name="day_index" value="{{ day.index }}">
                     <input type="hidden" name="action" value="regenerate">
                     <button type="submit" class="vp-btn-ghost">Regenerate day</button>
@@ -244,14 +244,14 @@
     <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; margin-top: 32px;">
         <form method="post" action="{% url 'meal_planner:ai_plan_save' %}">
             {% csrf_token %}
-            <input type="hidden" name="week_start" value="{{ week_start }}">
+            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             <button type="submit" class="vp-btn-primary" {% if not has_accepted %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
                 Save Accepted Meals ({{ accepted_count }})
             </button>
         </form>
         <form method="post" action="{% url 'meal_planner:ai_plan_cancel' %}">
             {% csrf_token %}
-            <input type="hidden" name="week_start" value="{{ week_start }}">
+            <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             <button type="submit" class="vp-btn-ghost">Discard &amp; Cancel</button>
         </form>
     </div>
