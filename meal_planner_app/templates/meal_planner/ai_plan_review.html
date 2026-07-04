@@ -369,12 +369,36 @@
             headers: {
                 "Accept": "application/json",
                 "Content-Type": "application/x-www-form-urlencoded",
+                // Belt-and-braces CSRF: the hidden ``csrfmiddlewaretoken``
+                // field is already in ``data`` above, but explicit header
+                // means the server sees the token even if some interceptor
+                // strips form fields. ``getCookie`` falls back gracefully
+                // when no cookie is present (e.g. localhost over HTTP
+                // with ``CSRF_COOKIE_SECURE=True`` blocking the cookie).
                 "X-CSRFToken": getCookie("csrftoken"),
                 "X-Requested-With": "XMLHttpRequest",
             },
         }).then(function (response) {
+            const ct = (response.headers.get("content-type") || "").toLowerCase();
+            if (!ct.includes("application/json")) {
+                // Most likely a CSRF 403 HTML page, a 500 traceback, or a
+                // proxy intercept. Surface the bytes verbatim so the user
+                // knows what the server actually said.
+                return response.text().then(function (text) {
+                    const head = (response.statusText || "") + " (HTTP " + response.status + ")";
+                    const snippet = text.length > 240 ? text.slice(0, 240) + "..." : text;
+                    const err = new Error("Server returned " + head + " instead of JSON: " + snippet);
+                    err.status = response.status;
+                    throw err;
+                });
+            }
             return response.json().then(function (payload) {
-                payload.__ok = response.ok;
+                if (!response.ok || (payload && payload.success === false)) {
+                    const msg = (payload && payload.error) || ("HTTP " + response.status);
+                    const err = new Error(msg);
+                    err.status = response.status;
+                    throw err;
+                }
                 return payload;
             });
         });
