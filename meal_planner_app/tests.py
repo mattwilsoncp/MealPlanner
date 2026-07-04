@@ -475,11 +475,15 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("snack", response.context["meal_types"])
 
     def test_recipe_meal_title_links_to_detail_page_with_drag_disabled(self):
-        """Regression: the planner meal card's title is wrapped in a link
-        to the recipe detail page so users can read the full recipe
-        without opening the modal preview. The link must be
-        ``draggable="false"`` so its parent card's drag-and-drop handler
-        doesn't suppress the click."""
+        """Regression: the planner meal card surfaces a direct link to
+        ``recipes:recipe_detail`` from the actions row so users can read
+        the full recipe without opening the modal preview. Earlier
+        attempts to wire the *title* itself to the URL failed in the
+        browser: descendants of a ``drag-and-drop`` element are
+        themselves draggable, and even a 1-pixel pointer movement on
+        the title suppressed its click. The action-row link with
+        ``draggable="false"`` reliably receives a normal click."""
+        import re
         self.client.login(username="alice", password="pass1234")
         MealPlan.objects.create(
             household=self.household,
@@ -490,20 +494,22 @@ class PlannerHomeViewTests(TestCase):
         response = self.client.get(reverse("meal_planner:planner"))
         self.assertEqual(response.status_code, 200)
         body = response.content.decode()
-        # Compress whitespace before searching because the template
-        # emits each attribute on its own line for readability.
-        compact = " ".join(body.split())
         expected_href = reverse(
             "recipes:recipe_detail", args=[self.recipe.pk]
         )
-        # Title link carries both the .link and .planner-meal-title
-        # classes plus the draggable=false opt-out.
-        title_token = (
-            f'<a href="{expected_href}" class="link planner-meal-title" '
-            f'draggable="false"'
+        # Find every <a…>View</a> in the actions row and check the View
+        # link points at the recipe detail and is ``draggable="false"``.
+        pattern = (
+            rf'<a\s+href="{re.escape(expected_href)}"\s+draggable="false"'
+            rf'[^>]*>\s*View\s*</a>'
         )
-        self.assertIn(title_token, compact)
-        # And the title text is still rendered (no template regression).
+        self.assertRegex(
+            body,
+            pattern,
+            "Expected a View link in the planner actions row pointing "
+            "at recipe_detail with draggable=\"false\".",
+        )
+        # The recipe title is still rendered (it's just plain text now).
         self.assertIn("Test Recipe", body)
 
 

@@ -132,10 +132,7 @@
                     <div class="vp-card-tight planner-meal-card" draggable="true" data-meal-id="{{ meal.pk }}" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="padding: 12px 16px; margin-bottom: 8px; cursor: grab; background: var(--bg-elevated);">
                         {% if meal.recipe %}
                         <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
-                            <a href="{% url 'recipes:recipe_detail' meal.recipe.pk %}"
-                               class="link planner-meal-title"
-                               draggable="false"
-                               style="font-weight: 500; font-size: 0.9375rem; margin-bottom: 8px; flex: 1;">{{ meal.recipe.title }}</a>
+                            <div style="font-weight: 500; font-size: 0.9375rem; margin-bottom: 8px; flex: 1;">{{ meal.recipe.title }}</div>
                             <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
                                 {% csrf_token %}
                                 <button type="submit" class="vp-btn-ghost"
@@ -147,6 +144,10 @@
                             </form>
                         </div>
                         <div style="display: inline-flex; gap: 12px;">
+                            <a href="{% url 'recipes:recipe_detail' meal.recipe.pk %}"
+                               draggable="false"
+                               class="link"
+                               style="font-size: 0.75rem;">View</a>
                             <button type="button"
                                     draggable="false"
                                     data-recipe-id="{{ meal.recipe.pk }}"
