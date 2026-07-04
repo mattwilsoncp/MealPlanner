@@ -474,15 +474,14 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("dinner", response.context["meal_types"])
         self.assertIn("snack", response.context["meal_types"])
 
-    def test_recipe_meal_title_links_to_detail_page_with_drag_disabled(self):
-        """Regression: the planner meal card surfaces a direct link to
-        ``recipes:recipe_detail`` from the actions row so users can read
-        the full recipe without opening the modal preview. Earlier
-        attempts to wire the *title* itself to the URL failed in the
-        browser: descendants of a ``drag-and-drop`` element are
-        themselves draggable, and even a 1-pixel pointer movement on
-        the title suppressed its click. The action-row link with
-        ``draggable="false"`` reliably receives a normal click."""
+    def test_recipe_meal_actions_are_preview_and_cook(self):
+        """The action row on a recipe-linked meal is exactly two buttons:
+        ``Preview`` (modal) + ``Cook`` (cooking-reconcile). The noisy
+        ``View`` direct link is gone — opening the modal already
+        includes a ``View Full Recipe`` anchor pointing at
+        ``recipes:recipe_detail``, so an extra top-level button is
+        redundant. All action controls are ``draggable="false"`` so the
+        parent planner-meal-card's drag handler can't suppress clicks."""
         import re
         self.client.login(username="alice", password="pass1234")
         MealPlan.objects.create(
@@ -494,28 +493,60 @@ class PlannerHomeViewTests(TestCase):
         response = self.client.get(reverse("meal_planner:planner"))
         self.assertEqual(response.status_code, 200)
         body = response.content.decode()
-        expected_href = reverse(
+
+        # Whitespace-tolerant assertions — the template renders each
+        # attribute on its own line for readability.
+        def compact_attr(tag):
+            return re.sub(r"\s+", " ", tag)
+
+        # Preview button: opens the modal by binding to
+        # ``js-open-recipe-modal`` and carrying a ``data-recipe-id``.
+        preview_re = re.compile(
+            r'<button[^>]*class="vp-btn-ghost planner-meal-action '
+            r'js-open-recipe-modal"[^>]*>'
+        )
+        preview_open = preview_re.search(body)
+        self.assertIsNotNone(preview_open, "Preview button not found.")
+        self.assertIn(
+            f'data-recipe-id="{self.recipe.pk}"',
+            compact_attr(preview_open.group(0)),
+        )
+        self.assertIn("draggable=\"false\"", compact_attr(preview_open.group(0)))
+
+        # Cook button: anchors straight at the cooking-reconcile screen.
+        meal = MealPlan.objects.get(recipe=self.recipe)
+        cook_href = reverse(
+            "meal_planner:cooking_reconcile", args=[meal.pk]
+        )
+        cook_re = re.compile(
+            r'<a[^>]*class="vp-btn-ghost planner-meal-action"[^>]*>'
+        )
+        cook_match = cook_re.search(body)
+        self.assertIsNotNone(cook_match, "Cook anchor not found.")
+        self.assertIn(
+            f'href="{cook_href}"', compact_attr(cook_match.group(0))
+        )
+        self.assertIn("draggable=\"false\"", compact_attr(cook_match.group(0)))
+
+        # No ``View`` anchor pointing at recipe_detail from the
+        # actions row — that was the drop. Reject any anchor that
+        # uses the planner-meal-action class and hrefs at recipes.
+        recipe_href = reverse(
             "recipes:recipe_detail", args=[self.recipe.pk]
         )
-        # The actions row carries a ``View`` anchor that points at the
-        # recipe detail page and is ``draggable="false"`` so its parent
-        # card's drag handler cannot suppress its click. It uses the
-        # vp-btn-ghost class — small but unmistakable button shape —
-        # sat inside a dashed-border divider so users don't miss it.
-        pattern = (
-            rf'<a\s+href="{re.escape(expected_href)}"\s+draggable="false"'
-            rf'[^>]*class="vp-btn-ghost planner-meal-action"'
-            rf'[^>]*>\s*View\s*</a>'
+        meta_re = re.compile(
+            r'<a[^>]*class="vp-btn-ghost planner-meal-action"[^>]*>'
         )
-        self.assertRegex(
-            body,
-            pattern,
-            "Expected a View link in the planner actions row pointing "
-            "at recipe_detail with draggable=\"false\".",
-        )
-        # The divider line is rendered above the action row.
+        for m in meta_re.finditer(body):
+            self.assertNotIn(
+                f'href="{recipe_href}"',
+                compact_attr(m.group(0)),
+                msg="The redundant View anchor must stay dropped.",
+            )
+
+        # Divider is still drawn above the action row.
         self.assertIn("border-top: 1px dashed var(--border-subtle)", body)
-        # The recipe title is still rendered.
+        # Recipe title text still renders.
         self.assertIn("Test Recipe", body)
 
     def test_custom_meal_card_surfaces_action_buttons(self):
