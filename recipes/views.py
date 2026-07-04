@@ -71,6 +71,7 @@ def strip_transcript_log_suffix(description):
     return TRANSCRIPT_LOG_SUFFIX_RE.sub("", description).rstrip()
 from .parsing import RecipeParsingService
 from ingredients.models import IngredientLink, Ingredient
+from ingredients.utils import summarize_linked_nutrition
 from instructions.models import Instruction
 from tags.models import RecipeTag, Tag
 from ratings.models import Rating
@@ -384,12 +385,16 @@ Source Context:
         youtube_url = form.cleaned_data["youtube_url"]
         title_override = (form.cleaned_data.get("title") or "").strip()
 
-        # The model field is optional; fall back to a sensible default.
-        # ``google/gemini-2.0-flash-001`` is fast and reliably returns
-        # parseable JSON, which is why we surface it as the first choice.
-        model = (
-            (form.cleaned_data.get("model") or "").strip()
-            or "google/gemini-2.0-flash-001"
+        # The model field is optional; when empty, fall back to the
+        # household's saved choice at /tools/ai-models/ (via AISettings).
+        # The household-scoped default is supplied by
+        # ``meal_planner_app.services.ai_settings.resolve_model``.
+        from meal_planner_app.services.ai_settings import resolve_model
+
+        model = resolve_model(
+            household=household,
+            feature_key="recipe_import_text",
+            override=form.cleaned_data.get("model") or "",
         )
 
         # Delegate the entire import to youtube_importer.py so the web
@@ -883,7 +888,15 @@ Rules:
             from PIL import Image as PILImage
 
             uploaded_image = form.cleaned_data["image"]
-            model = form.cleaned_data.get("model") or "openrouter/free"
+            # Resolve the model: per-request form value wins, otherwise use the
+            # household's saved choice for the recipe photo import feature.
+            from meal_planner_app.services.ai_settings import resolve_model
+
+            model = resolve_model(
+                household=household,
+                feature_key="recipe_import_image",
+                override=form.cleaned_data.get("model") or "",
+            )
 
             # Convert image to JPEG and resize to stay under API limit (5MB)
             MAX_BYTES = 3_500_000  # conservative limit (base64 adds ~33%)
@@ -1139,6 +1152,8 @@ class RecipeDetailView(LoginRequiredMixin, DetailView):
             .select_related("ingredient", "inventory_item")
             .order_by("order")
         )
+
+        context["nutrition_summary"] = summarize_linked_nutrition(context["ingredients"])
 
         context["instructions"] = Instruction.objects.filter(recipe=recipe).order_by(
             "step_number"

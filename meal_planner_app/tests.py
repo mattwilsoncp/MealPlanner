@@ -1428,6 +1428,795 @@ class AIServiceTests(TestCase):
         self.assertTrue(result.success)
         self.assertEqual(len(result.meals), 1)
 
+    @patch("httpx.Client.post")
+    def test_truncated_reasoning_retries_with_larger_budget(self, mock_post):
+        """First response empties the budget mid-reasoning (finish_reason=length,
+        empty content). The retry loop doubles max_tokens and succeeds on a
+        second attempt that returns valid JSON."""
+        from meal_planner_app.services.ai_service import AIService
+
+        call_count = 0
+        budgets = []
+
+        def side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            budgets.append(kwargs["json"]["max_tokens"])
+            if call_count == 1:
+                # First call: reasoning model ran out of tokens before content
+                resp = MagicMock()
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "choices": [
+                        {
+                            "finish_reason": "length",
+                            "message": {"content": "", "reasoning_content": "thinking..."},
+                        }
+                    ]
+                }
+                resp.raise_for_status = lambda: None
+                return resp
+            # Second call after retry: model has budget and emits JSON
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json.return_value = {
+                "choices": [{"message": {"content": json_dumps(self.valid_ai_response)}}]
+            }
+            resp.raise_for_status = lambda: None
+            return resp
+
+        mock_post.side_effect = side_effect
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertTrue(result.success, msg=result.error)
+        self.assertEqual(call_count, 2)
+        # First attempt uses the default; retry should have grown the budget
+        self.assertEqual(budgets[0], 8192)
+        self.assertEqual(budgets[1], 16384)
+
+    @patch("httpx.Client.post")
+    def test_empty_content_without_length_is_fatal(self, mock_post):
+        """If content is empty for any reason other than finish_reason=length,
+        the loop must NOT retry with a larger budget — that would just waste
+        tokens on an empty response."""
+        from meal_planner_app.services.ai_service import AIService
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"content": ""},
+                }
+            ]
+        }
+        mock_post.return_value = mock_response
+        mock_response.raise_for_status = lambda: None
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertFalse(result.success)
+        self.assertIn("Failed to parse AI response", result.error)
+        # Only one HTTP attempt — no retry on non-truncation empty content.
+        self.assertEqual(mock_post.call_count, 1)
+
+    @patch("httpx.Client.post")
+    def test_truncated_past_ceiling_returns_actionable_error(self, mock_post):
+        """Even after max_retries and the 16384 ceiling, an empty reasoning
+        response must surface a useful error that names finish_reason and the
+        budget hit, so the user (and operator) can act on it."""
+        from meal_planner_app.services.ai_service import AIService
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [
+                {
+                    "finish_reason": "length",
+                    "message": {"content": ""},
+                }
+            ]
+        }
+        mock_post.return_value = mock_response
+        mock_response.raise_for_status = lambda: None
+
+        service = AIService()
+        result = service.generate_meal_plan(
+            household=self.household,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            preferences=self.prefs,
+        )
+
+        self.assertFalse(result.success)
+        self.assertIn("finish_reason=length", result.error)
+        self.assertIn("max_tokens=16384", result.error)
+        # Two attempts: 8192 → 16384. We don't re-shoot at the ceiling — the
+        # same params produced the same truncation, so give up and report.
+        self.assertEqual(mock_post.call_count, 2)
+
+
+# =============================================================================
+# AI Settings Tests
+# =============================================================================
+
+
+class AISettingsTests(TestCase):
+    """Storage and resolution of per-household AI model preferences."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="AI Settings Household")
+
+    def test_get_or_create_returns_row(self):
+        from meal_planner_app.models import AISettings
+
+        first, created_first = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        second, created_second = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        self.assertTrue(created_first)
+        self.assertFalse(created_second)
+        self.assertEqual(first.pk, second.pk)
+
+    def test_set_model_persists_with_timestamp(self):
+        from meal_planner_app.models import AISettings
+
+        settings_row, _ = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        settings_row.set_model(
+            "meal_plan_generation",
+            "anthropic/claude-sonnet-4",
+            "Claude Sonnet 4",
+        )
+        settings_row.refresh_from_db()
+        binding = settings_row.get_model("meal_plan_generation")
+        self.assertIsNotNone(binding)
+        self.assertEqual(binding["model_id"], "anthropic/claude-sonnet-4")
+        self.assertEqual(binding["label"], "Claude Sonnet 4")
+        self.assertIn("updated_at", binding)
+
+    def test_get_model_returns_none_for_unspecified_feature(self):
+        from meal_planner_app.models import AISettings
+
+        settings_row, _ = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        self.assertIsNone(settings_row.get_model("nonexistent"))
+
+    def test_resolve_model_uses_override_first(self):
+        from meal_planner_app.models import AISettings
+        from meal_planner_app.services.ai_settings import resolve_model
+
+        AISettings.objects.get_or_create(household=self.household)
+        # Even if the household saved a binding, an explicit override wins.
+        settings_row = AISettings.objects.get(household=self.household)
+        settings_row.set_model("meal_plan_generation", "saved/model", "Saved")
+        self.assertEqual(
+            resolve_model(self.household, "meal_plan_generation", override="override/model"),
+            "override/model",
+        )
+
+    def test_resolve_model_uses_household_binding(self):
+        from meal_planner_app.models import AISettings
+        from meal_planner_app.services.ai_settings import resolve_model
+
+        settings_row, _ = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        settings_row.set_model("recipe_import_text", "saved/recipe", "Saved Recipe")
+        self.assertEqual(
+            resolve_model(self.household, "recipe_import_text"),
+            "saved/recipe",
+        )
+
+    def test_resolve_model_falls_back_to_default(self):
+        from meal_planner_app.services.ai_settings import (
+            FEATURE_KEYS, resolve_model,
+        )
+
+        # No AISettings row + no override → baked-in default.
+        self.assertEqual(
+            resolve_model(self.household, "meal_plan_generation"),
+            FEATURE_KEYS["meal_plan_generation"]["default_model"],
+        )
+
+    def test_resolve_model_raises_for_unknown_feature(self):
+        from meal_planner_app.services.ai_settings import resolve_model
+
+        with self.assertRaises(KeyError):
+            resolve_model(self.household, "nope/not/a/feature")
+
+    def test_resolve_openrouter_api_key_prefers_household_override(self):
+        from meal_planner_app.services.ai_settings import resolve_openrouter_api_key
+
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "env-key"}):
+            settings_row, _ = __import__(
+                "meal_planner_app.models", fromlist=["AISettings"]
+            ).AISettings.objects.get_or_create(household=self.household)
+            self.assertEqual(resolve_openrouter_api_key(self.household), "env-key")
+
+            settings_row.openrouter_api_key_override = "house-key"
+            settings_row.save()
+            self.assertEqual(resolve_openrouter_api_key(self.household), "house-key")
+
+            self.assertEqual(resolve_openrouter_api_key(None), "env-key")
+
+
+class OpenRouterCatalogTests(TestCase):
+    """Process-wide cache of the OpenRouter /v1/models catalog."""
+
+    def setUp(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        OpenRouterCatalog.reset()
+
+    def tearDown(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        OpenRouterCatalog.reset()
+
+    def _sample_catalog(self):
+        return {
+            "data": [
+                {
+                    "id": "anthropic/claude-sonnet-4",
+                    "name": "Claude Sonnet 4",
+                    "description": "Paid, very smart",
+                    "context_length": 200000,
+                    "pricing": {"prompt": "0.000003", "completion": "0.000015"},
+                    "architecture": {
+                        "modality": "text+image->text",
+                        "input_modalities": ["text", "image"],
+                        "output_modalities": ["text"],
+                    },
+                },
+                {
+                    "id": "google/gemini-2.0-flash-001",
+                    "name": "Gemini 2.0 Flash (Paid)",
+                    "description": "Paid, fast",
+                    "context_length": 1000000,
+                    "pricing": {"prompt": "0.0000001", "completion": "0.0000004"},
+                    "architecture": {
+                        "modality": "text+image->text",
+                        "input_modalities": ["text", "image"],
+                        "output_modalities": ["text"],
+                    },
+                },
+                {
+                    "id": "qwen/qwen3-coder:free",
+                    "name": "Qwen3 Coder (Free)",
+                    "description": "Free text-only",
+                    "context_length": 32768,
+                    "pricing": {"prompt": "0", "completion": "0"},
+                    "architecture": {
+                        "modality": "text->text",
+                        "input_modalities": ["text"],
+                        "output_modalities": ["text"],
+                    },
+                },
+                {
+                    "id": "deepseek/deepseek-chat-v3:free",
+                    "name": "DeepSeek Chat v3 (Free)",
+                    "description": "Free",
+                    "context_length": 64000,
+                    "pricing": {"prompt": "0", "completion": "0"},
+                    "architecture": {
+                        "modality": "text->text",
+                        "input_modalities": ["text"],
+                        "output_modalities": ["text"],
+                    },
+                },
+            ]
+        }
+
+    def _stub_client(self, payload):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = payload
+        response.raise_for_status = lambda: None
+        client = MagicMock()
+        client.__enter__ = lambda self_: client
+        client.__exit__ = lambda self_, *args: False
+        client.get = MagicMock(return_value=response)
+        return client
+
+    def test_fetch_parses_and_sorts_free_first(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        client = self._stub_client(self._sample_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            models = OpenRouterCatalog.fetch(force_refresh=True)
+        # Free models come first; paid after — alphabetical within each group.
+        ids = [m.id for m in models]
+        self.assertEqual(
+            ids,
+            [
+                "deepseek/deepseek-chat-v3:free",
+                "qwen/qwen3-coder:free",
+                "anthropic/claude-sonnet-4",
+                "google/gemini-2.0-flash-001",
+            ],
+        )
+        self.assertEqual(models[0].is_free, True)
+        self.assertEqual(models[-1].is_free, False)
+
+    def test_fetch_caches_and_only_hits_upstream_once(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        client = self._stub_client(self._sample_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client) as constructor:
+            OpenRouterCatalog.fetch(force_refresh=True)
+            OpenRouterCatalog.fetch()
+            OpenRouterCatalog.fetch()
+            # Constructor run count == 1 because the catalog is cached in process.
+            self.assertEqual(constructor.call_count, 1)
+
+    def test_force_refresh_busts_cache(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        client = self._stub_client(self._sample_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client) as constructor:
+            OpenRouterCatalog.fetch()
+            OpenRouterCatalog.fetch(force_refresh=True)
+            self.assertEqual(constructor.call_count, 2)
+
+    def test_vision_feature_filters_text_only_models(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        client = self._stub_client(self._sample_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            vision = OpenRouterCatalog.for_feature("recipe_import_image")
+        ids = [m.id for m in vision]
+        self.assertNotIn("qwen/qwen3-coder:free", ids)
+        self.assertNotIn("deepseek/deepseek-chat-v3:free", ids)
+        self.assertIn("anthropic/claude-sonnet-4", ids)
+        self.assertIn("google/gemini-2.0-flash-001", ids)
+
+    def test_text_feature_returns_everything(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        client = self._stub_client(self._sample_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            all_models = OpenRouterCatalog.for_feature("meal_plan_generation")
+        self.assertEqual(len(all_models), 4)
+
+    def test_fetch_serves_last_good_value_when_upstream_blips(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        good = self._sample_catalog()
+        good_response = MagicMock()
+        good_response.json.return_value = good
+        good_response.raise_for_status = lambda: None
+
+        bad_response = MagicMock()
+        bad_response.raise_for_status.side_effect = httpx.HTTPError("upstream down")
+
+        success_client = MagicMock()
+        success_client.__enter__ = lambda self_: success_client
+        success_client.__exit__ = lambda self_, *args: False
+        success_client.get = MagicMock(return_value=good_response)
+
+        failing_client = MagicMock()
+        failing_client.__enter__ = lambda self_: failing_client
+        failing_client.__exit__ = lambda self_, *args: False
+        failing_client.get = MagicMock(return_value=bad_response)
+
+        with patch(
+            "meal_planner_app.services.ai_settings.httpx.Client",
+            side_effect=[success_client, failing_client],
+        ):
+            OpenRouterCatalog.fetch(force_refresh=True)
+            # Second fetch swallows the upstream error and serves the cache.
+            models = OpenRouterCatalog.fetch()
+        self.assertEqual(len(models), 4)
+
+    def test_for_feature_raises_for_unknown_key(self):
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        with self.assertRaises(KeyError):
+            OpenRouterCatalog.for_feature("not-a-feature")
+
+
+class AIModelsSettingsViewTests(TestCase):
+    """GET / POST /tools/ai-models/ behavior."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="AI Settings View HH")
+        self.user = User.objects.create_user(
+            username="aiuser",
+            email="ai@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        OpenRouterCatalog.reset()
+        self.url = reverse("meal_planner:ai_models_settings")
+
+    def _stub_catalog(self):
+        return {
+            "data": [
+                {
+                    "id": "anthropic/claude-sonnet-4",
+                    "name": "Claude Sonnet 4",
+                    "description": "Paid",
+                    "context_length": 200000,
+                    "pricing": {"prompt": "0.000003", "completion": "0.000015"},
+                    "architecture": {
+                        "modality": "text+image->text",
+                        "input_modalities": ["text", "image"],
+                        "output_modalities": ["text"],
+                    },
+                },
+                {
+                    "id": "qwen/qwen3-coder:free",
+                    "name": "Qwen3 Coder (Free)",
+                    "description": "Free text-only",
+                    "context_length": 32768,
+                    "pricing": {"prompt": "0", "completion": "0"},
+                    "architecture": {
+                        "modality": "text->text",
+                        "input_modalities": ["text"],
+                        "output_modalities": ["text"],
+                    },
+                },
+            ]
+        }
+
+    def _stub_client(self, payload):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = payload
+        response.raise_for_status = lambda: None
+        client = MagicMock()
+        client.__enter__ = lambda self_: client
+        client.__exit__ = lambda self_, *args: False
+        client.get = MagicMock(return_value=response)
+        return client
+
+    def test_get_requires_auth(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_get_renders_with_features_and_options(self):
+        self.client.login(username="aiuser", password="pass1234")
+        client = self._stub_client(self._stub_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "settings/ai_models.html")
+        features = response.context["features"]
+        # One feature block per FEATURE_KEYS entry.
+        from meal_planner_app.services.ai_settings import FEATURE_KEYS
+
+        self.assertEqual({f["key"] for f in features}, set(FEATURE_KEYS.keys()))
+        # Recipe photo feature should NOT list the text-only free Qwen model.
+        photo_block = next(f for f in features if f["key"] == "recipe_import_image")
+        photo_ids = [m.id for m in photo_block["options"]]
+        self.assertNotIn("qwen/qwen3-coder:free", photo_ids)
+        self.assertIn("anthropic/claude-sonnet-4", photo_ids)
+
+    def test_post_persists_model_for_each_feature(self):
+        self.client.login(username="aiuser", password="pass1234")
+        client = self._stub_client(self._stub_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            response = self.client.post(
+                self.url,
+                data={
+                    "model_meal_plan_generation": "anthropic/claude-sonnet-4",
+                    "model_recipe_import_text": "qwen/qwen3-coder:free",
+                    "model_recipe_import_image": "anthropic/claude-sonnet-4",
+                    "model_receipt_barcode": "anthropic/claude-sonnet-4",
+                    "openrouter_api_key_override": "house-key-1234",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        from meal_planner_app.models import AISettings
+
+        settings_row = AISettings.objects.get(household=self.household)
+        for key in (
+            "meal_plan_generation",
+            "recipe_import_text",
+            "recipe_import_image",
+            "receipt_barcode",
+        ):
+            binding = settings_row.get_model(key)
+            self.assertIsNotNone(binding, msg=key)
+        self.assertEqual(
+            settings_row.get_model("recipe_import_text")["model_id"],
+            "qwen/qwen3-coder:free",
+        )
+        self.assertEqual(settings_row.openrouter_api_key_override, "house-key-1234")
+
+    def test_post_rejects_text_only_model_for_vision_feature(self):
+        self.client.login(username="aiuser", password="pass1234")
+        client = self._stub_client(self._stub_catalog())
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            response = self.client.post(
+                self.url,
+                data={
+                    "model_meal_plan_generation": "",
+                    "model_recipe_import_text": "",
+                    # Vision feature submitted with a text-only model — should be refused.
+                    "model_recipe_import_image": "qwen/qwen3-coder:free",
+                    "model_receipt_barcode": "",
+                    "openrouter_api_key_override": "",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        from meal_planner_app.models import AISettings
+
+        settings_row = AISettings.objects.get(household=self.household)
+        # Vision feature kept unset because the chosen model can't read images.
+        self.assertIsNone(settings_row.get_model("recipe_import_image"))
+
+    def test_post_clears_binding_when_empty_string(self):
+        self.client.login(username="aiuser", password="pass1234")
+        client = self._stub_client(self._stub_catalog())
+        # Pre-seed a binding.
+        from meal_planner_app.models import AISettings
+        from meal_planner_app.services.ai_settings import OpenRouterCatalog
+
+        settings_row, _ = AISettings.objects.get_or_create(household=self.household)
+        settings_row.set_model("meal_plan_generation", "anthropic/claude-sonnet-4", "Claude")
+        with patch("meal_planner_app.services.ai_settings.httpx.Client", return_value=client):
+            self.client.post(
+                self.url,
+                data={
+                    "model_meal_plan_generation": "",
+                    "model_recipe_import_text": "",
+                    "model_recipe_import_image": "",
+                    "model_receipt_barcode": "",
+                    "openrouter_api_key_override": "",
+                },
+            )
+        settings_row.refresh_from_db()
+        self.assertIsNone(settings_row.get_model("meal_plan_generation"))
+
+    def test_get_refresh_busts_catalog_cache(self):
+        self.client.login(username="aiuser", password="pass1234")
+        client = self._stub_client(self._stub_catalog())
+        with patch(
+            "meal_planner_app.services.ai_settings.httpx.Client",
+            return_value=client,
+        ) as constructor:
+            self.client.get(self.url)
+            self.client.get(self.url + "?refresh=1")
+        # First load fetches, second load with refresh=1 fetches again.
+        self.assertEqual(constructor.call_count, 2)
+
+    def test_get_renders_with_usda_key_input(self):
+        from meal_planner_app.models import AISettings
+
+        self.client.login(username="aiuser", password="pass1234")
+        settings_row, _ = AISettings.objects.get_or_create(household=self.household)
+        settings_row.usda_fdc_api_key_override = "FDC-12345"
+        settings_row.save()
+        with patch(
+            "meal_planner_app.services.ai_settings.httpx.Client",
+            return_value=self._stub_client(self._stub_catalog()),
+        ):
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["override_usda_api_key"], "FDC-12345"
+        )
+        self.assertContains(response, 'name="usda_fdc_api_key_override"')
+        self.assertContains(response, 'value="FDC-12345"')
+
+    def test_post_persists_usda_key_override(self):
+        from meal_planner_app.models import AISettings
+
+        self.client.login(username="aiuser", password="pass1234")
+        with patch(
+            "meal_planner_app.services.ai_settings.httpx.Client",
+            return_value=self._stub_client(self._stub_catalog()),
+        ):
+            response = self.client.post(
+                self.url,
+                {
+                    "model_meal_plan_generation": "",
+                    "model_recipe_import_text": "",
+                    "model_recipe_import_image": "",
+                    "model_receipt_barcode": "",
+                    "openrouter_api_key_override": "",
+                    "usda_fdc_api_key_override": "FDC-SECRET-KEY",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        settings_row = AISettings.objects.get(household=self.household)
+        self.assertEqual(settings_row.usda_fdc_api_key_override, "FDC-SECRET-KEY")
+
+    def test_post_usda_blank_clears_override(self):
+        from meal_planner_app.models import AISettings
+
+        self.client.login(username="aiuser", password="pass1234")
+        settings_row, _ = AISettings.objects.get_or_create(household=self.household)
+        settings_row.usda_fdc_api_key_override = "FDC-12345"
+        settings_row.save()
+        with patch(
+            "meal_planner_app.services.ai_settings.httpx.Client",
+            return_value=self._stub_client(self._stub_catalog()),
+        ):
+            response = self.client.post(
+                self.url,
+                {
+                    "model_meal_plan_generation": "",
+                    "model_recipe_import_text": "",
+                    "model_recipe_import_image": "",
+                    "model_receipt_barcode": "",
+                    "openrouter_api_key_override": "",
+                    "usda_fdc_api_key_override": "",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        settings_row.refresh_from_db()
+        self.assertEqual(settings_row.usda_fdc_api_key_override, "")
+
+
+class AIServiceUsesPerHouseholdSettingsTests(TestCase):
+    """The meal-plan service must honor the saved binding for the household."""
+
+    def setUp(self):
+        self.household = Household.objects.create(name="Resolved Plan HH")
+        self.prefs = MealPreferences.objects.create(
+            household=self.household,
+            cuisine_preferences=["italian"],
+            dietary_restrictions=[],
+            cooking_effort="moderate",
+            servings_per_meal=2,
+        )
+        self.valid_plan = [
+            {
+                "date": "2026-06-01",
+                "meals": [
+                    {
+                        "meal_type": "dinner",
+                        "title": "Pasta",
+                        "description": "Quick pasta",
+                        "cook_time_minutes": 20,
+                        "ingredients": ["pasta"],
+                    },
+                ],
+            }
+        ]
+        self._plan_json = json_dumps(self.valid_plan)
+
+    def _make_fake_post(self, captured: dict):
+        """Build a fake httpx.Client.post replacement that captures the call."""
+        outer_json = self._plan_json  # local alias — never touch self inside
+
+        def fake_post(self, url, json=None, headers=None, **_kwargs):
+            captured["url"] = url
+            captured["payload"] = json
+            captured["headers"] = headers or {}
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json.return_value = {
+                "choices": [{"message": {"content": outer_json}}]
+            }
+            resp.raise_for_status = lambda: None
+            return resp
+
+        return fake_post
+
+    def test_make_api_call_sends_saved_model_and_bearer_token(self):
+        """When the household saved a binding, _make_api_call must POST
+        that model id and use the API key (env or per-household)."""
+        from meal_planner_app.models import AISettings
+        from meal_planner_app.services.ai_service import AIService
+
+        settings_row, _ = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        settings_row.set_model("meal_plan_generation", "saved/model", "Saved")
+
+        captured: dict = {}
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}):
+            with patch("httpx.Client.post", new=self._make_fake_post(captured)):
+                AIService(
+                    household=self.household,
+                    feature="meal_plan_generation",
+                ).generate_meal_plan(
+                    household=self.household,
+                    start_date=date(2026, 6, 1),
+                    end_date=date(2026, 6, 7),
+                    preferences=self.prefs,
+                )
+
+        self.assertEqual(captured["payload"]["model"], "saved/model")
+        self.assertEqual(
+            captured["headers"].get("Authorization"), "Bearer test-key"
+        )
+
+    def test_make_api_call_uses_override_over_saved_binding(self):
+        from meal_planner_app.models import AISettings
+        from meal_planner_app.services.ai_service import AIService
+
+        settings_row, _ = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        settings_row.set_model("meal_plan_generation", "saved/model", "Saved")
+
+        captured: dict = {}
+        with patch("httpx.Client.post", new=self._make_fake_post(captured)):
+            AIService(
+                household=self.household,
+                feature="meal_plan_generation",
+                model_override="override/model",
+            ).generate_meal_plan(
+                household=self.household,
+                start_date=date(2026, 6, 1),
+                end_date=date(2026, 6, 7),
+                preferences=self.prefs,
+            )
+        self.assertEqual(captured["payload"]["model"], "override/model")
+
+    def test_make_api_call_uses_default_when_no_binding(self):
+        from meal_planner_app.services.ai_service import AIService
+        from meal_planner_app.services.ai_settings import FEATURE_KEYS
+
+        captured: dict = {}
+        with patch("httpx.Client.post", new=self._make_fake_post(captured)):
+            # No AISettings row exists for self.household at this point.
+            AIService(
+                household=self.household,
+                feature="meal_plan_generation",
+            ).generate_meal_plan(
+                household=self.household,
+                start_date=date(2026, 6, 1),
+                end_date=date(2026, 6, 7),
+                preferences=self.prefs,
+            )
+        self.assertEqual(
+            captured["payload"]["model"],
+            FEATURE_KEYS["meal_plan_generation"]["default_model"],
+        )
+
+    def test_per_household_api_key_override_beats_env(self):
+        from meal_planner_app.models import AISettings
+        from meal_planner_app.services.ai_service import AIService
+
+        settings_row, _ = AISettings.objects.get_or_create(
+            household=self.household
+        )
+        settings_row.openrouter_api_key_override = "house-key"
+        settings_row.save()
+
+        captured: dict = {}
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "env-key"}):
+            with patch("httpx.Client.post", new=self._make_fake_post(captured)):
+                AIService(
+                    household=self.household,
+                    feature="meal_plan_generation",
+                ).generate_meal_plan(
+                    household=self.household,
+                    start_date=date(2026, 6, 1),
+                    end_date=date(2026, 6, 7),
+                    preferences=self.prefs,
+                )
+        self.assertEqual(
+            captured["headers"].get("Authorization"), "Bearer house-key"
+        )
+
 
 # =============================================================================
 # Response Parser Tests
@@ -2029,6 +2818,185 @@ class AiPlanDayActionViewTests(TestCase):
         )
         self.assertRedirects(response, reverse("meal_planner:planner"))
 
+    def test_accept_meal_sets_status_and_keeps_day_accepted(self):
+        """POST with action=accept_meal flips that meal's status to
+        'accepted' and leaves a previously accepted day accepted."""
+        self._init_session()
+        # Make the day start out as "pending" so we can observe the
+        # reconcile logic flipping it to "accepted" after one meal is
+        # accepted.
+        self.session_data["days"][0]["status"] = "pending"
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "accept_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+        session = self.client.session
+        plan_data = session[self.session_key]
+        self.assertEqual(
+            plan_data["days"][0]["meals"][0]["status"], "accepted"
+        )
+        # Day status derived from meals: any accepted → day "accepted".
+        self.assertEqual(plan_data["days"][0]["status"], "accepted")
+
+    def test_reject_meal_marks_only_that_meal(self):
+        """POST with action=reject_meal leaves the day accepted (other meals
+        still accepted) and only flips the targeted meal."""
+        self._init_session()
+        # Accept the day first, with two meals so flipping one doesn't tip
+        # the derived day status.
+        self.session_data["days"][0]["status"] = "accepted"
+        self.session_data["days"][0]["meals"] = [
+            {
+                "meal_type": "breakfast",
+                "title": "Oatmeal",
+                "description": "",
+                "cook_time_minutes": 10,
+                "ingredients": ["oats"],
+                "status": "accepted",
+            },
+            {
+                "meal_type": "dinner",
+                "title": "Pasta",
+                "description": "",
+                "cook_time_minutes": 20,
+                "ingredients": ["pasta"],
+                "status": "accepted",
+            },
+        ]
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+        plan_data = self.client.session[self.session_key]
+        self.assertEqual(
+            plan_data["days"][0]["meals"][0]["status"], "rejected"
+        )
+        self.assertEqual(
+            plan_data["days"][0]["meals"][1]["status"], "accepted"
+        )
+        # Day still accepted because the other meal is still accepted.
+        self.assertEqual(plan_data["days"][0]["status"], "accepted")
+
+    def test_reject_all_meals_flips_day_status_to_rejected(self):
+        """When every meal on a day is rejected, the day pill should
+        automatically show as rejected (derived from meal statuses)."""
+        self._init_session()
+        self.session_data["days"][0]["status"] = "accepted"
+        for meal in self.session_data["days"][0]["meals"]:
+            meal["status"] = "accepted"
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "0",
+            },
+        )
+        plan_data = self.client.session[self.session_key]
+        self.assertEqual(plan_data["days"][0]["status"], "rejected")
+
+    def test_reject_meal_with_invalid_index_returns_clean_error(self):
+        """Rejecting an out-of-range meal index redirects to review,
+        not to the planner — the user is mid-review and should not lose
+        their place."""
+        self._init_session()
+        self.client.login(username="dayaction", password="pass1234")
+        response = self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject_meal",
+                "day_index": "0",
+                "meal_index": "99",
+            },
+        )
+        self.assertRedirects(
+            response,
+            f"{self.review_url}?week_start={self.week_start}",
+        )
+
+    def test_accept_day_marks_all_meals_accepted(self):
+        """Day-level accept propagates to every meal so a later per-meal
+        reject still finds the others accepted."""
+        self._init_session()
+        # Reset all meals to "rejected" to make the propagation visible.
+        for meal in self.session_data["days"][0]["meals"]:
+            meal["status"] = "rejected"
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "accept",
+                "day_index": "0",
+            },
+        )
+        plan_data = self.client.session[self.session_key]
+        for meal in plan_data["days"][0]["meals"]:
+            self.assertEqual(meal["status"], "accepted")
+
+    def test_reject_day_marks_all_meals_rejected(self):
+        """Day-level reject propagates to every meal too."""
+        self._init_session()
+        for meal in self.session_data["days"][0]["meals"]:
+            meal["status"] = "accepted"
+        session = self.client.session
+        session[self.session_key] = self.session_data
+        session.save()
+
+        self.client.login(username="dayaction", password="pass1234")
+        self.client.post(
+            self.action_url,
+            {
+                "week_start": str(self.week_start),
+                "action": "reject",
+                "day_index": "0",
+            },
+        )
+        plan_data = self.client.session[self.session_key]
+        for meal in plan_data["days"][0]["meals"]:
+            self.assertEqual(meal["status"], "rejected")
+
 
 class AiPlanSaveViewTests(TestCase):
     """Tests for AiPlanSaveView (POST /ai-plan/save/)."""
@@ -2321,6 +3289,106 @@ class AiPlanSaveViewTests(TestCase):
             meal_type="snack",
         )
         self.assertEqual(meal.ingredients, [])
+
+    def test_skips_per_meal_rejections_when_saving_accepted_day(self):
+        """A day can stay "accepted" while one meal is individually rejected.
+        Save must honor that and only persist the accepted meals."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": str(self.week_start),
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "Yes Oatmeal",
+                            "description": "",
+                            "cook_time_minutes": 10,
+                            "ingredients": ["oats"],
+                            "status": "accepted",
+                        },
+                        {
+                            "meal_type": "dinner",
+                            "title": "No Pasta",
+                            "description": "",
+                            "cook_time_minutes": 25,
+                            "ingredients": ["pasta"],
+                            "status": "rejected",
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+        meals = MealPlan.objects.filter(household=self.household)
+        self.assertEqual(meals.count(), 1)
+        self.assertEqual(meals.first().meal_type, "breakfast")
+        self.assertIn("Yes Oatmeal", meals.first().custom_meal)
+
+    def test_saves_only_accepted_meals_when_day_has_mixed_statuses(self):
+        """If meals are flipped individually after the day was accepted,
+        only the explicitly accepted meals land in MealPlan."""
+        session_data = {
+            "week_start": str(self.week_start),
+            "days": [
+                {
+                    "index": 0,
+                    "date": str(self.week_start),
+                    "status": "accepted",
+                    "meals": [
+                        {
+                            "meal_type": "breakfast",
+                            "title": "A1",
+                            "description": "",
+                            "cook_time_minutes": 5,
+                            "ingredients": ["x"],
+                            "status": "accepted",
+                        },
+                        {
+                            "meal_type": "lunch",
+                            "title": "A2",
+                            "description": "",
+                            "cook_time_minutes": 5,
+                            "ingredients": ["x"],
+                            "status": "accepted",
+                        },
+                        {
+                            "meal_type": "dinner",
+                            "title": "A3",
+                            "description": "",
+                            "cook_time_minutes": 5,
+                            "ingredients": ["x"],
+                            "status": "rejected",
+                        },
+                    ],
+                },
+            ],
+        }
+        self.client.login(username="saveuser", password="pass1234")
+        session = self.client.session
+        session[self.session_key] = session_data
+        session.save()
+
+        self.client.post(
+            self.save_url,
+            {"week_start": str(self.week_start)},
+        )
+        slots = list(
+            MealPlan.objects.filter(household=self.household)
+            .order_by("meal_type")
+            .values_list("meal_type", flat=True)
+        )
+        self.assertEqual(slots, ["breakfast", "lunch"])
 
 
 class AiPlanCancelViewTests(TestCase):

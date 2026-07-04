@@ -184,13 +184,39 @@ MEDIA_ROOT = BASE_DIR / "media"
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
 
 # AI Meal Suggestions Configuration
+#
+# All AI features (meal plan generation, recipe import, image import,
+# receipt enrichment) are routed through OpenRouter so households can
+# pick one model per feature from the same catalog at /tools/ai-models/.
+# Set ``OPENROUTER_API_KEY`` in the environment — or override per
+# household in the settings page.
 AI_API_BASE_URL = os.environ.get(
     "AI_API_BASE_URL",
-    "https://opencode.ai/zen/v1",
+    "https://openrouter.ai/api/v1",
 )
-AI_MODEL = os.environ.get("AI_MODEL", "deepseek-v4-flash-free")
+AI_MODEL = os.environ.get("AI_MODEL", "openrouter/free")
 AI_REQUEST_TIMEOUT = int(os.environ.get("AI_REQUEST_TIMEOUT", "60"))
 AI_MAX_RETRIES = int(os.environ.get("AI_MAX_RETRIES", "3"))
+
+# OpenRouter catalog + per-household API key resolution.
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+OPENROUTER_CATALOG_TTL_SECONDS = int(
+    os.environ.get("OPENROUTER_CATALOG_TTL_SECONDS", "600")
+)
+OPENROUTER_CATALOG_TIMEOUT = int(os.environ.get("OPENROUTER_CATALOG_TIMEOUT", "30"))
+
+# USDA FoodData Central — used to look up an Ingredient by name and pull
+# the canonical kcal/protein/carbs/fat snapshot. The public endpoint is
+# gated by ``api_key``; a free ``DEMO_KEY`` is accepted with strict rate
+# limits, so production deployments should set a real key in the env
+# (or override per household on the AI Settings page).
+USDA_FDC_API_KEY = os.environ.get("USDA_FDC_API_KEY", "DEMO_KEY").strip()
+USDA_FDC_SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
+USDA_FDC_FOOD_URL = "https://api.nal.usda.gov/fdc/v1/food/{fdc_id}"
+USDA_FDC_TIMEOUT = int(os.environ.get("USDA_FDC_TIMEOUT", "20"))
+USDA_FDC_CACHE_TTL_SECONDS = int(
+    os.environ.get("USDA_FDC_CACHE_TTL_SECONDS", "3600")
+)
 
 # Email backend — writes reset emails to logs/ in dev, configure SMTP for production
 if DEBUG:

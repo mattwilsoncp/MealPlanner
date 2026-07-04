@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}USDA link &middot; {{ ingredient.name }} &middot; Meal Planner{% endblock %}
+
+{% block content %}
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <span class="vp-eyebrow">USDA FoodData Central</span>
+        <h1 class="vp-display-secondary">Link {{ ingredient.name }}.</h1>
+        <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">
+            Search the canonical USDA database, pick the food that is
+            closest to your pantry definition, and the matching
+            kcal / protein / carbs / fat snapshot will be saved with the
+            ingredient so it shows up on every recipe that uses it.
+        </p>
+        {% if linked %}
+        <p class="vp-label-mono" style="margin-top: 16px; color: var(--text-secondary); font-size: 0.8125rem;">
+            Currently linked to USDA id {{ ingredient.usda_food_id }}.
+            Saving a new match overrides the existing one.
+        </p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="vp-section" style="max-width: 1120px;">
+    <form method="get" class="vp-card-tight" style="padding: 0; overflow: hidden;">
+        <div style="padding: 24px 32px; display: flex; flex-wrap: wrap; align-items: end; gap: 16px;">
+            <div style="flex: 1 1 360px;">
+                <label class="vp-label-mono" for="q">Search query</label>
+                <input type="text"
+                       id="q"
+                       name="q"
+                       value="{{ query }}"
+                       placeholder="e.g. tomato, cheddar cheese, olive oil"
+                       autocomplete="off"
+                       spellcheck="false"
+                       class="vp-input"
+                       style="margin-top: 8px; width: 100%; padding: 10px 12px; border: 1px solid var(--border-medium); border-radius: 4px; background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.875rem;">
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="vp-btn-primary">Search USDA</button>
+                <a href="{% url 'home' %}" class="vp-btn-ghost">Cancel</a>
+            </div>
+        </div>
+    </form>
+
+    {% if api_error %}
+    <div class="vp-card-tight" style="margin-top: 24px; padding: 16px 20px; border-color: var(--border-medium);">
+        <span class="vp-label-mono">Heads up</span>
+        <p style="margin-top: 6px; color: var(--text-secondary); font-size: 0.95rem;">
+            The upstream USDA service responded with an error
+            ({{ api_error }}). Try the search again in a moment, or fall
+            back to editing the nutrition fields directly via the
+            Django admin.
+        </p>
+    </div>
+    {% endif %}
+
+    {% if query and not matches and not api_error %}
+    <div class="vp-card-tight" style="margin-top: 24px; padding: 16px 20px;">
+        <span class="vp-label-mono">No matches</span>
+        <p style="margin-top: 6px; color: var(--text-secondary); font-size: 0.95rem;">
+            The USDA catalog returned no results for <code>{{ query }}</code>.
+            Try a shorter or alternate spelling (e.g. <em>flour</em> instead
+            of <em>all-purpose flour</em>).
+        </p>
+    </div>
+    {% endif %}
+
+    {% if matches %}
+    <div class="vp-section-header" style="margin-top: 32px;">
+        <span class="vp-eyebrow">Matches</span>
+        <h2 class="vp-section-header-title">Pick the closest food</h2>
+    </div>
+
+    <div class="vp-card" style="padding: 0; overflow: hidden;">
+        <table class="vp-table" style="width: 100%; border-collapse: collapse; font-family: var(--font-primary);">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-strong);">
+                    <th style="padding: 12px 16px; text-align: left; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">USDA id</th>
+                    <th style="padding: 12px 16px; text-align: left; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">Description</th>
+                    <th style="padding: 12px 16px; text-align: left; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">Dataset</th>
+                    <th style="padding: 12px 16px; text-align: left; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">kcal / 100g</th>
+                    <th style="padding: 12px 16px; text-align: left; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">P / C / F</th>
+                    <th style="padding: 12px 16px; text-align: right; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in matches %}
+                <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 12px 16px; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary);">
+                        {{ m.fdc_id }}
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <span style="font-weight: 500; color: var(--text-primary);">{{ m.description }}</span>
+                        {% if m.brand_name %}
+                        <div class="vp-label-mono" style="font-size: 0.6875rem; margin-top: 4px; color: var(--text-muted); letter-spacing: 0.05em;">
+                            {{ m.brand_name }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                        {{ m.data_type|default:"&mdash;" }}
+                    </td>
+                    <td style="padding: 12px 16px; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary);">
+                        {% if m.calories_kcal is not None %}
+                        {{ m.calories_kcal }} kcal
+                        {% else %}
+                        &mdash;
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);">
+                        {% if m.protein_g is not None %}P {{ m.protein_g|floatformat:2 }}g{% else %}&mdash;{% endif %}
+                        &middot;
+                        {% if m.carbs_g is not None %}C {{ m.carbs_g|floatformat:2 }}g{% else %}&mdash;{% endif %}
+                        &middot;
+                        {% if m.fat_g is not None %}F {{ m.fat_g|floatformat:2 }}g{% else %}&mdash;{% endif %}
+                    </td>
+                    <td style="padding: 8px 16px; text-align: right;">
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="fdc_id" value="{{ m.fdc_id }}">
+                            <input type="hidden" name="description" value="{{ m.description }}">
+                            <input type="hidden" name="data_type" value="{{ m.data_type }}">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <button type="submit" class="vp-btn-primary" style="padding: 6px 14px; font-size: 0.8125rem;">
+                                Use this
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
