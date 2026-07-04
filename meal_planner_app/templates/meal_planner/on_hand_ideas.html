@@ -88,7 +88,7 @@ async function toggleOnHandIdea(recipeId) {
         const formData = new FormData();
         formData.append('recipe_id', recipeId);
 
-        const response = await fetch(`/planner/api/recipe/${recipeId}/toggle-on-hand/`, {
+        const response = await fetch(`/api/recipe/${recipeId}/toggle-on-hand/`, {
             method: 'POST',
             body: formData,
             headers: {
