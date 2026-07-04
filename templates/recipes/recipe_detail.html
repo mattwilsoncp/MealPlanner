@@ -116,10 +116,85 @@
                             {% else %}
                             <span>Nutrition unavailable for this ingredient.</span>
                             {% endif %}
+                            <a href="{% url 'ingredients:link_usda' pk=ing.ingredient.pk %}"
+                               style="margin-left: 16px; color: var(--text-secondary); text-transform: none; letter-spacing: 0; font-family: var(--font-primary); font-size: 0.8125rem; border-bottom: 1px solid var(--border-medium); padding-bottom: 1px;">
+                                {% if ing.ingredient.usda_food_id %}Re-link USDA{% else %}Link USDA{% endif %}
+                            </a>
                         </div>
                     </li>
                     {% endfor %}
                 </ul>
+            </div>
+            {% endif %}
+
+            {% if nutrition_summary and not nutrition_summary.is_empty %}
+            <div style="margin-top: 32px;">
+                <div class="vp-card-tight" style="padding: 28px 32px;">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px;">
+                        <div>
+                            <span class="vp-eyebrow">Nutrition totals</span>
+                            <div style="margin-top: 8px; font-family: var(--font-display); font-size: 2.25rem; font-weight: 500; color: var(--text-primary); line-height: 1.05;">
+                                {% if nutrition_summary.linked_count %}
+                                {{ nutrition_summary.calories_kcal|floatformat:0 }} <span style="font-size: 1rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;">kcal</span>
+                                {% else %}
+                                <span style="color: var(--text-muted);">—</span> <span style="font-size: 1rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;">kcal yet</span>
+                                {% endif %}
+                            </div>
+                            <p class="vp-label-mono" style="margin-top: 8px; font-size: 0.6875rem; color: var(--text-muted);">
+                                {% if nutrition_summary.linked_count and nutrition_summary.needs_attention_count %}
+                                {{ nutrition_summary.linked_count }} of {{ nutrition_summary.total_count }} ingredient{{ nutrition_summary.total_count|pluralize }} in totals &middot; {{ nutrition_summary.needs_attention_count }} linked but not measurable below
+                                {% elif nutrition_summary.linked_count %}
+                                {{ nutrition_summary.linked_count }} of {{ nutrition_summary.total_count }} ingredient{{ nutrition_summary.total_count|pluralize }} in totals
+                                {% else %}
+                                {{ nutrition_summary.needs_attention_count }} of {{ nutrition_summary.total_count }} ingredient{{ nutrition_summary.total_count|pluralize }} linked but not measurable &mdash; fix the unit or relink with macros to roll up
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if nutrition_summary.linked_count %}
+                        <div style="display: flex; gap: 24px;">
+                            <div>
+                                <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">Protein</span>
+                                <div style="font-family: var(--font-display); font-size: 1.5rem; color: var(--text-primary); line-height: 1.1;">{{ nutrition_summary.protein_g|floatformat:2 }}<span style="font-size: 0.875rem; color: var(--text-muted); font-family: var(--font-mono);">g</span></div>
+                            </div>
+                            <div>
+                                <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">Carbs</span>
+                                <div style="font-family: var(--font-display); font-size: 1.5rem; color: var(--text-primary); line-height: 1.1;">{{ nutrition_summary.carbs_g|floatformat:2 }}<span style="font-size: 0.875rem; color: var(--text-muted); font-family: var(--font-mono);">g</span></div>
+                            </div>
+                            <div>
+                                <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">Fat</span>
+                                <div style="font-family: var(--font-display); font-size: 1.5rem; color: var(--text-primary); line-height: 1.1;">{{ nutrition_summary.fat_g|floatformat:2 }}<span style="font-size: 0.875rem; color: var(--text-muted); font-family: var(--font-mono);">g</span></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if nutrition_summary.skipped %}
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">Not in totals</span>
+                        <ul style="margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+                            {% for s in nutrition_summary.skipped %}
+                            <li style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);">
+                                {{ s.quantity }} {{ s.unit }} {{ s.name }} &mdash; <span style="color: var(--text-muted);">{{ s.reason }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if not nutrition_summary.linked_count %}
+                        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 0.85rem; max-width: 64ch; line-height: 1.5;">
+                            <em>Why nothing rolled up</em>: USDA FoodData Central reports
+                            nutrition per 100 g, so the recipe page can only sum rows
+                            whose unit is a weight (<code>g</code>, <code>kg</code>,
+                            <code>oz</code>, <code>lb</code>) or a volume measured as
+                            water (<code>ml</code>, <code>l</code>, <code>cup</code>,
+                            <code>tbsp</code>, <code>tsp</code>). Items in count units
+                            like <code>piece</code>, <code>clove</code>, <code>slice</code>
+                            need to be edited in the ingredient row so the unit is a
+                            weight, or the linked USDA entry needs to expose a
+                            calories/protein/carbs/fat snapshot (some Branded entries
+                            don&rsquo;t).
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
 
@@ -182,7 +257,7 @@ async function toggleOnHandIdea(recipeId) {
         const formData = new FormData();
         formData.append('recipe_id', recipeId);
 
-        const response = await fetch(`/planner/api/recipe/${recipeId}/toggle-on-hand/`, {
+        const response = await fetch(`/api/recipe/${recipeId}/toggle-on-hand/`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -203,7 +278,7 @@ async function toggleLeftoverWorthy(recipeId) {
         const formData = new FormData();
         formData.append('recipe_id', recipeId);
 
-        const response = await fetch(`/planner/api/recipe/${recipeId}/toggle-leftover/`, {
+        const response = await fetch(`/api/recipe/${recipeId}/toggle-leftover/`, {
             method: 'POST',
             body: formData,
             headers: {

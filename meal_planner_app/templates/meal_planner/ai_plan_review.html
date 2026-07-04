@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}Review AI Meal Plan{% endblock %}
 
@@ -26,6 +25,9 @@
             <span>{{ rejected_count }} Rejected</span>
             {% if skipped_count > 0 %}<span>{{ skipped_count }} Skipped (full)</span>{% endif %}
         </div>
+        <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+            Press a day to flip its meal set wholesale, or use the Accept / Reject buttons under each meal to keep what you want and drop the rest.
+        </p>
     </div>
 
     {% if total_days > 0 %}
@@ -34,7 +36,7 @@
             {% csrf_token %}
             <input type="hidden" name="week_start" value="{{ week_start }}">
             <button type="submit" class="vp-btn-primary" {% if not has_accepted %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
-                Save Accepted Days
+                Save Accepted Meals
             </button>
         </form>
         <form method="post" action="{% url 'meal_planner:ai_plan_cancel' %}">
@@ -44,42 +46,57 @@
         </form>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 24px;" x-data="planReview()">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
         {% for day in days %}
         <div class="vp-card-tight day-card"
              data-day-index="{{ day.index }}"
-             x-data="{ status: '{{ day.status }}' }"
-             :class="{
-                 'opacity-60': status === 'rejected',
-                 'border-color: var(--border-strong)': status === 'accepted' || status === 'rejected'
-             }"
-             x-init="status = '{{ day.status }}'"
-             style="padding: 0;">
+             style="padding: 0;
+                    {% if day.status == 'rejected' %}opacity: 0.55;
+                    {% elif day.status == 'accepted' %}border-color: var(--border-strong);
+                    {% endif %}">
             <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: start; gap: 16px;">
                 <div>
                     <h3 class="vp-display-secondary" style="font-size: 1.25rem; margin: 0;">{{ day.day_name }}</h3>
                     <p class="vp-label-mono mt-2">{{ day.formatted_date }}</p>
                 </div>
-                <div>
-                    <span x-show="status === 'accepted'" class="badge">Accepted</span>
-                    <span x-show="status === 'rejected'" class="badge">Rejected</span>
-                    <span x-show="status === 'skipped'" class="badge">Full &mdash; Skipped</span>
-                    <span x-show="status === 'pending'" class="badge">Pending</span>
+                <div style="text-align: right;">
+                    {% if day.status == "accepted" %}<span class="badge">Accepted</span>
+                    {% elif day.status == "rejected" %}<span class="badge">Rejected</span>
+                    {% elif day.status == "skipped" %}<span class="badge">Full &mdash; Skipped</span>
+                    {% else %}<span class="badge">Pending</span>{% endif %}
+                    {% if day.meal_total %}
+                    <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 8px; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase;">
+                        {{ day.meal_accepted }} of {{ day.meal_total }} meal{{ day.meal_total|pluralize }}{% if day.meal_rejected %} &middot; {{ day.meal_rejected }} rejected{% endif %}
+                    </p>
+                    {% endif %}
                 </div>
             </div>
 
             {% if day.meals %}
             <div style="padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
                 {% for meal in day.meals %}
-                <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 20px;">
+                {% with meal_status=meal.status|default:"accepted" %}
+                <div class="meal-card"
+                     data-meal-index="{{ forloop.counter0 }}"
+                     style="background: var(--bg-elevated);
+                            border: 1px solid var(--border-subtle);
+                            border-radius: 6px;
+                            padding: 20px;
+                            {% if meal_status == 'rejected' %}opacity: 0.55;
+                            {% elif meal_status == 'accepted' %}border-color: var(--border-medium);
+                            {% endif %}">
                     <div style="display: flex; align-items: start; justify-content: space-between; gap: 12px;">
                         <div>
                             <span class="vp-label-mono" style="text-transform: capitalize;">{{ meal.meal_type }}</span>
-                            <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 500; margin-top: 8px;">{{ meal.title }}</h4>
+                            <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 500; margin-top: 8px; {% if meal_status == 'rejected' %}text-decoration: line-through;{% endif %}">{{ meal.title }}</h4>
                         </div>
-                        {% if meal.cook_time_minutes %}
-                        <span class="vp-label-mono" style="color: var(--text-muted);">{{ meal.cook_time_minutes }} MIN</span>
-                        {% endif %}
+                        <div style="text-align: right;">
+                            {% if meal_status == "rejected" %}<span class="badge">Rejected</span>
+                            {% else %}<span class="badge">Accepted</span>{% endif %}
+                            {% if meal.cook_time_minutes %}
+                            <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 4px;">{{ meal.cook_time_minutes }} MIN</p>
+                            {% endif %}
+                        </div>
                     </div>
 
                     {% if meal.description %}
@@ -96,7 +113,30 @@
                         </details>
                     </div>
                     {% endif %}
+
+                    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-subtle); display: inline-flex; gap: 8px; flex-wrap: wrap;">
+                        {% if meal_status == "accepted" %}
+                        <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="week_start" value="{{ week_start }}">
+                            <input type="hidden" name="day_index" value="{{ day.index }}">
+                            <input type="hidden" name="meal_index" value="{{ forloop.counter0 }}">
+                            <input type="hidden" name="action" value="reject_meal">
+                            <button type="submit" class="vp-btn-ghost" style="padding: 6px 14px; font-size: 0.75rem;">Reject this meal</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="week_start" value="{{ week_start }}">
+                            <input type="hidden" name="day_index" value="{{ day.index }}">
+                            <input type="hidden" name="meal_index" value="{{ forloop.counter0 }}">
+                            <input type="hidden" name="action" value="accept_meal">
+                            <button type="submit" class="vp-btn-ghost" style="padding: 6px 14px; font-size: 0.75rem; border-color: var(--border-strong);">Accept this meal</button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
+                {% endwith %}
                 {% endfor %}
             </div>
             {% else %}
@@ -105,21 +145,56 @@
             </div>
             {% endif %}
 
-            {% if day.status == "pending" %}
             <div style="padding: 20px 28px; border-top: 1px solid var(--border-subtle); display: inline-flex; gap: 12px; flex-wrap: wrap;">
-                <button @click="acceptDay({{ day.index }}, '{{ week_start }}')" class="vp-btn-primary">Accept Day</button>
-                <button @click="regenerateDay({{ day.index }}, '{{ week_start }}')" class="vp-btn-ghost">Regenerate</button>
-                <button @click="rejectDay({{ day.index }}, '{{ week_start }}')" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject</button>
+                {% if day.status == "accepted" %}
+                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="day_index" value="{{ day.index }}">
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject day</button>
+                </form>
+                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="day_index" value="{{ day.index }}">
+                    <input type="hidden" name="action" value="regenerate">
+                    <button type="submit" class="vp-btn-ghost">Regenerate day</button>
+                </form>
+                {% elif day.status == "rejected" %}
+                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="day_index" value="{{ day.index }}">
+                    <input type="hidden" name="action" value="accept">
+                    <button type="submit" class="vp-btn-primary">Undo reject &mdash; accept day</button>
+                </form>
+                {% elif day.status == "pending" or day.status == "skipped" %}
+                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="day_index" value="{{ day.index }}">
+                    <input type="hidden" name="action" value="accept">
+                    <button type="submit" class="vp-btn-primary">Accept day</button>
+                </form>
+                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="day_index" value="{{ day.index }}">
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" class="vp-btn-ghost" style="color: var(--text-secondary);">Reject day</button>
+                </form>
+                {% if day.status == "pending" %}
+                <form method="post" action="{% url 'meal_planner:ai_plan_day_action' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <input type="hidden" name="day_index" value="{{ day.index }}">
+                    <input type="hidden" name="action" value="regenerate">
+                    <button type="submit" class="vp-btn-ghost">Regenerate day</button>
+                </form>
+                {% endif %}
+                {% endif %}
             </div>
-            {% elif day.status == "accepted" %}
-            <div style="padding: 20px 28px; border-top: 1px solid var(--border-subtle);">
-                <button @click="rejectDay({{ day.index }}, '{{ week_start }}')" class="vp-btn-ghost" style="color: var(--text-secondary);">Undo Accept</button>
-            </div>
-            {% elif day.status == "rejected" %}
-            <div style="padding: 20px 28px; border-top: 1px solid var(--border-subtle);">
-                <button @click="acceptDay({{ day.index }}, '{{ week_start }}')" class="vp-btn-primary">Undo Reject</button>
-            </div>
-            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -129,7 +204,7 @@
             {% csrf_token %}
             <input type="hidden" name="week_start" value="{{ week_start }}">
             <button type="submit" class="vp-btn-primary" {% if not has_accepted %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
-                Save Accepted Days ({{ accepted_count }})
+                Save Accepted Meals ({{ accepted_count }})
             </button>
         </form>
         <form method="post" action="{% url 'meal_planner:ai_plan_cancel' %}">
@@ -146,48 +221,4 @@
     </div>
     {% endif %}
 </section>
-{% endblock %}
-
-{% block extra_js %}
-{% if display_days %}
-<script>
-function planReview() {
-    return {
-        init() {},
-        async acceptDay(dayIndex, weekStart) {
-            const result = await this.submitAction('accept', dayIndex, weekStart);
-            if (result) location.reload();
-        },
-        async rejectDay(dayIndex, weekStart) {
-            const result = await this.submitAction('reject', dayIndex, weekStart);
-            if (result) location.reload();
-        },
-        async regenerateDay(dayIndex, weekStart) {
-            const result = await this.submitAction('regenerate', dayIndex, weekStart);
-            if (result) location.reload();
-        },
-        async submitAction(action, dayIndex, weekStart) {
-            const formData = new FormData();
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-            formData.append('action', action);
-            formData.append('day_index', dayIndex);
-            formData.append('week_start', weekStart);
-
-            try {
-                const response = await fetch('{% url "meal_planner:ai_plan_day_action" %}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-                if (response.ok || response.status === 302) return true;
-                return false;
-            } catch (error) {
-                console.error('Action failed:', error);
-                return false;
-            }
-        }
-    };
-}
-</script>
-{% endif %}
 {% endblock %}
