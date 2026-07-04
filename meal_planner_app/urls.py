@@ -119,4 +119,10 @@ urlpatterns = [
         views.AiPlanCancelView.as_view(),
         name="ai_plan_cancel",
     ),
+    # Per-household AI model picker
+    path(
+        "tools/ai-models/",
+        views.AIModelsSettingsView.as_view(),
+        name="ai_models_settings",
+    ),
 ]

@@ -401,7 +401,12 @@ Rules:
 """
 
     def form_valid(self, form):
-        api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+        household = self.request.user.household
+        # Resolve API key + model from per-household AI settings (falls back
+        # to env / inbox default when the household has not customized).
+        from meal_planner_app.services.ai_settings import resolve_model, resolve_openrouter_api_key
+
+        api_key = resolve_openrouter_api_key(household)
         if not api_key:
             form.add_error("image", "OPENROUTER_API_KEY is not configured.")
             return self.form_invalid(form)
@@ -410,7 +415,11 @@ Rules:
             image_b64, content_type = self._prepare_image(form.cleaned_data["image"])
             client = OpenAI(api_key=api_key, base_url="https://openrouter.ai/api/v1")
             response = client.chat.completions.create(
-                model=form.cleaned_data.get("model") or "google/gemini-2.0-flash-001",
+                model=resolve_model(
+                    household=household,
+                    feature_key="receipt_barcode",
+                    override=form.cleaned_data.get("model") or "",
+                ),
                 messages=[
                     {
                         "role": "system",

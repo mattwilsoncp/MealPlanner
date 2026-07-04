@@ -1078,6 +1078,9 @@ class GenerateAiPlanView(LoginRequiredMixin, View):
                     "description": meal_data.get("description", ""),
                     "cook_time_minutes": meal_data.get("cook_time_minutes", 30),
                     "ingredients": meal_data.get("ingredients", []),
+                    # Per-meal default: every suggestion is accepted until the
+                    # reviewer flips it. Saving skips meals with status=="rejected".
+                    "status": meal_data.get("status") or "accepted",
                 })
 
             days.append({
@@ -1141,9 +1144,27 @@ class AiPlanReviewView(LoginRequiredMixin, TemplateView):
         rejected_count = sum(1 for d in days if d["status"] == "rejected")
         skipped_count = sum(1 for d in days if d["status"] == "skipped")
 
+        # Build a parallel `days_with_counts` so the template can show
+        # "3 of 5 accepted" on each card without re-computing in Django.
+        days_with_counts = []
+        for d in days:
+            meals = d.get("meals") or []
+            meal_accepted = sum(
+                1 for m in meals if (m.get("status") or "accepted") == "accepted"
+            )
+            meal_rejected = sum(
+                1 for m in meals if m.get("status") == "rejected"
+            )
+            days_with_counts.append({
+                **d,
+                "meal_total": len(meals),
+                "meal_accepted": meal_accepted,
+                "meal_rejected": meal_rejected,
+            })
+
         context = {
             "plan": plan_data,
-            "days": days,
+            "days": days_with_counts,
             "week_start": week_start,
             "week_end": week_start + timedelta(days=6),
             "week_days": week_days,
@@ -1153,20 +1174,35 @@ class AiPlanReviewView(LoginRequiredMixin, TemplateView):
             "rejected_count": rejected_count,
             "skipped_count": skipped_count,
             "total_days": len(days),
+            # The Save button is enabled when *any* day is accepted. Per-meal
+            # rejections are handled at save time, not at this toggle, so the
+            # reviewer can flip meals even on already-accepted days.
             "has_accepted": accepted_count > 0,
         }
         return self.render_to_response(context)
 
 
 class AiPlanDayActionView(LoginRequiredMixin, View):
-    """View to accept/reject/regenerate a single day in the AI plan."""
+    """View to accept/reject/regenerate a day or an individual meal.
+
+    Supported actions:
+        - ``accept`` / ``reject`` / ``regenerate`` apply to a whole day
+          (and propagate meal status accordingly).
+        - ``accept_meal`` / ``reject_meal`` toggle a single meal; the parent
+          day's status is then re-derived from its meals so the header pill
+          stays consistent.
+    """
 
     http_method_names = ["post"]
+
+    MEAL_ACTIONS = {"accept_meal", "reject_meal"}
+    DAY_ACTIONS = {"accept", "reject", "regenerate"}
 
     def post(self, request, *args, **kwargs):
         week_start_str = request.POST.get("week_start")
         action = request.POST.get("action")
         day_index_str = request.POST.get("day_index")
+        meal_index_str = request.POST.get("meal_index")
 
         if not all([week_start_str, action, day_index_str]):
             messages.error(request, "Missing required parameters.")
@@ -1177,6 +1213,14 @@ class AiPlanDayActionView(LoginRequiredMixin, View):
         except (ValueError, TypeError):
             messages.error(request, "Invalid day index.")
             return redirect("meal_planner:planner")
+
+        try:
+            meal_index = int(meal_index_str) if meal_index_str not in (None, "") else None
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid meal index.")
+            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+
+        review_url = f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}"
 
         household = request.user.household
         session_key = f"ai_pending_plan_{household.pk}_{week_start_str}"
@@ -1189,28 +1233,91 @@ class AiPlanDayActionView(LoginRequiredMixin, View):
         days = plan_data.get("days", [])
         if day_index < 0 or day_index >= len(days):
             messages.error(request, "Invalid day index.")
-            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+            return redirect(review_url)
 
-        if action == "accept":
-            days[day_index]["status"] = "accepted"
-            messages.success(request, "Day accepted.")
-        elif action == "reject":
-            days[day_index]["status"] = "rejected"
-            messages.success(request, "Day rejected.")
-        elif action == "regenerate":
-            days[day_index]["status"] = "pending"
-            messages.success(request, "Day marked for regeneration.")
+        day = days[day_index]
+
+        if action in self.MEAL_ACTIONS:
+            ok = self._apply_meal_action(day, action, meal_index)
+            if not ok:
+                messages.error(request, "Invalid meal selection.")
+                return redirect(review_url)
+            self._reconcile_day_status(day)
+            verb = "accepted" if action == "accept_meal" else "rejected"
+            messages.success(request, f"Meal {verb}.")
+        elif action in self.DAY_ACTIONS:
+            if action == "accept":
+                self._set_all_meals(day, "accepted")
+                day["status"] = "accepted"
+                messages.success(request, "Day accepted.")
+            elif action == "reject":
+                self._set_all_meals(day, "rejected")
+                day["status"] = "rejected"
+                messages.success(request, "Day rejected.")
+            elif action == "regenerate":
+                day["status"] = "pending"
+                messages.success(request, "Day marked for regeneration.")
         else:
             messages.error(request, f"Unknown action: {action}")
-            return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+            return redirect(review_url)
 
         request.session[session_key] = plan_data
         request.session.modified = True
-        return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
+        return redirect(review_url)
+
+    @staticmethod
+    def _apply_meal_action(day: dict, action: str, meal_index: int | None) -> bool:
+        meals = day.get("meals") or []
+        if meal_index is None or meal_index < 0 or meal_index >= len(meals):
+            return False
+        new_status = "accepted" if action == "accept_meal" else "rejected"
+        meals[meal_index]["status"] = new_status
+        return True
+
+    @staticmethod
+    def _set_all_meals(day: dict, status_value: str) -> None:
+        for meal in day.get("meals") or []:
+            meal["status"] = status_value
+
+    @staticmethod
+    def _reconcile_day_status(day: dict) -> None:
+        """Recompute ``day['status']`` from its meal statuses.
+
+        Used so that flipping a meal via the per-meal action keeps the day
+        header pill in sync:
+            - any meal accepted  → day "accepted"
+            - all meals rejected → day "rejected"
+            - mixed without accepted → day "pending"
+        Empty days stay where they were; ``skipped`` is never introduced
+        here (that's set by ``GenerateAiPlanView`` when slots are full).
+        """
+        if day.get("status") == "skipped":
+            return  # Skipped-day sentinel is owned by the generator; don't churn it.
+        meals = day.get("meals") or []
+        if not meals:
+            # No meals to derive from — leave the day where it was unless it
+            # was 'accepted' (which would mislead the reviewer).
+            if day.get("status") == "accepted":
+                day["status"] = "pending"
+            return
+        statuses = {m.get("status", "accepted") for m in meals}
+        if "accepted" in statuses:
+            day["status"] = "accepted"
+        elif statuses == {"rejected"}:
+            day["status"] = "rejected"
+        else:
+            day["status"] = "pending"
 
 
 class AiPlanSaveView(LoginRequiredMixin, View):
-    """View to save accepted days from the AI plan to MealPlan records."""
+    """View to save accepted meals from the AI plan to MealPlan records.
+
+    Honors per-meal status: a day's ``status`` is treated as the user's
+    coarse-grained intent (``accepted`` → save everything, ``rejected`` →
+    save nothing) but individual meals may have been flipped via the
+    per-meal action, in which case only ``accepted`` meals land in the
+    planner. ``skipped`` days and rejected meals are skipped silently.
+    """
 
     http_method_names = ["post"]
 
@@ -1229,14 +1336,14 @@ class AiPlanSaveView(LoginRequiredMixin, View):
             return redirect("meal_planner:planner")
 
         days = plan_data.get("days", [])
-        accepted_days = [d for d in days if d["status"] == "accepted"]
+        candidate_days = [d for d in days if d.get("status") == "accepted"]
 
-        if not accepted_days:
+        if not candidate_days:
             messages.info(request, "No accepted days to save.")
             return redirect(f"{reverse('meal_planner:ai_plan_review')}?week_start={week_start_str}")
 
         created_count = 0
-        for day in accepted_days:
+        for day in candidate_days:
             meal_date_str = day.get("date")
             try:
                 meal_date = date.fromisoformat(meal_date_str)
@@ -1244,6 +1351,11 @@ class AiPlanSaveView(LoginRequiredMixin, View):
                 continue
 
             for meal_data in day.get("meals", []):
+                # Per-meal guard: a meal the reviewer individually rejected
+                # is skipped, even when the parent day is accepted.
+                if meal_data.get("status") == "rejected":
+                    continue
+
                 meal_type = _normalize_meal_type(meal_data.get("meal_type", "dinner"))
 
                 slot_exists = MealPlan.objects.filter(
@@ -1299,3 +1411,160 @@ class AiPlanCancelView(LoginRequiredMixin, View):
 
         messages.info(request, "AI plan review cancelled.")
         return redirect("meal_planner:planner")
+
+
+class AIModelsSettingsView(LoginRequiredMixin, TemplateView):
+    """Per-household AI model picker, fed from the live OpenRouter catalog."""
+
+    template_name = "settings/ai_models.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .models import AISettings
+        from .services.ai_settings import (
+            FEATURE_KEYS,
+            OpenRouterCatalog,
+            resolve_openrouter_api_key,
+        )
+
+        household = self.request.user.household
+        settings_row, _ = AISettings.objects.get_or_create(household=household)
+
+        refresh = self.request.GET.get("refresh") == "1"
+
+        # Always include both groups in the sidebar badges so the counts are
+        # known without per-feature fetches; the dropdown population happens
+        # lazily below so a single feature-key bug doesn't blank the page.
+        try:
+            all_models = OpenRouterCatalog.fetch(force_refresh=refresh)
+        except Exception as exc:  # pragma: no cover - upstream blip
+            messages.warning(
+                self.request,
+                f"Could not reach the OpenRouter catalog ({exc}). "
+                "Showing the last known snapshot or — on first visit — nothing.",
+            )
+            all_models = []
+
+        features: list[dict] = []
+        for feature_key, spec in FEATURE_KEYS.items():
+            if spec["needs_image"]:
+                eligible = [m for m in all_models if m.supports_image_input]
+            else:
+                eligible = list(all_models)
+            binding = settings_row.get_model(feature_key)
+            current_model_id = binding["model_id"] if binding else ""
+            free_count = sum(1 for m in eligible if m.is_free)
+            features.append(
+                {
+                    "key": feature_key,
+                    "label": spec["label"],
+                    "help": spec["help"],
+                    "needs_image": spec["needs_image"],
+                    "default_model": spec["default_model"],
+                    "current_model_id": current_model_id,
+                    "options": eligible,
+                    "free_count": free_count,
+                    "paid_count": len(eligible) - free_count,
+                }
+            )
+
+        context.update(
+            {
+                "features": features,
+                "catalog_size": len(all_models),
+                "env_api_key_set": bool(resolve_openrouter_api_key(None)),
+                "override_api_key": settings_row.openrouter_api_key_override or "",
+                "override_usda_api_key": settings_row.usda_fdc_api_key_override or "",
+                "refreshed": refresh,
+            }
+        )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        from .models import AISettings
+        from .services.ai_settings import FEATURE_KEYS, OpenRouterCatalog
+
+        household = request.user.household
+        settings_row, _ = AISettings.objects.get_or_create(household=household)
+
+        # Catalog lookup so we can stamp the saved label + reject unknown IDs.
+        all_models = OpenRouterCatalog.fetch()
+        by_id = {m.id: m for m in all_models}
+
+        saved: list[str] = []
+        cleared: list[str] = []
+        for feature_key, spec in FEATURE_KEYS.items():
+            raw = (request.POST.get(f"model_{feature_key}") or "").strip()
+            if not raw:
+                # Empty dropdown: remove any saved binding so the baked-in
+                # default applies. We don't persist an "empty" record.
+                if settings_row.get_model(feature_key) is not None:
+                    bindings = dict(settings_row.model_bindings or {})
+                    bindings.pop(feature_key, None)
+                    settings_row.model_bindings = bindings
+                    settings_row.save(
+                        update_fields=["model_bindings", "updated_at"]
+                    )
+                    cleared.append(feature_key)
+                continue
+            model = by_id.get(raw)
+            if model is None:
+                # Unknown id — keep the previous value, surface a soft message.
+                messages.warning(
+                    request,
+                    f"'{raw}' is not in the current OpenRouter catalog, "
+                    f"so {spec['label']} was left unchanged.",
+                )
+                continue
+            if spec["needs_image"] and not model.supports_image_input:
+                messages.warning(
+                    request,
+                    f"'{model.name}' does not accept image input, so it "
+                    f"can't be used for {spec['label']}. Keeping the prior model.",
+                )
+                continue
+            settings_row.set_model(feature_key, model.id, model.name)
+            saved.append(feature_key)
+
+        override = (request.POST.get("openrouter_api_key_override") or "").strip()
+        previous_override = settings_row.openrouter_api_key_override or ""
+        openrouter_changed = override != previous_override
+        if openrouter_changed:
+            settings_row.openrouter_api_key_override = override
+            settings_row.save(update_fields=["openrouter_api_key_override", "updated_at"])
+
+        usda_override = (
+            request.POST.get("usda_fdc_api_key_override") or ""
+        ).strip()
+        previous_usda_override = settings_row.usda_fdc_api_key_override or ""
+        usda_changed = usda_override != previous_usda_override
+        if usda_changed:
+            settings_row.usda_fdc_api_key_override = usda_override
+            settings_row.save(
+                update_fields=["usda_fdc_api_key_override", "updated_at"]
+            )
+
+        if saved or cleared:
+            parts: list[str] = []
+            if saved:
+                parts.append(
+                    f"updated {len(saved)} feature{'s' if len(saved) != 1 else ''}: "
+                    f"{', '.join(saved)}"
+                )
+            if cleared:
+                parts.append(
+                    f"reset {len(cleared)} feature{'s' if len(cleared) != 1 else ''} "
+                    f"to the default: {', '.join(cleared)}"
+                )
+            messages.success(request, "AI settings saved — " + "; ".join(parts) + ".")
+        elif openrouter_changed or usda_changed:
+            parts = []
+            if openrouter_changed:
+                parts.append("OpenRouter key")
+            if usda_changed:
+                parts.append("USDA FDC key")
+            messages.success(request, "API key(s) saved — " + ", ".join(parts) + ".")
+        else:
+            messages.info(request, "No AI model changes submitted.")
+
+        return redirect("meal_planner:ai_models_settings")

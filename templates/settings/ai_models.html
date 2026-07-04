@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}AI Models &middot; Settings &middot; Meal Planner{% endblock %}
+
+{% block content %}
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <span class="vp-eyebrow">Settings</span>
+        <h1 class="vp-display-secondary">AI models.</h1>
+        <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">
+            Pick which OpenRouter model powers each AI feature in your kitchen.
+            Choices apply across all imports &mdash; the per-form dropdowns still
+            act as a one-off override.
+        </p>
+    </div>
+</section>
+
+<section class="vp-section" style="max-width: 1120px;">
+    {% if not env_api_key_set %}
+    <div class="vp-card-tight" style="padding: 16px 20px; margin-bottom: 24px; border-color: var(--border-medium);">
+        <span class="vp-label-mono">Heads up</span>
+        <p style="margin-top: 6px; color: var(--text-secondary); font-size: 0.95rem;">
+            The server doesn't have <code>OPENROUTER_API_KEY</code> set, so AI
+            calls will fail until you either set one in the environment or save
+            your own override below. The model list still loads because
+            OpenRouter's catalog is public.
+        </p>
+    </div>
+    {% endif %}
+
+    <form method="post" class="vp-card" style="padding: 0; overflow: hidden;">
+        {% csrf_token %}
+
+        <div style="padding: 24px 32px; border-bottom: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px;">
+            <div>
+                <span class="vp-label-mono">OpenRouter catalog</span>
+                <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 6px; font-size: 0.75rem;">
+                    {% if features %}
+                        {{ catalog_size }} model{{ catalog_size|pluralize }} loaded &middot;
+                        {% if refreshed %}refreshed just now
+                        {% else %}cached for 10 min{% endif %}
+                    {% else %}
+                        Catalog empty &mdash; hit Refresh below.
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% url 'meal_planner:ai_models_settings' %}?refresh=1" class="vp-btn-ghost" style="font-size: 0.8125rem;">
+                Refresh catalog
+            </a>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            {% for feature in features %}
+            <div style="padding: 32px; border-bottom: 1px solid var(--border-subtle); {% if forloop.last %}border-bottom: none;{% endif %}">
+                <div style="display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 16px;">
+                    <div style="flex: 1 1 360px;">
+                        <span class="vp-eyebrow">Feature</span>
+                        <h2 class="vp-display-secondary" style="font-size: 1.5rem; margin: 8px 0 6px;">{{ feature.label }}</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; max-width: 56ch;">
+                            {{ feature.help }}
+                        </p>
+                        {% if feature.needs_image %}
+                        <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 12px; font-size: 0.75rem;">
+                            Requires an image-capable model &middot;
+                            {{ feature.free_count }} free / {{ feature.paid_count }} paid
+                        </p>
+                        {% else %}
+                        <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 12px; font-size: 0.75rem;">
+                            {{ feature.free_count }} free / {{ feature.paid_count }} paid
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div style="flex: 1 1 320px; min-width: 280px;">
+                        <label class="vp-label-mono" for="model_{{ feature.key }}">Model</label>
+                        <select id="model_{{ feature.key }}"
+                                name="model_{{ feature.key }}"
+                                class="vp-input"
+                                style="margin-top: 8px; width: 100%; padding: 10px 12px; border: 1px solid var(--border-medium); border-radius: 4px; background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.8125rem;">
+                            <option value="" {% if not feature.current_model_id %}selected{% endif %}>
+                                Default ({{ feature.default_model }})
+                            </option>
+                            {% regroup feature.options|dictsort:"is_free" by is_free as grouped %}
+                            {% for group in grouped %}
+                                {% if group.grouper %}
+                                <optgroup label="Free models">
+                                {% else %}
+                                <optgroup label="Paid models">
+                                {% endif %}
+                                    {% for option in group.list %}
+                                    <option value="{{ option.id }}"
+                                            {% if feature.current_model_id == option.id %}selected{% endif %}>
+                                        {{ option.name }} &middot; {{ option.id }}
+                                    </option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="padding: 32px; background: var(--bg-elevated);">
+            <span class="vp-label-mono">Per-household OpenRouter key (optional)</span>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 6px; max-width: 64ch;">
+                Leave blank to use the server-wide <code>OPENROUTER_API_KEY</code>
+                env value. Only host this app somewhere you trust before pasting a
+                paid account key here &mdash; v1 stores it in plain text.
+            </p>
+            <input type="text"
+                   name="openrouter_api_key_override"
+                   value="{{ override_api_key }}"
+                   placeholder="sk-or-..."
+                   autocomplete="off"
+                   spellcheck="false"
+                   class="vp-input"
+                   style="margin-top: 12px; width: 100%; max-width: 480px; padding: 10px 12px; border: 1px solid var(--border-medium); border-radius: 4px; background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.8125rem;">
+        </div>
+
+        <div style="padding: 32px; border-top: 1px solid var(--border-subtle);">
+            <span class="vp-label-mono">Per-household USDA FoodData Central key (optional)</span>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 6px; max-width: 64ch;">
+                Used by the <em>Link USDA</em> button on recipe ingredient rows
+                to search and import nutrition snapshots. Leave blank to use the
+                server-wide <code>USDA_FDC_API_KEY</code> env value (defaulting
+                to <code>DEMO_KEY</code>, which is rate-limited for development).
+                Apply for a real key at <code>api.data.gov</code> if you hit the
+                daily limit. v1 stores it in plain text.
+            </p>
+            {% if override_usda_api_key %}
+            <p class="vp-label-mono" style="color: var(--text-muted); margin-top: 12px; font-size: 0.6875rem;">
+                Currently using your household override
+                ({{ override_usda_api_key|slice:":3" }}…{{ override_usda_api_key|slice:"-3:" }}).
+                Submit the field empty to fall back to the env value.
+            </p>
+            {% endif %}
+            <input type="text"
+                   name="usda_fdc_api_key_override"
+                   value="{{ override_usda_api_key }}"
+                   placeholder="(blank — use server-wide key)"
+                   autocomplete="off"
+                   spellcheck="false"
+                   class="vp-input"
+                   style="margin-top: 12px; width: 100%; max-width: 480px; padding: 10px 12px; border: 1px solid var(--border-medium); border-radius: 4px; background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.8125rem;">
+        </div>
+
+        <div style="padding: 24px 32px; border-top: 1px solid var(--border-subtle); display: flex; gap: 12px; justify-content: flex-end;">
+            <a href="{% url 'home' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">Save AI settings</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,8 +1,11 @@
 """
-AI Meal Suggestions - Service layer for interacting with opencode.ai API.
+AI Meal Suggestions - Service layer for talking to the OpenRouter API.
 
 Provides AIService for generating weekly meal plans via OpenAI-compatible
-chat completions at https://opencode.ai/zen/v1 using free models.
+chat completions at https://openrouter.ai/api/v1. Model selection and the
+API key are resolved per call from
+``meal_planner_app.services.ai_settings`` so every household can pick
+its own model per feature from the settings page.
 """
 
 import json
@@ -28,14 +31,46 @@ class AIServiceResult:
     error: str | None = None
 
 
-class AIService:
-    """Service for interacting with opencode.ai to generate meal plans."""
+class _AIContentTruncatedError(Exception):
+    """Raised when a reasoning model empties its token budget before emitting content.
 
-    def __init__(self) -> None:
+    Distinct from a generic parse failure so the retry logic can retry with a
+    larger budget instead of giving up on the same payload.
+    """
+
+
+# Reasoning models (e.g. deepseek-v4-flash) burn tokens on chain-of-thought that
+# land in `reasoning_content`, leaving little room for the visible answer in
+# `content`. 8192 leaves comfortable headroom for a 7-day plan; if that is
+# still not enough we double once and cap at 16384 instead of retrying the
+# same payload.
+AI_MAX_TOKENS_DEFAULT = 8192
+AI_MAX_TOKENS_FLOOR = 16384
+
+
+class AIService:
+    """Service for talking to OpenRouter to generate meal plans.
+
+    Model selection and API key are resolved per call from
+    ``meal_planner_app.services.ai_settings``: the constructor accepts
+    a ``household`` so the per-household ``AISettings`` row is honored,
+    plus an optional OpenRouter model ``override`` that wins over the
+    saved binding.
+    """
+
+    def __init__(
+        self,
+        household: Any | None = None,
+        *,
+        feature: str = "meal_plan_generation",
+        model_override: str | None = None,
+    ) -> None:
         self.base_url = settings.AI_API_BASE_URL
-        self.model = settings.AI_MODEL
         self.timeout = settings.AI_REQUEST_TIMEOUT
         self.max_retries = settings.AI_MAX_RETRIES
+        self.household = household
+        self.feature = feature
+        self.model_override = model_override
 
     def generate_meal_plan(
         self,
@@ -57,12 +92,17 @@ class AIService:
         Returns:
             AIServiceResult with parsed meal plan or error details.
         """
+        # Keep the active household fresh; an instance may have been built
+        # without one (e.g. CLI callers) so prefer the call-site argument.
+        if household is not None:
+            self.household = household
+
         # Load preferences if not provided
-        if preferences is None:
+        if preferences is None and self.household is not None:
             from meal_planner_app.models import MealPreferences
 
             try:
-                preferences = MealPreferences.objects.get(household=household)
+                preferences = MealPreferences.objects.get(household=self.household)
             except MealPreferences.DoesNotExist:
                 preferences = None
 
@@ -174,10 +214,13 @@ class AIService:
         from meal_planner_app.services.response_parser import parse_weekly_plan
 
         last_error: Exception | None = None
+        max_tokens = AI_MAX_TOKENS_DEFAULT
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                response_data = self._make_api_call(messages)
+                response_data = self._make_api_call(
+                    messages, max_tokens=max_tokens, household=self.household
+                )
                 meals = parse_weekly_plan(response_data)
                 return AIServiceResult(success=True, meals=meals)
 
@@ -209,6 +252,28 @@ class AIService:
                 if attempt < self.max_retries:
                     time.sleep(2 ** attempt)
 
+            except _AIContentTruncatedError as e:
+                last_error = e
+                if max_tokens < AI_MAX_TOKENS_FLOOR and attempt < self.max_retries:
+                    max_tokens = min(max_tokens * 2, AI_MAX_TOKENS_FLOOR)
+                    logger.warning(
+                        "AI content empty after reasoning budget (attempt %d/%d); "
+                        "retrying with max_tokens=%d: %s",
+                        attempt,
+                        self.max_retries,
+                        max_tokens,
+                        e,
+                    )
+                    continue
+                return AIServiceResult(
+                    success=False,
+                    error=(
+                        f"AI response content is empty after {self.max_retries} attempts "
+                        f"(finish_reason=length, max_tokens={max_tokens}); the model used "
+                        "the full token budget for reasoning before emitting content"
+                    ),
+                )
+
             except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
                 return AIServiceResult(
                     success=False,
@@ -220,20 +285,47 @@ class AIService:
             error=f"AI API request failed after {self.max_retries} attempts: {last_error}",
         )
 
-    def _make_api_call(self, messages: list[dict[str, str]]) -> dict[str, Any]:
-        """Execute the actual HTTP request to the AI API."""
+    def _make_api_call(
+        self,
+        messages: list[dict[str, str]],
+        max_tokens: int = AI_MAX_TOKENS_DEFAULT,
+        household: Any | None = None,
+    ) -> dict[str, Any]:
+        """Execute the actual HTTP request to the AI API.
+
+        Resolves the model id and per-household API key from
+        ``meal_planner_app.services.ai_settings`` on each call so a
+        settings change takes effect without restarting the worker.
+
+        Raises ``_AIContentTruncatedError`` when the API responds 200 OK but the
+        model used every token for reasoning and never emitted a visible reply;
+        the retry loop handles that with a larger ``max_tokens`` budget.
+        """
+        from meal_planner_app.services.ai_settings import (
+            resolve_model,
+            resolve_openrouter_api_key,
+        )
+
+        active_household = household if household is not None else self.household
+        model_id = resolve_model(active_household, self.feature, self.model_override)
+        api_key = resolve_openrouter_api_key(active_household)
+
         payload = {
-            "model": self.model,
+            "model": model_id,
             "messages": messages,
-            "max_tokens": 4096,
+            "max_tokens": max_tokens,
             "temperature": 0.8,
         }
+
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         with httpx.Client(timeout=self.timeout) as client:
             response = client.post(
                 f"{self.base_url}/chat/completions",
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
             response.raise_for_status()
             data = response.json()
@@ -243,10 +335,21 @@ class AIService:
         if not choices:
             raise ValueError("AI response has no choices")
 
-        message = choices[0].get("message", {})
+        choice = choices[0]
+        finish_reason = choice.get("finish_reason")
+        message = choice.get("message", {})
         content = message.get("content", "")
 
         if not content:
+            # Reasoning models (e.g. deepseek-v4-flash) sometimes burn the
+            # entire token budget on chain-of-thought and never emit visible
+            # content. Surface that as a retryable, distinct condition so the
+            # retry loop can grow the budget instead of failing permanently.
+            if finish_reason == "length":
+                raise _AIContentTruncatedError(
+                    f"AI used all {max_tokens} tokens before emitting content "
+                    f"(finish_reason=length)"
+                )
             raise ValueError("AI response content is empty")
 
         # Parse the content as JSON

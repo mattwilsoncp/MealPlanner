@@ -37,6 +37,68 @@ class MealPreferences(models.Model):
         return f"Meal preferences for {self.household}"
 
 
+class AISettings(models.Model):
+    """Per-household AI model preferences and API key overrides.
+
+    ``model_bindings`` is a JSONField keyed by feature slug (see
+    ``meal_planner_app.services.ai_settings.FEATURE_KEYS``). Each value is::
+
+        {"model_id": "<openrouter id>", "label": "<display name>", "updated_at": "<iso8601>"}
+
+    ``openrouter_api_key_override`` is the per-household OpenRouter key,
+    used when the household wants to bill AI calls to their own account
+    instead of the shared server-wide ``OPENROUTER_API_KEY`` env value.
+    Empty falls back to the env value.
+
+    ``usda_fdc_api_key_override`` is the per-household USDA FoodData
+    Central API key, used when the household wants ingredient lookups
+    to bill against their own FDC account instead of the shared
+    ``USDA_FDC_API_KEY`` env value (which defaults to ``"DEMO_KEY"`` so
+    the link-from-recipe flow works out of the box for development).
+    Empty falls back to the env value.
+    """
+
+    household = models.OneToOneField(
+        Household, on_delete=models.CASCADE, related_name="ai_settings"
+    )
+    model_bindings = models.JSONField(default=dict, blank=True)
+    openrouter_api_key_override = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    usda_fdc_api_key_override = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "AI settings"
+        verbose_name_plural = "AI settings"
+
+    def __str__(self):
+        return f"AI settings for {self.household}"
+
+    def set_model(self, feature_key: str, model_id: str, label: str = "") -> None:
+        """Persist the chosen model for ``feature_key``."""
+        import datetime as _dt
+
+        data = dict(self.model_bindings or {})
+        data[feature_key] = {
+            "model_id": model_id,
+            "label": label,
+            "updated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        }
+        self.model_bindings = data
+        self.save(update_fields=["model_bindings", "updated_at"])
+
+    def get_model(self, feature_key: str) -> dict | None:
+        """Return the saved binding for ``feature_key`` or ``None``."""
+        if not self.model_bindings:
+            return None
+        value = self.model_bindings.get(feature_key)
+        return value if isinstance(value, dict) else None
+
+
 class MealType(models.TextChoices):
     BREAKFAST = "breakfast", "Breakfast"
     LUNCH = "lunch", "Lunch"
