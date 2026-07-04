@@ -518,6 +518,32 @@ class PlannerHomeViewTests(TestCase):
         # The recipe title is still rendered.
         self.assertIn("Test Recipe", body)
 
+    def test_custom_meal_card_surfaces_action_buttons(self):
+        """Regression: cards in the ``{% else %}`` branch (meals without
+        a recipe) used to render only the custom-meal text and a
+        Delete form. They now ship the same dashed-divider +
+        vp-btn-ghost action row, so users can route into the meal-edit
+        flow (``Edit``) and the cooking-reconcile screen (``Cook``)
+        without first having to attach a recipe."""
+        self.client.login(username="alice", password="pass1234")
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            custom_meal="Leftover stir-fry",
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # The custom-meal text shows.
+        self.assertIn("Leftover stir-fry", body)
+        # Both Edit (meal-edit flow) and Cook buttons are visible.
+        self.assertIn("vp-btn-ghost planner-meal-action", body)
+        # And the divider is drawn even on the no-recipe branch.
+        self.assertIn(
+            "border-top: 1px dashed var(--border-subtle)", body
+        )
+
 
 # =============================================================================
 # Form Tests
