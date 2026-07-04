@@ -37,7 +37,7 @@
                 <a href="{% url 'meal_planner:on_hand_ideas' %}" class="vp-btn-ghost">On-Hand Ideas</a>
                 <a href="{% url 'shopping:week' %}?week_start={{ start_date|date:'Y-m-d' }}" class="vp-btn-ghost">Shopping List</a>
                 <a href="{% url 'meal_planner:preferences' %}" class="vp-btn-ghost">Preferences</a>
-                <form method="post" action="{% url 'meal_planner:generate_ai_plan' %}" onsubmit="return confirm('Generate AI meal suggestions for this week? You will be able to review, accept, or reject each day before saving.');" style="display: inline;">
+                <form id="generate-ai-form" method="post" action="{% url 'meal_planner:generate_ai_plan' %}" style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="week_start" value="{{ start_date|date:'Y-m-d' }}">
                     <button type="submit" class="vp-btn-primary" id="generate-ai-btn">Generate AI Plan</button>
@@ -46,6 +46,29 @@
         </div>
     </div>
 </section>
+
+<div id="ai-progress-overlay" style="display: none; position: fixed; inset: 0; background: rgba(33, 37, 41, 0.55); z-index: 9999; align-items: center; justify-content: center;"
+     data-state="idle">
+    <div class="vp-card" style="max-width: 28rem; padding: 32px 36px;">
+        <span class="vp-eyebrow">Generating meal plan</span>
+        <div id="ai-progress-stage" style="margin-top: 12px; font-family: var(--font-display); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1.1; min-height: 2.6rem;">
+            Preparing prompt…
+        </div>
+        <p id="ai-progress-detail" style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary); letter-spacing: 0.02em; min-height: 1.5em;">
+            &nbsp;
+        </p>
+        <div style="margin-top: 20px; height: 2px; background: var(--border-subtle); overflow: hidden;">
+            <div id="ai-progress-bar" style="height: 100%; background: var(--text-primary); width: 0%; transition: width 0.4s ease;"></div>
+        </div>
+        <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" id="ai-progress-dismiss" class="vp-btn-ghost" style="display: none; padding: 6px 14px; font-size: 0.8125rem;">Dismiss</button>
+            <span style="flex: 1;"></span>
+            <span class="vp-label-mono" style="font-size: 0.6875rem; color: var(--text-muted);">
+                Streaming &middot; do not reload
+            </span>
+        </div>
+    </div>
+</div>
 
 <section class="vp-section">
     <div id="recipe-modal" class="modal-backdrop" style="display: none;">
@@ -286,5 +309,136 @@ function toggleLeftovers() {
         el.style.display = show ? 'block' : 'none';
     });
 }
+
+// AI plan generation — stream progress events from the server instead of
+// blocking on a synchronous form submit. The form is still POSTable if JS
+// is disabled; the server returns a normal redirect in that fallback.
+(function () {
+    const form = document.getElementById('generate-ai-form');
+    if (!form) return;
+
+    const overlay = document.getElementById('ai-progress-overlay');
+    const stageEl = document.getElementById('ai-progress-stage');
+    const detailEl = document.getElementById('ai-progress-detail');
+    const barEl = document.getElementById('ai-progress-bar');
+    const dismissEl = document.getElementById('ai-progress-dismiss');
+
+    function showOverlay(state) {
+        overlay.style.display = 'flex';
+        overlay.dataset.state = state;
+    }
+    function hideOverlay() {
+        overlay.style.display = 'none';
+        overlay.dataset.state = 'idle';
+        form.querySelector('button[type="submit"]').disabled = false;
+    }
+    function setStage(label, detail) {
+        if (label) stageEl.textContent = label;
+        if (detail !== undefined) detailEl.textContent = detail || ' ';
+    }
+    function setProgress(pct) {
+        barEl.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    }
+    function setErrorMode(label, detail) {
+        setStage(label, detail);
+        overlay.dataset.state = 'error';
+        dismissEl.style.display = 'inline-flex';
+    }
+
+    form.addEventListener('submit', function (e) {
+        if (overlay.dataset.state === 'running') {
+            // Already generating — block a second click.
+            e.preventDefault();
+            return;
+        }
+        if (!window.confirm(
+            'Generate AI meal suggestions for this week? You will be able to '
+            + 'review, accept, or reject each meal before saving.'
+        )) {
+            e.preventDefault();
+            return;
+        }
+        e.preventDefault();
+
+        showOverlay('running');
+        setStage('Connecting…', '');
+        setProgress(5);
+        form.querySelector('button[type="submit"]').disabled = true;
+
+        const formData = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: { 'Accept': 'text/event-stream' },
+        }).then(function (response) {
+            if (!response.ok) {
+                setErrorMode('Failed to start', 'Server returned HTTP ' + response.status);
+                return null;
+            }
+            const reader = response.body && response.body.getReader
+                ? response.body.getReader() : null;
+            if (!reader) {
+                // No streaming support — fall back to letting the browser
+                // complete the redirect (which it should, since the server
+                // will still redirect when the worker finishes).
+                return null;
+            }
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let pct = 8;
+            const advance = function () { pct = Math.min(pct + 12, 92); setProgress(pct); };
+
+            function pump() {
+                return reader.read().then(function (result) {
+                    if (result.done) {
+                        // Stream closed without an explicit `ready` event —
+                        // assume the redirect fired and rely on the browser.
+                        return;
+                    }
+                    buffer += decoder.decode(result.value, { stream: true });
+                    let idx;
+                    while ((idx = buffer.indexOf('\n\n')) !== -1) {
+                        const chunk = buffer.slice(0, idx);
+                        buffer = buffer.slice(idx + 2);
+                        const line = chunk.split('\n').find(function (l) {
+                            return l.startsWith('data: ');
+                        });
+                        if (!line) { advance(); continue; }
+                        let payload;
+                        try {
+                            payload = JSON.parse(line.slice(6));
+                        } catch (err) {
+                            advance();
+                            continue;
+                        }
+                        if (payload.kind === 'progress') {
+                            setStage(payload.label, payload.detail);
+                            advance();
+                        } else if (payload.kind === 'error') {
+                            setErrorMode(
+                                'AI generation failed',
+                                payload.message || 'Unknown error'
+                            );
+                            return;
+                        } else if (payload.kind === 'ready') {
+                            setStage('Ready — opening review…', '');
+                            setProgress(100);
+                            dismissEl.style.display = 'none';
+                            window.location.href = payload.redirect_url;
+                            return;
+                        }
+                    }
+                    return pump();
+                });
+            }
+            return pump();
+        }).catch(function (err) {
+            setErrorMode('Network error', err && err.message ? err.message : String(err));
+        });
+    });
+
+    dismissEl.addEventListener('click', hideOverlay);
+})();
 </script>
 {% endblock %}
