@@ -416,10 +416,17 @@ function toggleLeftovers() {
                             setStage(payload.label, payload.detail);
                             advance();
                         } else if (payload.kind === 'error') {
-                            setErrorMode(
-                                'AI generation failed',
-                                payload.message || 'Unknown error'
-                            );
+                            // The worker pushes two error shapes: the AIService
+                            // emits ``{kind:error,label:...,detail:...}`` while
+                            // the view's terminal branch emits
+                            // ``{kind:error,message:...}``. Surface whichever
+                            // one arrived so the user sees the real cause
+                            // instead of an "Unknown error" placeholder.
+                            const detail = payload.message || payload.detail || 'Unknown error';
+                            const stage = payload.label && payload.label !== 'Generation failed'
+                                ? `${payload.label} — ${detail}`
+                                : detail;
+                            setErrorMode(stage, '');
                             return;
                         } else if (payload.kind === 'ready') {
                             setStage('Ready — opening review…', '');
