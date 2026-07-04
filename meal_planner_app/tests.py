@@ -474,6 +474,38 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("dinner", response.context["meal_types"])
         self.assertIn("snack", response.context["meal_types"])
 
+    def test_recipe_meal_title_links_to_detail_page_with_drag_disabled(self):
+        """Regression: the planner meal card's title is wrapped in a link
+        to the recipe detail page so users can read the full recipe
+        without opening the modal preview. The link must be
+        ``draggable="false"`` so its parent card's drag-and-drop handler
+        doesn't suppress the click."""
+        self.client.login(username="alice", password="pass1234")
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            recipe=self.recipe,
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # Compress whitespace before searching because the template
+        # emits each attribute on its own line for readability.
+        compact = " ".join(body.split())
+        expected_href = reverse(
+            "recipes:recipe_detail", args=[self.recipe.pk]
+        )
+        # Title link carries both the .link and .planner-meal-title
+        # classes plus the draggable=false opt-out.
+        title_token = (
+            f'<a href="{expected_href}" class="link planner-meal-title" '
+            f'draggable="false"'
+        )
+        self.assertIn(title_token, compact)
+        # And the title text is still rendered (no template regression).
+        self.assertIn("Test Recipe", body)
+
 
 # =============================================================================
 # Form Tests

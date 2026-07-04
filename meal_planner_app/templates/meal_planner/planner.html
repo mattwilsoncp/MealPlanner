@@ -13,6 +13,28 @@
     .planner-meal-card.is-dragging {
         opacity: 0.5;
     }
+    /* The title link and the action buttons should never initiate a
+       drag-and-drop on a card whose parent is draggable. The HTML
+       already has ``draggable="false"`` on these elements; the cursor
+       rules below reinforce which parts of the card are clickable
+       vs. draggable so users know what to do. */
+    .planner-meal-title {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    .planner-meal-title,
+    .planner-meal-card button,
+    .planner-meal-card a {
+        cursor: pointer;
+    }
+    /* Re-assert the grab cursor only on the title row's pointer zone;
+       the action buttons get a normal pointer so the cue matches
+       their behavior. The whole card inherits ``cursor: grab`` from
+       its inline style; we override per-element below. */
+    .planner-meal-card {
+        /* No override here — keep drag cursor globally on the card
+           surface. Title/buttons override via the rules above. */
+    }
 </style>
 
 <section class="vp-hero">
@@ -111,18 +133,29 @@
                         {% if meal.recipe %}
                         <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
                             <a href="{% url 'recipes:recipe_detail' meal.recipe.pk %}"
-                               class="link"
+                               class="link planner-meal-title"
+                               draggable="false"
                                style="font-weight: 500; font-size: 0.9375rem; margin-bottom: 8px; flex: 1;">{{ meal.recipe.title }}</a>
                             <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
                                 {% csrf_token %}
-                                <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
+                                <button type="submit" class="vp-btn-ghost"
+                                        draggable="false"
+                                        style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);"
+                                        title="Delete meal">
                                     Delete
                                 </button>
                             </form>
                         </div>
                         <div style="display: inline-flex; gap: 12px;">
-                            <button type="button" data-recipe-id="{{ meal.recipe.pk }}" class="link js-open-recipe-modal" style="font-size: 0.75rem;">Preview</button>
-                            <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}" class="link" style="font-size: 0.75rem;">Cook</a>
+                            <button type="button"
+                                    draggable="false"
+                                    data-recipe-id="{{ meal.recipe.pk }}"
+                                    class="link js-open-recipe-modal"
+                                    style="font-size: 0.75rem;">Preview</button>
+                            <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}"
+                               draggable="false"
+                               class="link"
+                               style="font-size: 0.75rem;">Cook</a>
                         </div>
                         {% else %}
                         <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
