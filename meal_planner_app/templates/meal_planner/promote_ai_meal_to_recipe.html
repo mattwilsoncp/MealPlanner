@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Materialize AI Meal &mdash; {{ ai_title|default:meal.custom_meal|truncatechars:40 }}{% endblock %}
+
+{% block content %}
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">AI Meal &rarr; Recipe</span>
+                <h1 class="vp-display">Materialize<br>the recipe.</h1>
+                <p class="vp-subhead">Convert the stub this meal was saved with into a fully structured Recipe you can edit.</p>
+            </div>
+            <a href="{% url 'meal_planner:planner' %}" class="vp-btn-ghost">Back to Planner</a>
+        </div>
+    </div>
+</section>
+
+<section class="vp-section" style="max-width: 960px;">
+    <div class="vp-card" style="margin-bottom: 24px;">
+        <span class="vp-label-mono" style="margin-bottom: 12px; display: block;">Source meal stub</span>
+        <table class="vp-table" style="width: 100%; border-collapse: collapse;">
+            <tbody>
+                <tr>
+                    <td style="width: 28%; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.12em;">Title</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid var(--border-subtle);">{{ ai_title|default:meal.custom_meal }}</td>
+                </tr>
+                {% if ai_description %}
+                <tr>
+                    <td style="width: 28%; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.12em;">Description</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid var(--border-subtle);">{{ ai_description }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="width: 28%; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.12em;">Cook time</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid var(--border-subtle);">{{ ai_cook_time_minutes }} min</td>
+                </tr>
+                <tr>
+                    <td style="width: 28%; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.12em;">Meal slot</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid var(--border-subtle);">{{ meal.meal_date|date:"M d, Y" }} &middot; {{ meal.get_meal_type_display }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="vp-card" style="margin-bottom: 24px;">
+        <span class="vp-label-mono" style="margin-bottom: 12px; display: block;">Ingredients on file</span>
+        {% if raw_ingredients %}
+        <ul style="margin: 0; padding-left: 18px; color: var(--text-secondary); line-height: 1.55;">
+            {% for ing in raw_ingredients %}
+            <li>{{ ing }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">No ingredients were saved with this meal. The promotion will still produce a Recipe row, but you will need to add ingredients manually on the next screen.</p>
+        {% endif %}
+    </div>
+
+    <div class="vp-card" style="margin-bottom: 24px;">
+        <span class="vp-label-mono" style="margin-bottom: 12px; display: block;">What will happen</span>
+        <ol style="margin: 0; padding-left: 18px; color: var(--text-secondary); line-height: 1.55; font-size: 0.9375rem;">
+            <li>The model uses the title, description, cook time, and ingredient list above as prompts.</li>
+            <li>It returns a structured recipe: refined title, 1&ndash;3 sentence description, ingredients with quantities / units, and an ordered step list.</li>
+            <li>A new <code style="font-family: var(--font-mono); font-size: 0.875rem; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;">Recipe</code> row is created in your library.</li>
+            <li>Canonical <code style="font-family: var(--font-mono); font-size: 0.875rem; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;">Ingredient</code> rows and <code style="font-family: var(--font-mono); font-size: 0.875rem; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;">Instruction</code> rows get linked to the new Recipe.</li>
+            <li>This meal gets attached (<code style="font-family: var(--font-mono); font-size: 0.875rem; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;">meal.recipe = new_recipe</code>) and the AI badge is cleared from its planner card.</li>
+        </ol>
+        <p style="margin: 16px 0 0; color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+            If no API key is configured (or the model call fails for any reason), a basic Recipe is built from the on-file data so the click is still productive. The basic Recipe lands on the same Recipe-detail page where you can edit title, ingredients, and steps.
+        </p>
+    </div>
+
+    <form method="post" action="{% url 'meal_planner:promote_meal_to_recipe' meal.pk %}" style="display: flex; flex-wrap: wrap; gap: 12px;">
+        {% csrf_token %}
+        <button type="submit" class="vp-btn-primary" id="materialize-btn">
+            Materialize as Recipe
+        </button>
+        <a href="{% url 'meal_planner:planner' %}" class="vp-btn-ghost">&larr; Cancel</a>
+    </form>
+</section>
+{% endblock %}

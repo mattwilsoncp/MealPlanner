@@ -42,6 +42,11 @@ urlpatterns = [
     ),
     path("meal/<int:meal_id>/rate/", views.RateMealView.as_view(), name="rate_meal"),
     path("meal/<int:meal_id>/move/", views.MoveMealView.as_view(), name="move_meal"),
+    path(
+        "meal/<int:meal_id>/promote-to-recipe/",
+        views.MealPlanPromoteToRecipeView.as_view(),
+        name="promote_meal_to_recipe",
+    ),
     # On-Hand Ideas URLs
     path("on-hand/", views.OnHandIdeasView.as_view(), name="on_hand_ideas"),
     path(

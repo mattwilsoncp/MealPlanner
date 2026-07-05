@@ -27,6 +27,37 @@
     .planner-meal-card a {
         cursor: pointer;
     }
+    /* AI badge — surfaces meals that came from the AI planner. Clicking
+       opens the promote-to-recipe page so the user can materialize
+       the stub into a real Recipe row. The badge uses the monochrome
+       design tokens so it doesn't clash with the card chrome: a
+       1px outline + uppercase mono micro-label matching the eyebrow
+       style on other labels in the app. */
+    .planner-ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px 3px 6px;
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        background: var(--bg-card);
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 0.625rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        flex-shrink: 0;
+        transition: border-color 0.18s ease, background 0.18s ease;
+    }
+    .planner-ai-badge:hover {
+        border-color: var(--text-primary);
+        background: var(--bg-elevated);
+    }
+    .planner-ai-badge svg {
+        color: var(--text-primary);
+    }
     /* Re-assert the grab cursor only on the title row's pointer zone;
        the action buttons get a normal pointer so the cue matches
        their behavior. The whole card inherits ``cursor: grab`` from
@@ -167,7 +198,24 @@
                         </div>
                         {% else %}
                         <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
-                            <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ meal.custom_meal|default:meal.notes|truncatechars:30 }}</div>
+                            <div style="display: flex; align-items: start; gap: 8px; flex: 1; min-width: 0;">
+                                {% if meal.is_ai_generated %}
+                                <a href="{% url 'meal_planner:promote_meal_to_recipe' meal.pk %}"
+                                   draggable="false"
+                                   class="planner-ai-badge"
+                                   title="This meal was generated from an AI plan. Click to try to materialize it as a real Recipe."
+                                   aria-label="Materialize AI-generated meal into a Recipe">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;">
+                                        <path d="M12 2 L13.5 9 L21 10.5 L13.5 12 L12 19 L10.5 12 L3 10.5 L10.5 9 Z"></path>
+                                        <path d="M19 17 L19.7 19 L21.7 19.7 L19.7 20.4 L19 22.4 L18.3 20.4 L16.3 19.7 L18.3 19 Z"></path>
+                                    </svg>
+                                    <span>AI</span>
+                                </a>
+                                {% endif %}
+                                <div style="font-size: 0.875rem; color: var(--text-secondary); min-width: 0; flex: 1;">
+                                    {{ meal.custom_meal|default:meal.notes|truncatechars:30 }}
+                                </div>
+                            </div>
                             <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
                                 {% csrf_token %}
                                 <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
