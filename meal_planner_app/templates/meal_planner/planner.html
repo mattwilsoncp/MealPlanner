@@ -162,8 +162,14 @@
                     {% for meal in day.meals|get_item:meal_type %}
                     <div class="vp-card-tight planner-meal-card" draggable="true" data-meal-id="{{ meal.pk }}" data-meal-date="{{ day.date|date:'Y-m-d' }}" data-meal-type="{{ meal_type }}" style="padding: 12px 16px; margin-bottom: 8px; cursor: grab; background: var(--bg-elevated);">
                         {% if meal.recipe %}
-                        <div style="display: flex; align-items: start; justify-content: space-between; gap: 8px;">
-                            <div style="font-weight: 500; font-size: 0.9375rem; flex: 1;">{{ meal.recipe.title }}</div>
+                        <div style="display: flex; align-items: start; gap: 8px;">
+                            <a href="{% url 'meal_planner:edit_meal' meal.pk %}"
+                               draggable="false"
+                               class="vp-btn-ghost"
+                               style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);"
+                               title="Edit meal">
+                                Edit
+                            </a>
                             <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
                                 {% csrf_token %}
                                 <button type="submit" class="vp-btn-ghost"
@@ -173,6 +179,9 @@
                                     Delete
                                 </button>
                             </form>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9375rem; font-weight: 500; color: var(--text-primary); line-height: 1.25; word-wrap: break-word; overflow-wrap: anywhere;">
+                            {{ meal.recipe.title }}
                         </div>
                         {# Visual divider so the action row is unmistakable. #}
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); display: flex; flex-wrap: wrap; gap: 10px;">

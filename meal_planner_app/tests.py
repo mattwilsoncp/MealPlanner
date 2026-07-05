@@ -868,6 +868,59 @@ class PlannerHomeViewTests(TestCase):
             msg="Recipe-linked meals should not render the AI badge.",
         )
 
+    def test_recipe_linked_card_title_row_surfaces_edit_link(self):
+        """Recipe-linked meals now share the layout with non-AI custom
+        meals: a small Edit + Delete row at the top, the recipe name
+        on its own full-width line, and the dashed-divider action row
+        below carrying View + Preview + Cook. Edit lives in the title
+        row so the action row still reads as a navigation target, not
+        as a destructive control.
+        """
+        import re as _re
+        self.client.login(username="alice", password="pass1234")
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.DINNER,
+            recipe=self.recipe,
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # Edit link anchors at the meal-edit URL, with the same
+        # small ghost-button chrome as Delete (``title="Edit meal"``).
+        edit_href = reverse(
+            "meal_planner:edit_meal", args=[meal.pk]
+        )
+        self.assertRegex(
+            body.replace("\n", " "),
+            r'<a\b[^>]*href="' + _re.escape(edit_href)
+            + r'"[^>]*title="Edit meal"[^>]*>\s*Edit\s*</a>',
+        )
+        # Recipe name renders on its own row below the title controls.
+        # We look for the recipe title text appearing AFTER the Edit
+        # anchor — a loose substring check that the layout ordering
+        # doesn't accidentally bury the title.
+        edit_idx = body.find(
+            reverse("meal_planner:edit_meal", args=[meal.pk])
+        )
+        title_idx = body.find("Test Recipe", edit_idx)
+        self.assertGreater(
+            edit_idx, -1,
+            msg="Edit anchor must be present on the recipe-meal card.",
+        )
+        self.assertGreater(
+            title_idx, edit_idx,
+            msg="Recipe title must come after the Edit link in the card.",
+        )
+        # The dashed-divider action row still carries
+        # ``vp-btn-ghost planner-meal-action`` for View + Preview + Cook.
+        self.assertRegex(
+            body.replace("\n", " "),
+            r'<a\b[^>]*class="vp-btn-ghost planner-meal-action"'
+            r'[^>]*>\s*View\s*</a>',
+        )
+
 
 # =============================================================================
 # Form Tests
