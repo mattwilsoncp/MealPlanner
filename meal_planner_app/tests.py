@@ -946,6 +946,79 @@ class PlannerHomeViewTests(TestCase):
         # the existence/empty-state side-dishes panel).
         self.assertNotIn("Edit sides", body)
 
+    def test_recipe_meal_card_surfaces_thumbnail_when_photo_set(self):
+        """When ``Recipe.photo`` is populated, the planner card
+        renders a 56×56 thumbnail inline with the recipe title.
+        The thumb carries the ``planner-meal-thumb`` class so a
+        future CSS regression that hides thumbnails would fail
+        loud.
+        """
+        import re as _re
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # Avoid writing to disk during this probe — write to an
+        # in-memory file with a tiny 1×1 PNG bytes blob.
+        self.recipe.photo = SimpleUploadedFile(
+            name="thumb.png",
+            content=(
+                b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+                b"\x00\x00\x00\x01\x08\x00\x00\x00\x00:~\x9bU\x00\x00"
+                b"\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4"
+                b"\x00\x00\x00\x00IEND\xaeB`\x82"
+            ),
+            content_type="image/png",
+        )
+        self.recipe.save()
+        self.client.login(username="alice", password="pass1234")
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            recipe=self.recipe,
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        body = response.content.decode()
+        # Find the thumbnail anchor in the page (the only
+        # ``<img … class="planner-meal-thumb">``).
+        match = _re.search(
+            r'<img\b[^>]*class="planner-meal-thumb"[^>]*>', body,
+        )
+        self.assertIsNotNone(
+            match,
+            msg="planner-meal-thumb image missing on a recipe with a photo.",
+        )
+        tag = match.group(0)
+        # URL points at the media-served photo file.
+        self.assertIn(self.recipe.photo.url, tag)
+        # And the alt text matches the recipe title for screen readers.
+        self.assertIn("Test Recipe", tag)
+
+    def test_recipe_meal_card_omits_thumbnail_when_photo_missing(self):
+        """If ``Recipe.photo`` is None, the recipe branch does *not*
+        render an ``<img>`` element — only the title row keeps its
+        width. Regression guard against a template that always
+        emits a 1×1 placeholder img and ruins grid alignment.
+        """
+        import re as _re
+        self.recipe.refresh_from_db()
+        self.assertFalse(bool(self.recipe.photo))
+        self.client.login(username="alice", password="pass1234")
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            recipe=self.recipe,
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        body = response.content.decode()
+        # No ``planner-meal-thumb`` image element is rendered.
+        self.assertIsNone(
+            _re.search(
+                r'<img\b[^>]*class="planner-meal-thumb"[^>]*>', body,
+            ),
+            msg="Thumbnail must not render when Recipe.photo is empty.",
+        )
+
 
 # =============================================================================
 # Form Tests
