@@ -597,9 +597,14 @@ class PlannerHomeViewTests(TestCase):
 
         # Anchors / buttons in the recipe-meal actions row carry the
         # ``planner-meal-action`` class and ``draggable="false"``.
+        # The match is non-greedy but tolerant of inline ``<svg>``
+        # icons inside the anchor (the Cook label sits after an
+        # inline flame SVG). DOTALL so we can span the multi-line
+        # template output.
         action_re = re.compile(
             r'<(a|button)\b[^>]*class="vp-btn-ghost planner-meal-action'
-            r'[^"]*"[^>]*>[^<]*</\1>'
+            r'[^"]*"[^>]*>(?:(?!</\1>).)*</\1>',
+            flags=re.DOTALL,
         )
         actions = []
         for m in action_re.finditer(body):
@@ -632,7 +637,11 @@ class PlannerHomeViewTests(TestCase):
         cook_present = any(
             tag == "a"
             and f'href="{cook_href}"' in compact_attr(action_html)
-            and "Cook" in compact_attr(action_html)
+            # The Cook label sits after an inline flame SVG, so a
+            # regex-style substring match beats a strict end-anchor
+            # one. ``compact_attr`` collapses the multi-line HTML so
+            # SVG + label are contiguous.
+            and "Cook" in compact_attr(action_html).split("</svg>")[-1]
             and 'draggable="false"' in compact_attr(action_html)
             for tag, action_html in actions
         )
@@ -659,6 +668,57 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("border-top: 1px dashed var(--border-subtle)", body)
         # Recipe title text still renders.
         self.assertIn("Test Recipe", body)
+
+    def test_cook_button_carries_flame_icon(self):
+        """Cook anchors carry a small inline flame SVG before the
+        ``Cook`` label so the action reads as "start cooking" rather
+        than just "go to this page". Both the recipe-meal branch
+        and the custom-meal branch share the same chrome, so we
+        assert the icon for each.
+        """
+        import re as _re
+
+        # Recipe-meal + custom-meal on the same Monday so the
+        # response carries two Cook anchors (one per branch).
+        from datetime import date as _date
+        from datetime import timedelta as _td
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            recipe=self.recipe,
+        )
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.DINNER,
+            custom_meal="Scratch soup",
+        )
+        self.client.login(username="alice", password="pass1234")
+        response = self.client.get(reverse("meal_planner:planner"))
+        body = response.content.decode()
+
+        cook_anchor_re = _re.compile(
+            r'<a\b[^>]*class="vp-btn-ghost planner-meal-action"[^>]*>'
+            r'(.*?)\s*Cook\s*</a>',
+            flags=_re.DOTALL,
+        )
+        cook_anchors = list(cook_anchor_re.finditer(body))
+        self.assertGreaterEqual(
+            len(cook_anchors), 2,
+            msg="Expected at least two Cook anchors (one per branch).",
+        )
+        for m in cook_anchors:
+            inner = m.group(1)
+            # An inline flame SVG sits before the label. Path data
+            # gives us the shape contract;``viewBox="0 0 24 24"``
+            # anchors it'll be a Lucide-style icon.
+            self.assertRegex(
+                inner,
+                r'<svg\b[^>]*viewBox="0 0 24 24"[^>]*>'
+                r'[^<]*<path\b'
+                r'[^>]*d="[^"]*M\d+\.\d+ \d+\.\d+A[^"]+"',
+            )
 
     def test_custom_meal_card_surfaces_action_buttons(self):
         """Regression: cards in the ``{% else %}`` branch (meals
@@ -695,11 +755,12 @@ class PlannerHomeViewTests(TestCase):
             + r'"[^>]*title="Edit meal"[^>]*>\s*Edit\s*</a>',
         )
         # Cook link still lives inside the dashed-divider action row,
-        # styled with ``vp-btn-ghost planner-meal-action``.
+        # styled with ``vp-btn-ghost planner-meal-action``. The
+        # label sits after an inline flame SVG.
         self.assertRegex(
             body.replace("\n", " "),
             r'<a\b[^>]*class="vp-btn-ghost planner-meal-action"'
-            r'[^>]*>\s*Cook\s*</a>',
+            r'[^>]*>.*?<svg\b[^>]*>.*?</svg>\s*Cook\s*</a>',
         )
         # And the divider is still drawn on the no-recipe branch.
         self.assertIn(
