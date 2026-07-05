@@ -130,6 +130,84 @@ class InventoryDeleteView(LoginRequiredMixin, DeleteView):
         return HttpResponseRedirect(success_url)
 
 
+class InventoryAssignCategoryView(LoginRequiredMixin, View):
+    """Quickly assign a category to a single inventory item via AJAX.
+
+    Hit from the inventory list page's per-row dropdown on
+    uncategorised rows so the user can flip ``other`` → a real
+    category without leaving the page or opening a separate
+    edit form. Accepts JSON over AJAX; falls back gracefully to
+    a form-POST redirect for non-JS clients.
+    """
+
+    http_method_names = ["post"]
+
+    VALID_CATEGORIES = {value for value, _ in InventoryItem.CATEGORY_CHOICES}
+
+    def post(self, request, *args, **kwargs):
+        item_id = request.POST.get("item_id") or kwargs.get("item_id")
+        category = (
+            request.POST.get("category")
+            or self._json_value(request, "category")
+        )
+
+        category_values = self.VALID_CATEGORIES
+        if category not in category_values:
+            return self._error(
+                f"'{category}' is not a valid category.", status=400,
+            )
+
+        if not item_id:
+            return self._error("Missing item id.", status=400)
+
+        try:
+            item = InventoryItem.objects.get(
+                pk=item_id,
+                household=request.user.household,
+            )
+        except InventoryItem.DoesNotExist:
+            return self._error("Item not found.", status=404)
+
+        previous_category = item.category
+        item.category = category
+        item.save(update_fields=["category", "updated_at"])
+
+        if previous_category != category:
+            messages.success(
+                request,
+                f"Moved {item.name} from {previous_category} to {category}.",
+            )
+
+        return JsonResponse(
+            {
+                "ok": True,
+                "id": item.pk,
+                "name": item.name,
+                "category": category,
+                "previous_category": previous_category,
+            }
+        )
+
+    @staticmethod
+    def _json_value(request, key):
+        """Pull a field from a JSON body, falling back to None."""
+        if "application/json" not in (request.content_type or ""):
+            return None
+        try:
+            payload = json.loads(request.body or b"{}")
+        except (ValueError, TypeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        return payload.get(key)
+
+    def _error(self, message: str, status: int = 400):
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": False, "error": message}, status=status)
+        messages.error(self.request, message)
+        return redirect("inventory:inventory_list")
+
+
 class InventoryExpiringView(LoginRequiredMixin, ListView):
     model = InventoryItem
     template_name = "inventory/inventory_expiring.html"

@@ -344,6 +344,170 @@ class InventoryViewTests(TestCase):
         self.assertNotIn("Outside Threshold", expiring_names)
         self.assertIn("Already Expired", expired_names)
 
+    def test_list_page_shows_assign_category_select_only_for_uncategorised_items(
+        self,
+    ):
+        """The dropdown that triggers the AJAX category-assignment
+        endpoint appears on rows inside the ``Uncategorized``
+        bucket (i.e. ``category="other"``). Rows in any other
+        bucket should not show the dropdown — those are already
+        sorted into a real category. The select carries a
+        ``data-assign-url`` so the JS handler can route the
+        request without re-deriving the URL on the client.
+        """
+        uncategorised = InventoryItem.objects.create(
+            household=self.household,
+            name="Mystery Bag",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+        sorted_item = InventoryItem.objects.create(
+            household=self.household,
+            name="Carrots",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="produce",
+            location="refrigerator",
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("inventory:inventory_list"))
+        body = response.content.decode()
+
+        # Uncategorized row carries the dropdown.
+        unassigned_url = reverse(
+            "inventory:inventory_assign_category", args=[uncategorised.id]
+        )
+        self.assertIn("js-inventory-assign-category", body)
+        self.assertIn(f'data-assign-url="{unassigned_url}"', body)
+
+        # The per-row select MUST exclude ``other`` so the user
+        # is not offered the current bucket as a destination
+        # (that would be a no-op). We pick the select's
+        # option list by anchoring at the ``js-inventory-assign
+        # -category`` class on the same select element.
+        import re as _re
+        select_match = _re.search(
+            r'<select[^>]*class="\s*[^"]*js-inventory-assign-category[^"]*"'
+            r'[^>]*>(.*?)</select>',
+            body, flags=_re.DOTALL,
+        )
+        self.assertIsNotNone(
+            select_match,
+            msg="Could not locate the per-row assign-category select.",
+        )
+        select_options = select_match.group(1)
+        self.assertNotIn('value="other"', select_options)
+        self.assertIn("Produce", select_options)
+        self.assertIn("Dairy", select_options)
+
+        # Exactly one card has the dropdown wired, matching only
+        # the uncategorised item.
+        self.assertEqual(
+            body.count(f'data-assign-url="{unassigned_url}"'), 1,
+        )
+        sorted_url = reverse(
+            "inventory:inventory_assign_category", args=[sorted_item.id]
+        )
+        self.assertNotIn(f'data-assign-url="{sorted_url}"', body)
+
+    def test_ajax_assign_category_updates_item_and_returns_json(self):
+        """POST the assign-category endpoint as an AJAX request
+        and confirm the item's ``category`` flips and the JSON
+        payload reports the change.
+        """
+        item = InventoryItem.objects.create(
+            household=self.household,
+            name="Bulk Lentils",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse(
+                "inventory:inventory_assign_category", args=[item.id]
+            ),
+            data={
+                "item_id": str(item.id),
+                "category": "pantry",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["id"], item.id)
+        self.assertEqual(payload["category"], "pantry")
+        self.assertEqual(payload["previous_category"], "other")
+
+        item.refresh_from_db()
+        self.assertEqual(item.category, "pantry")
+
+    def test_ajax_assign_category_rejects_invalid_category(self):
+        """An invalid category value returns 400 + JSON error so
+        the JS handler can surface the failure without losing
+        the previous dropdown selection.
+        """
+        item = InventoryItem.objects.create(
+            household=self.household,
+            name="Mystery Bag",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse(
+                "inventory:inventory_assign_category", args=[item.id]
+            ),
+            data={
+                "item_id": str(item.id),
+                "category": "definitely-not-a-valid-category",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertFalse(payload["ok"])
+        self.assertIn("not a valid category", payload["error"])
+        # The item is left in place (category unchanged).
+        item.refresh_from_db()
+        self.assertEqual(item.category, "other")
+
+    def test_ajax_assign_category_rejects_other_household_item(self):
+        """An attacker who guesses a foreign item id gets 404 —
+        cross-household writes are rejected, matching the rest
+        of the inventory CRUD surface.
+        """
+        other = InventoryItem.objects.create(
+            household=self.other_household,
+            name="Foreign Bag",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse(
+                "inventory:inventory_assign_category", args=[other.id]
+            ),
+            data={
+                "item_id": str(other.id),
+                "category": "pantry",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 404)
+        # The foreign row is unchanged.
+        other.refresh_from_db()
+        self.assertEqual(other.category, "other")
+
 
 class InventoryQuickAddApiTests(TestCase):
     def setUp(self):
