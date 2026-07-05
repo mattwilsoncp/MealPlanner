@@ -216,20 +216,23 @@
                                     {{ meal.custom_meal|default:meal.notes|truncatechars:30 }}
                                 </div>
                             </div>
-                            <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
-                                {% csrf_token %}
-                                <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
-                                    Delete
-                                </button>
-                            </form>
+                            <div style="display: inline-flex; align-items: start; gap: 6px; flex-shrink: 0;">
+                                <a href="{% url 'meal_planner:edit_meal' meal.pk %}"
+                                   draggable="false"
+                                   class="vp-btn-ghost"
+                                   style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);"
+                                   title="Edit meal">
+                                    Edit
+                                </a>
+                                <form method="post" action="{% url 'meal_planner:delete_meal' meal.pk %}" onsubmit="return confirm('Delete this meal?')" style="flex-shrink: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="vp-btn-ghost" style="padding: 4px 8px; font-size: 0.6875rem; border-color: transparent; color: var(--text-muted);" title="Delete meal">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); display: flex; flex-wrap: wrap; gap: 10px;">
-                            <a href="{% url 'meal_planner:edit_meal' meal.pk %}"
-                               draggable="false"
-                               class="vp-btn-ghost planner-meal-action"
-                               style="padding: 4px 12px; font-size: 0.75rem; font-weight: 500;">
-                                Edit
-                            </a>
                             <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}"
                                draggable="false"
                                class="vp-btn-ghost planner-meal-action"
