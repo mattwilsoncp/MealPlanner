@@ -68,6 +68,14 @@
                 </div>
                 {% endif %}
                 {% endif %}
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-subtle);">
+                    <a href="{% url 'meal_planner:add_meal' %}?recipe={{ match.recipe.pk }}"
+                       draggable="false"
+                       class="vp-btn-ghost discovery-card-action"
+                       data-recipe-id="{{ match.recipe.pk }}">
+                        + Add to Planner
+                    </a>
+                </div>
             </div>
         </article>
         {% endfor %}
@@ -89,6 +97,15 @@
     border-color: var(--border-strong) !important;
     background: var(--bg-elevated) !important;
     pointer-events: none;
+}
+.discovery-card-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
 }
 </style>
 
