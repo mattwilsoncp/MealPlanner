@@ -661,27 +661,47 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("Test Recipe", body)
 
     def test_custom_meal_card_surfaces_action_buttons(self):
-        """Regression: cards in the ``{% else %}`` branch (meals without
-        a recipe) used to render only the custom-meal text and a
-        Delete form. They now ship the same dashed-divider +
-        vp-btn-ghost action row, so users can route into the meal-edit
-        flow (``Edit``) and the cooking-reconcile screen (``Cook``)
-        without first having to attach a recipe."""
-        self.client.login(username="alice", password="pass1234")
-        MealPlan.objects.create(
+        """Regression: cards in the ``{% else %}`` branch (meals
+        without a recipe) used to render only the custom-meal text
+        and a Delete form. They now ship the same dashed-divider
+        + vp-btn-ghost action row carrying the ``Cook`` link, plus
+        an ``Edit`` link in the title row next to ``Delete`` styled
+        as an inline ghost button — so users can route into the
+        meal-edit flow without first having to attach a recipe.
+        """
+        import re as _re
+
+        meal = MealPlan.objects.create(
             household=self.household,
             meal_date=self.monday,
             meal_type=MealType.LUNCH,
             custom_meal="Leftover stir-fry",
         )
+        self.client.login(username="alice", password="pass1234")
         response = self.client.get(reverse("meal_planner:planner"))
         self.assertEqual(response.status_code, 200)
         body = response.content.decode()
         # The custom-meal text shows.
         self.assertIn("Leftover stir-fry", body)
-        # Both Edit (meal-edit flow) and Cook buttons are visible.
-        self.assertIn("vp-btn-ghost planner-meal-action", body)
-        # And the divider is drawn even on the no-recipe branch.
+        # Edit link is in the title row: anchors at the meal-edit URL
+        # and uses the same minimal ghost-button shape as Delete
+        # (``<a class="vp-btn-ghost" title="Edit meal">``).
+        edit_href = reverse(
+            "meal_planner:edit_meal", args=[meal.pk]
+        )
+        self.assertRegex(
+            body.replace("\n", " "),
+            r'<a\b[^>]*href="' + _re.escape(edit_href)
+            + r'"[^>]*title="Edit meal"[^>]*>\s*Edit\s*</a>',
+        )
+        # Cook link still lives inside the dashed-divider action row,
+        # styled with ``vp-btn-ghost planner-meal-action``.
+        self.assertRegex(
+            body.replace("\n", " "),
+            r'<a\b[^>]*class="vp-btn-ghost planner-meal-action"'
+            r'[^>]*>\s*Cook\s*</a>',
+        )
+        # And the divider is still drawn on the no-recipe branch.
         self.assertIn(
             "border-top: 1px dashed var(--border-subtle)", body
         )
