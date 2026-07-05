@@ -25,7 +25,8 @@ from django.contrib import messages
 from .models import MealPlan, MealType, SideDish, MealPreferences
 from .forms import MealPlanForm, SideDishForm, MealPreferencesForm
 from recipes.models import Recipe
-from ingredients.models import IngredientLink
+from ingredients.models import Ingredient, IngredientLink
+from instructions.models import Instruction
 from inventory.models import InventoryItem
 
 
@@ -1549,6 +1550,182 @@ class AiPlanCancelView(LoginRequiredMixin, View):
 
         messages.info(request, "AI plan review cancelled.")
         return redirect("meal_planner:planner")
+
+
+class MealPlanPromoteToRecipeView(LoginRequiredMixin, View):
+    """Materialise an AI-generated meal into a real ``Recipe`` row.
+
+    Anchored off the AI badge on the planner custom-meal card. Clicking
+    the badge lands here on GET, which previews the meal's stub data
+    (title, description, ingredients, cook time) and offers a single
+    primary button "Materialize as Recipe".
+
+    POST does the actual conversion. It first asks the model to
+    expand the stub into structured recipe data via
+    ``meal_planner_app.services.ai_recipe_promotion``. If the call
+    succeeds, the result drives the new Recipe. If the call cannot
+    complete (no API key, transient HTTP error, parse failure), we
+    fall back to ``basic_recipe_from_meal`` so the click is still
+    useful — the user gets a Recipe row they can edit.
+
+    Either path performs the same write sequence:
+
+    1. Create a ``Recipe`` row (default state: ``needs_review=False``
+       because the user explicitly materialised it).
+    2. Create ``Ingredient`` rows for any new canonical names plus
+       ``IngredientLink`` rows pointing at the recipe with quantity
+       and unit.
+    3. Create ``Instruction`` rows from the model's step list.
+    4. Attach the ``MealPlan`` to the new recipe (sets ``recipe``,
+       clears the AI marker from ``notes``/``custom_meal`` so the AI
+       badge no longer renders), then redirect to
+       ``recipes:recipe_detail``.
+
+    A non-AI meal (no ``"AI-generated | Cook time:"`` prefix on
+    ``notes``) returns 404 — the badge only points here for AI stubs,
+    so a redirect would be misleading.
+    """
+
+    template_name = "meal_planner/promote_ai_meal_to_recipe.html"
+    http_method_names = ["get", "post"]
+
+    def get_meal(self, request, meal_id: int) -> MealPlan | None:
+        meal = get_object_or_404(
+            MealPlan,
+            pk=meal_id,
+            household=request.user.household,
+        )
+        if not meal.is_ai_generated:
+            return None
+        return meal
+
+    def get(self, request, meal_id: int, *args, **kwargs):
+        meal = self.get_meal(request, meal_id)
+        if meal is None:
+            messages.info(
+                request,
+                "Only AI-generated meals can be promoted to a Recipe.",
+            )
+            return redirect("meal_planner:planner")
+        return self._render_preview(request, meal)
+
+    def post(self, request, meal_id: int, *args, **kwargs):
+        meal = self.get_meal(request, meal_id)
+        if meal is None:
+            messages.info(
+                request,
+                "Only AI-generated meals can be promoted to a Recipe.",
+            )
+            return redirect("meal_planner:planner")
+        return self._materialise(request, meal)
+
+    def _render_preview(self, request, meal: MealPlan):
+        from django.shortcuts import render
+
+        context = {
+            "meal": meal,
+            "ai_title": meal.ai_title,
+            "ai_description": meal.ai_description,
+            "ai_cook_time_minutes": meal.ai_cook_time_minutes or 30,
+            "raw_ingredients": list(meal.ingredients or []),
+            "ai_marker_notes": meal.notes or "",
+        }
+        return render(request, self.template_name, context)
+
+    def _materialise(self, request, meal: MealPlan):
+        from .services.ai_recipe_promotion import (
+            basic_recipe_from_meal,
+            promote_meal_to_recipe,
+        )
+
+        outcome = promote_meal_to_recipe(meal)
+        if not outcome.success:
+            outcome = basic_recipe_from_meal(meal)
+            messages.warning(
+                request,
+                outcome.reason
+                or "Saved a basic Recipe from the meal data.",
+            )
+        else:
+            messages.success(
+                request,
+                f"AI generated the full Recipe '{outcome.title}'.",
+            )
+
+        # Persist Recipe + Ingredients + Instructions. Each transaction
+        # side is idempotent — re-running the click on a meal that has
+        # already attached to a Recipe would *add* a duplicate, so we
+        # 404 the GET/POST path with the same guard above.
+        try:
+            recipe = self._create_recipe(request.user.household, outcome)
+        except IntegrityError:
+            messages.error(
+                request,
+                "Could not save the Recipe (storage error); the meal was "
+                "left in place so you can retry.",
+            )
+            return redirect("meal_planner:promote_meal_to_recipe", meal_id=meal.pk)
+
+        # Attach the meal to the new Recipe and clear the AI marker so
+        # the badge disappears from the planner card.
+        meal.recipe = recipe
+        meal.custom_meal = ""
+        meal.notes = ""
+        meal.save(update_fields=["recipe", "custom_meal", "notes", "updated_at"])
+
+        messages.info(
+            request,
+            (
+                f"Linked the meal to the new Recipe '{recipe.title}'. "
+                "Edit it any time."
+            ),
+        )
+        return redirect("recipes:recipe_detail", pk=recipe.pk)
+
+    @staticmethod
+    def _create_recipe(household, outcome) -> Recipe:
+        recipe = Recipe.objects.create(
+            household=household,
+            title=outcome.title,
+            description=outcome.description,
+            needs_review=False,
+        )
+
+        for idx, ing in enumerate(outcome.ingredients, start=1):
+            name = (ing.get("name") or "").strip()
+            if not name:
+                continue
+            ingredient, _ = Ingredient.objects.get_or_create(
+                household=household,
+                name=name,
+            )
+            try:
+                quantity = float(ing.get("quantity") or 1)
+            except (TypeError, ValueError):
+                quantity = 1.0
+            unit = (ing.get("unit") or "piece").strip()[:20] or "piece"
+            IngredientLink.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                quantity=quantity,
+                unit=unit,
+                order=idx,
+            )
+
+        for step in outcome.instructions:
+            text = (step.get("text") or "").strip()
+            if not text:
+                continue
+            try:
+                step_number = int(step.get("step_number") or 1)
+            except (TypeError, ValueError):
+                step_number = 1
+            Instruction.objects.create(
+                recipe=recipe,
+                step_number=max(1, step_number),
+                text=text,
+            )
+        return recipe
 
 
 class AIModelsSettingsView(LoginRequiredMixin, TemplateView):

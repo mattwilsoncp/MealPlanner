@@ -148,6 +148,79 @@ class MealPlan(models.Model):
     def is_custom(self):
         return self.recipe is None
 
+    # The save-signature for AI meal-plan writes
+    # (``meal_planner_app.views.AiPlanSaveView``) is
+    # ``notes="AI-generated | Cook time: {cook_time} min"``. Keep this
+    # constant in sync if you ever change that string in the save view —
+    # the planner card, the promote-to-recipe view, and the unit tests
+    # all read from the same marker.
+    AI_GENERATED_NOTES_PREFIX = "AI-generated | Cook time:"
+
+    @property
+    def is_ai_generated(self) -> bool:
+        """True when the meal was materialized from an accepted AI plan.
+
+        Recognised by the ``notes`` prefix written by
+        ``AiPlanSaveView``. Custom-meal cards use this to surface an
+        "AI" badge on the planner that links to the
+        ``promote_meal_to_recipe`` page; once the meal is converted
+        into a real Recipe (or the prefix is cleared), the badge
+        disappears automatically.
+        """
+        notes = (self.notes or "").lstrip()
+        return notes.startswith(self.AI_GENERATED_NOTES_PREFIX)
+
+    @property
+    def ai_cook_time_minutes(self) -> int | None:
+        """Cook-time saved on the AI meal, or ``None`` if not AI.
+
+        Mirrors ``AiPlanSaveView``'s ``notes`` formatting. Returns
+        ``None`` for non-AI meals so callers can fall back to a
+        sensible default.
+        """
+        notes = (self.notes or "").lstrip()
+        if not notes.startswith(self.AI_GENERATED_NOTES_PREFIX):
+            return None
+        # Format: "AI-generated | Cook time: 30 min"
+        try:
+            tail = notes[len(self.AI_GENERATED_NOTES_PREFIX):]
+            # Skip leading separator and word "Cook" (already matched).
+            tail = tail.strip(" :")
+            # Strip suffix "min" / "minutes" if present.
+            tail = tail.split(" ", 1)[0]
+            return int(tail)
+        except (ValueError, IndexError):
+            return None
+
+    @property
+    def ai_title(self) -> str:
+        """Strip the ``"{title}: {description}"`` shape used by
+        ``AiPlanSaveView`` so the promote-to-recipe page can show
+        just the title. Falls back to ``custom_meal`` when no
+        separator is present.
+        """
+        if not self.is_ai_generated:
+            return self.custom_meal or ""
+        text = (self.custom_meal or "").strip()
+        if ":" in text:
+            return text.split(":", 1)[0].strip()
+        return text
+
+    @property
+    def ai_description(self) -> str:
+        """Description portion of the AI meal's ``custom_meal`` blob.
+
+        ``AiPlanSaveView`` writes ``custom_meal="<title>: <description>"``
+        — everything after the first colon is the description. Returns
+        ``""`` for non-AI meals.
+        """
+        if not self.is_ai_generated:
+            return ""
+        text = (self.custom_meal or "").strip()
+        if ":" not in text:
+            return ""
+        return text.split(":", 1)[1].strip()
+
 
 class SideDish(models.Model):
     """Side dishes linked to a meal plan entry."""

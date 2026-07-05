@@ -218,6 +218,103 @@ class MealPlanModelTests(TestCase):
         self.assertEqual(meals[1].meal_date, self.today + timedelta(days=1))
         self.assertEqual(meals[1].meal_type, MealType.BREAKFAST)
 
+    def test_is_ai_generated_with_marker_prefix(self):
+        """``is_ai_generated`` is True when ``notes`` carries the
+        ``AI-generated | Cook time:`` prefix written by
+        ``AiPlanSaveView``. This is the contract the planner template
+        leans on to render the AI badge that links into the promote
+        flow.
+        """
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.DINNER,
+            custom_meal="Spiced Lentil Stew: warming bowl with ginger.",
+            notes="AI-generated | Cook time: 35 min",
+            ingredients=["red lentils", "ginger", "cumin"],
+        )
+        self.assertTrue(meal.is_ai_generated)
+
+    def test_is_ai_generated_false_for_regular_meals(self):
+        """``is_ai_generated`` is False for handwritten meals."""
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.LUNCH,
+            custom_meal="Homemade Pizza",
+            notes="Family favourite",
+        )
+        self.assertFalse(meal.is_ai_generated)
+
+    def test_is_ai_generated_false_for_recipe_linked_meals(self):
+        """Recipe-linked meals never carry the AI marker even if a
+        user types its prefix into ``notes`` — they have a Recipe row
+        so the badge wouldn't render anyway. The marker check is the
+        canonical signal, regardless of recipe presence.
+        """
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.DINNER,
+            recipe=self.recipe,
+        )
+        self.assertFalse(meal.is_ai_generated)
+
+    def test_is_ai_generated_false_with_no_notes(self):
+        """Edge case: a custom meal with no ``notes`` is not AI."""
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.LUNCH,
+            custom_meal="Quick noodles",
+        )
+        self.assertFalse(meal.is_ai_generated)
+
+    def test_ai_cook_time_minutes_extracts_value(self):
+        """``ai_cook_time_minutes`` reads back the integer from the
+        AI marker; ``None`` for non-AI meals.
+        """
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.DINNER,
+            notes="AI-generated | Cook time: 45 min",
+        )
+        self.assertEqual(meal.ai_cook_time_minutes, 45)
+
+    def test_ai_title_splits_custom_meal_on_colon(self):
+        """``AiPlanSaveView`` writes the title + description into
+        ``custom_meal`` separated by a colon. ``ai_title`` peels the
+        title off so the promote page can show just the meal name.
+        """
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.LUNCH,
+            custom_meal="Thai Basil Chicken: stir-fry with jasmine rice",
+            notes="AI-generated | Cook time: 20 min",
+        )
+        self.assertEqual(meal.ai_title, "Thai Basil Chicken")
+        self.assertEqual(
+            meal.ai_description,
+            "stir-fry with jasmine rice",
+        )
+
+    def test_ai_title_returns_self_for_no_separator(self):
+        """If the custom_meal blob has no colon, the whole string is
+        treated as the title — the promote page still has something to
+        show.
+        """
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.today,
+            meal_type=MealType.LUNCH,
+            custom_meal="Mushroom Risotto",
+            notes="AI-generated | Cook time: 30 min",
+        )
+        self.assertEqual(meal.ai_title, "Mushroom Risotto")
+        self.assertEqual(meal.ai_description, "")
+
 
 class MealTypeTests(TestCase):
     """Tests for MealType choices."""
@@ -587,6 +684,107 @@ class PlannerHomeViewTests(TestCase):
         # And the divider is drawn even on the no-recipe branch.
         self.assertIn(
             "border-top: 1px dashed var(--border-subtle)", body
+        )
+
+    def test_ai_generated_card_shows_promote_badge(self):
+        """When a custom-meal card carries the AI marker in ``notes``,
+        the planner renders an "AI" badge with a link into the
+        promote-to-recipe page. The badge is what the user clicks to
+        attempt to materialize the stub into a real Recipe.
+        """
+        self.client.login(username="alice", password="pass1234")
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.DINNER,
+            custom_meal="Spiced Lentil Stew: warming bowl with ginger.",
+            notes="AI-generated | Cook time: 35 min",
+            ingredients=["red lentils", "ginger", "cumin"],
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        promote_url = reverse(
+            "meal_planner:promote_meal_to_recipe", args=[meal.pk]
+        )
+        # The badge link ``<a href="…/promote-..." class="planner-ai-badge"``>
+        # is rendered for this meal. The string check is hard — the
+        # body also embeds the CSS selector definition once inside
+        # the in-template ``<style>`` block, so we match an actual
+        # ``<a … class="planner-ai-badge">`` here instead.
+        import re as _re
+        badge_anchor = _re.search(
+            r'<a\b[^>]*class="planner-ai-badge"[^>]*>', body,
+        )
+        self.assertIsNotNone(
+            badge_anchor,
+            msg="AI badge anchor missing on AI-generated meal card.",
+        )
+        self.assertIn(promote_url, badge_anchor.group(0))
+        # And the badge carries the human-readable "AI" label inside
+        # the same anchor element.
+        start = badge_anchor.end()
+        end_match = _re.search(r"</a>", body[start:])
+        self.assertIsNotNone(end_match)
+        anchor_inner = body[start:start + end_match.start()]
+        self.assertIn("AI", anchor_inner)
+
+    def test_non_ai_custom_card_omits_promote_badge(self):
+        """The AI badge is only rendered for AI-generated meals; a
+        handwritten custom meal does not surface the chip so the
+        user is not invited to materialize something already saved
+        manually.
+        """
+        import re as _re
+        self.client.login(username="alice", password="pass1234")
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.DINNER,
+            custom_meal="Homemade Pizza",
+            notes="Family favourite",
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # No ``<a … class="planner-ai-badge">`` element is rendered.
+        # (The CSS rule itself lives in the page's ``<style>`` block,
+        # but that's not an anchor.)
+        self.assertIsNone(
+            _re.search(
+                r'<a\b[^>]*class="planner-ai-badge"[^>]*>', body,
+            ),
+            msg="AI badge should not appear on non-AI custom meals.",
+        )
+        # And no promote link is rendered toward any meal.
+        self.assertNotIn(
+            reverse(
+                "meal_planner:promote_meal_to_recipe", args=[1]
+            ),
+            body,
+        )
+
+    def test_recipe_linked_card_omits_promote_badge(self):
+        """Recipe-linked meals do not carry the AI marker, so the
+        promote badge must not appear on them either — clarification
+        guard against a future template regression.
+        """
+        import re as _re
+        self.client.login(username="alice", password="pass1234")
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.DINNER,
+            recipe=self.recipe,
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        self.assertIsNone(
+            _re.search(
+                r'<a\b[^>]*class="planner-ai-badge"[^>]*>', body,
+            ),
+            msg="Recipe-linked meals should not render the AI badge.",
         )
 
 
@@ -4451,3 +4649,253 @@ class HomePageViewTests(TestCase):
         # reviews_count is not passed at all for anonymous visitors so the
         # template's `{% if reviews_count %}` branch is skipped cleanly.
         self.assertNotIn("reviews_count", response.context)
+
+
+# =============================================================================
+# AI Meal Promoted to Recipe Tests
+# =============================================================================
+
+
+class MealPlanPromoteToRecipeViewTests(TestCase):
+    """Tests for ``MealPlanPromoteToRecipeView`` + the on-card AI badge.
+
+    The view is reached from the ``AI`` chip on planner custom-meal
+    cards (only rendered for AI-generated meals). It raises a real
+    Recipe row and links the MealPlan to it so the planner badge
+    disappears afterward.
+    """
+
+    def setUp(self):
+        from inventory.models import InventoryItem  # noqa: F401 (anchor import)
+
+        self.household = Household.objects.create(name="Promote Household")
+        self.other_household = Household.objects.create(name="Other Promote")
+        self.user = User.objects.create_user(
+            username="promote_alice",
+            email="promote@example.com",
+            password="pass1234",
+            household=self.household,
+        )
+        self.other_user = User.objects.create_user(
+            username="promote_bob",
+            email="promote_bob@example.com",
+            password="pass1234",
+            household=self.other_household,
+        )
+        MealPreferences.objects.create(
+            household=self.household, cuisine_preferences=["italian"],
+            cooking_effort="moderate",
+        )
+        # _Normalise_meal_type from views is referenced by the view; not
+        # needed for the promote flow but aliased here for completeness.
+        self.today = date.today()
+        self.monday = self.today - timedelta(days=self.today.weekday())
+
+    def _make_ai_meal(self, *, household=None, cook_time_minutes=35,
+                     title="Spiced Lentil Stew",
+                     description="warming bowl with ginger",
+                     ingredients=None) -> MealPlan:
+        return MealPlan.objects.create(
+            household=household or self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            custom_meal=f"{title}: {description}".rstrip(": "),
+            notes=f"AI-generated | Cook time: {cook_time_minutes} min",
+            ingredients=list(ingredients or ["red lentils", "ginger", "cumin"]),
+        )
+
+    def test_get_renders_meal_preview(self):
+        """GET surfaces the AI meal data and the materialize button
+        so the user can confirm before clicking through.
+        """
+        meal = self._make_ai_meal()
+        self.client.login(username="promote_alice", password="pass1234")
+        response = self.client.get(
+            reverse("meal_planner:promote_meal_to_recipe", args=[meal.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # The title is reflected in the page (split from description).
+        self.assertIn("Spiced Lentil Stew", body)
+        self.assertIn("warming bowl with ginger", body)
+        # The cook time comes from the AI marker.
+        self.assertIn("35 min", body)
+        # The ingredients list is rendered.
+        self.assertIn("red lentils", body)
+        self.assertIn("ginger", body)
+        self.assertIn("cumin", body)
+        # The primary "Materialize as Recipe" button is on the page.
+        self.assertIn("Materialize as Recipe", body)
+
+    def test_get_non_ai_meal_redirects_to_planner(self):
+        """Non-AI meals don't get to land on this page (the badge
+        only renders for AI stubs). The view enforces the same
+        guard by redirecting to the planner with an info flash.
+        """
+        meal = MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.LUNCH,
+            custom_meal="Homemade Pizza",
+            notes="Family favourite",
+        )
+        self.client.login(username="promote_alice", password="pass1234")
+        response = self.client.get(
+            reverse("meal_planner:promote_meal_to_recipe", args=[meal.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("meal_planner:planner"))
+
+    def test_get_unauthenticated_redirects_to_login(self):
+        """Standard auth gate."""
+        meal = self._make_ai_meal()
+        response = self.client.get(
+            reverse("meal_planner:promote_meal_to_recipe", args=[meal.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_get_other_household_meal_returns_404(self):
+        """Cross-household access must 404 — the AI link is per
+        household so user A cannot materialize user B's meals.
+        """
+        other_meal = self._make_ai_meal(household=self.other_household)
+        self.client.login(username="promote_alice", password="pass1234")
+        response = self.client.get(
+            reverse("meal_planner:promote_meal_to_recipe",
+                    args=[other_meal.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_creates_recipe_when_ai_returns_success(self):
+        """POST with a successful AI promotion creates a Recipe row
+        and *clears* the AI marker from the meal so the planner badge
+        no longer renders.
+        """
+        from meal_planner_app.services.ai_recipe_promotion import (
+            PromotionOutcome,
+        )
+
+        meal = self._make_ai_meal()
+        self.client.login(username="promote_alice", password="pass1234")
+
+        outcome = PromotionOutcome(
+            success=True,
+            title="Refined Lentil Stew",
+            description="A warming bowl of red lentils with ginger.",
+            ingredients=[
+                {"name": "red lentils", "quantity": 1.0, "unit": "cup"},
+                {"name": "fresh ginger", "quantity": 2.0, "unit": "tbsp"},
+            ],
+            instructions=[
+                {"step_number": 1, "text": "Rinse the lentils under cold water."},
+                {"step_number": 2,
+                 "text": "Simmer with ginger for 30 minutes.",
+                 },
+            ],
+        )
+        from unittest.mock import patch as _patch
+
+        # We don't rely on the real OpenRouter call; we drive the
+        # end-to-end flow with the promote helper patched.
+        with _patch(
+            "meal_planner_app.services.ai_recipe_promotion."
+            "promote_meal_to_recipe",
+            return_value=outcome,
+        ):
+            response = self.client.post(
+                reverse(
+                    "meal_planner:promote_meal_to_recipe",
+                    args=[meal.pk],
+                )
+            )
+        self.assertEqual(response.status_code, 302)
+        new_recipe = Recipe.objects.get(title="Refined Lentil Stew")
+        self.assertEqual(new_recipe.household, self.household)
+        self.assertFalse(new_recipe.needs_review)
+
+    def test_post_falls_back_when_ai_call_fails(self):
+        """When OpenRouter is unreachable / no API key, the view
+        builds a basic recipe from the meal's own data so the click
+        is still productive and the user is not stranded on a 500.
+        """
+        from unittest.mock import patch as _patch
+        from meal_planner_app.services.ai_recipe_promotion import (
+            PromotionOutcome,
+        )
+
+        meal = self._make_ai_meal()
+        self.client.login(username="promote_alice", password="pass1234")
+
+        ai_failure = PromotionOutcome(
+            success=False, reason="Mocked: no OpenRouter key.",
+        )
+        with _patch(
+            "meal_planner_app.services.ai_recipe_promotion."
+            "promote_meal_to_recipe",
+            return_value=ai_failure,
+        ):
+            response = self.client.post(
+                reverse("meal_planner:promote_meal_to_recipe",
+                        args=[meal.pk])
+            )
+        self.assertEqual(response.status_code, 302)
+        recipe = Recipe.objects.filter(
+            household=self.household, needs_review=False,
+        ).first()
+        self.assertIsNotNone(recipe)
+        # The basic outcome pulled the title out of the meal blob.
+        self.assertIn("Lentil Stew", recipe.title)
+        # And the meal was reattached to the new recipe with the AI
+        # marker cleared.
+        meal.refresh_from_db()
+        self.assertEqual(meal.recipe, recipe)
+        self.assertFalse(meal.is_ai_generated)
+        self.assertEqual(meal.notes, "")
+
+    def test_post_clears_ai_badge_on_planner(self):
+        """After a successful promotion, hitting the planner again
+        must no longer render the AI badge for that meal — the
+        meal is now recipe-linked and owned.
+        """
+        import re as _re
+        from unittest.mock import patch as _patch
+        from meal_planner_app.services.ai_recipe_promotion import (
+            PromotionOutcome,
+        )
+
+        meal = self._make_ai_meal()
+        self.client.login(username="promote_alice", password="pass1234")
+
+        outcome = PromotionOutcome(
+            success=True,
+            title="Stew",
+            description=".",
+            ingredients=[],
+            instructions=[],
+        )
+        with _patch(
+            "meal_planner_app.services.ai_recipe_promotion."
+            "promote_meal_to_recipe",
+            return_value=outcome,
+        ):
+            self.client.post(
+                reverse(
+                    "meal_planner:promote_meal_to_recipe", args=[meal.pk]
+                )
+            )
+        response = self.client.get(reverse("meal_planner:planner"))
+        body = response.content.decode()
+        # No AI badge ``<a>`` for the now-converted meal. (The CSS
+        # rule stays in ``<style>``; only the anchor is the real
+        # surface.)
+        self.assertIsNone(
+            _re.search(
+                r'<a\b[^>]*class="planner-ai-badge"[^>]*>', body,
+            ),
+            msg="AI badge should disappear once the meal has a Recipe.",
+        )
+        # Meal still on the planner, now linked to the new Recipe
+        # (whose title is the AI-derived "Stew", not the original
+        # custom_meal blob).
+        self.assertIn("Stew", body)
