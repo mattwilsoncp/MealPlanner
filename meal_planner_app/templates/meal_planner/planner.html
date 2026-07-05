@@ -185,19 +185,6 @@
                         </div>
                         {# Visual divider so the action row is unmistakable. #}
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); display: flex; flex-wrap: wrap; gap: 10px;">
-                            <a href="{% url 'recipes:recipe_detail' meal.recipe.pk %}"
-                               draggable="false"
-                               class="vp-btn-ghost planner-meal-action"
-                               style="padding: 4px 12px; font-size: 0.75rem; font-weight: 500;">
-                                View
-                            </a>
-                            <button type="button"
-                                    draggable="false"
-                                    data-recipe-id="{{ meal.recipe.pk }}"
-                                    class="vp-btn-ghost planner-meal-action js-open-recipe-modal"
-                                    style="padding: 4px 12px; font-size: 0.75rem; font-weight: 500;">
-                                Preview
-                            </button>
                             <a href="{% url 'meal_planner:cooking_reconcile' meal.pk %}"
                                draggable="false"
                                class="vp-btn-ghost planner-meal-action"
@@ -207,6 +194,13 @@
                                 </svg>
                                 Cook
                             </a>
+                            <button type="button"
+                                    draggable="false"
+                                    data-recipe-id="{{ meal.recipe.pk }}"
+                                    class="vp-btn-ghost planner-meal-action js-open-recipe-modal"
+                                    style="padding: 4px 12px; font-size: 0.75rem; font-weight: 500;">
+                                Preview
+                            </button>
                         </div>
                         {% else %}
                         <div style="display: flex; align-items: start; gap: 8px;">
@@ -251,18 +245,6 @@
                                 Cook
                             </a>
                         </div>
-                        {% endif %}
-                        {% if meal_type == "dinner" %}
-                        {% if meal.side_dishes.all %}
-                        <div style="margin-top: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 4px;">
-                            {% for side in meal.side_dishes.all %}
-                            <div class="vp-label-mono" style="margin-bottom: 4px;">+ {{ side.recipe.title|default:side.custom_side }}</div>
-                            {% endfor %}
-                            <a href="{% url 'meal_planner:edit_meal' meal.pk %}" class="link" style="font-size: 0.75rem;">Edit sides</a>
-                        </div>
-                        {% else %}
-                        <a href="{% url 'meal_planner:edit_meal' meal.pk %}" class="link" style="font-size: 0.75rem; display: inline-block; margin-top: 8px; color: var(--text-muted);">+ Add sides</a>
-                        {% endif %}
                         {% endif %}
                     </div>
                     {% endfor %}
