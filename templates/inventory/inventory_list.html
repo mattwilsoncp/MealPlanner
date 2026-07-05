@@ -108,7 +108,23 @@
                             </td>
                             <td style="text-align: right; white-space: nowrap;">
                                 <div class="vp-table-actions">
+                                    {% if category == "other" or not category %}
+                                    <select class="vp-input input-select js-inventory-assign-category"
+                                            data-item-id="{{ item.pk }}"
+                                            data-item-name="{{ item.name|escapejs }}"
+                                            data-assign-url="{% url 'inventory:inventory_assign_category' item.pk %}"
+                                            style="padding: 6px 10px; font-size: 0.75rem; max-width: 140px; border: 1px solid var(--border-medium); border-radius: 4px; background: var(--bg-elevated);"
+                                            title="Assign a category for {{ item.name }}">
+                                        <option value="">Assign category…</option>
+                                        {% for value,label in category_choices %}
+                                        {% if value != "other" %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
                                     <a href="{% url 'inventory:inventory_edit' item.pk %}" class="link">Edit</a>
+                                    {% endif %}
                                     <form method="post" action="{% url 'inventory:inventory_delete' item.pk %}" class="js-inventory-delete-form" data-item-id="{{ item.pk }}" data-item-name="{{ item.name|escapejs }}" style="display: inline;">
                                         {% csrf_token %}
                                         <button type="submit" class="vp-btn-ghost js-inventory-delete-btn" style="padding: 6px 10px; font-size: 0.6875rem; letter-spacing: 0.18em; color: var(--text-muted);" title="Delete {{ item.name }}" aria-label="Delete {{ item.name }}">
@@ -214,6 +230,91 @@
             .catch(function () {
                 if (button) button.disabled = false;
                 showFeedback('Could not delete "' + name + '". Please try again.', true);
+            });
+    });
+
+    document.addEventListener('change', function (event) {
+        const select = event.target.closest && event.target.closest('.js-inventory-assign-category');
+        if (!select || !select.value) return;
+
+        const assignUrl = select.dataset.assignUrl;
+        if (!assignUrl) return;
+        const itemId = select.dataset.itemId;
+        const itemName = select.dataset.itemName || 'this item';
+        const newCategory = select.value;
+        const previousValue = select.dataset.previousValue || '';
+
+        // Disable the dropdown while the request is in flight so a
+        // double-click cannot fire a second assignment.
+        select.disabled = true;
+        select.dataset.previousValue = newCategory;
+
+        const csrfField = document.querySelector(
+            'input[name="csrfmiddlewaretoken"]'
+        );
+        const csrfFromCookie = (document.cookie.split(';').find(
+            function (c) { return c.trim().startsWith('csrftoken='); }
+        ) || '').split('=')[1];
+        const csrfToken = csrfField
+            ? csrfField.value
+            : (csrfFromCookie || '');
+
+        fetch(assignUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                'item_id': itemId,
+                'category': newCategory,
+            }),
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    return response.json().then(function (payload) {
+                        throw new Error(
+                            (payload && payload.error)
+                                ? payload.error
+                                : 'Server returned HTTP ' + response.status
+                        );
+                    });
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                if (!payload || !payload.ok) {
+                    throw new Error((payload && payload.error) || 'Server rejected assignment.');
+                }
+                select.disabled = false;
+                showFeedback('Moved ' + itemName + ' to ' + newCategory + '.', false);
+                // Drop the row from the Uncategorized bucket — the
+                // user can refresh to land the item under its new
+                // category. We don't auto-mute the dropdown because
+                // they may want to switch it again before reload.
+                if (newCategory !== 'other') {
+                    select.value = '';
+                }
+                // Briefly highlight to acknowledge the change.
+                const row = select.closest('tr');
+                if (row) {
+                    row.style.transition = 'background 0.4s ease';
+                    row.style.background = 'var(--bg-elevated)';
+                    setTimeout(function () {
+                        row.style.background = '';
+                    }, 1200);
+                }
+            })
+            .catch(function (err) {
+                select.disabled = false;
+                select.value = previousValue;
+                showFeedback(
+                    'Could not assign: ' + (err && err.message ? err.message : 'unknown'),
+                    true
+                );
             });
     });
 })();

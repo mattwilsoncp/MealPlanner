@@ -20,6 +20,16 @@ urlpatterns = [
         views.InventoryDeleteView.as_view(),
         name="inventory_delete",
     ),
+    path(
+        "<int:item_id>/category/",
+        views.InventoryAssignCategoryView.as_view(),
+        name="inventory_assign_category",
+    ),
+    path(
+        "api/assign-category/",
+        views.InventoryAssignCategoryView.as_view(),
+        name="inventory_assign_category_api",
+    ),
     path("expiring/", views.InventoryExpiringView.as_view(), name="inventory_expiring"),
     path("expired/", views.InventoryExpiredView.as_view(), name="inventory_expired"),
     path(
