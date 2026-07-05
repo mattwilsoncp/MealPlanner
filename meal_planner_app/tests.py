@@ -571,15 +571,17 @@ class PlannerHomeViewTests(TestCase):
         self.assertIn("dinner", response.context["meal_types"])
         self.assertIn("snack", response.context["meal_types"])
 
-    def test_recipe_meal_actions_are_view_preview_and_cook(self):
-        """The action row on a recipe-linked meal is three controls:
-        ``View`` (full recipe page), ``Preview`` (modal summary), and
-        ``Cook`` (cooking-reconcile). All three carry
-        ``draggable="false"`` so the parent planner-meal-card's drag
-        handler can't suppress clicks. The user explicitly asked for
-        the direct ``View`` link back after dropping it in the previous
-        commit: Preview shows the same content in a modal, but the
-        full page is the canonical place to read the recipe."""
+    def test_recipe_meal_actions_are_cook_then_preview(self):
+        """The action row on a recipe-linked meal is two controls:
+        ``Cook`` (left, with the flame icon) and ``Preview``
+        (right, opens the recipe modal). The previous "View" link
+        is gone — the user explicitly dropped it because the
+        modal already carries a "View Full Recipe" anchor and
+        the dedicated ``Edit`` link in the title row above routes
+        the user back to the meal-edit flow. Both action-row
+        controls carry ``draggable="false"`` so the parent
+        planner-meal-card's drag handler can't suppress clicks.
+        """
         import re
         self.client.login(username="alice", password="pass1234")
         MealPlan.objects.create(
@@ -595,12 +597,6 @@ class PlannerHomeViewTests(TestCase):
         def compact_attr(tag):
             return re.sub(r"\s+", " ", tag)
 
-        # Anchors / buttons in the recipe-meal actions row carry the
-        # ``planner-meal-action`` class and ``draggable="false"``.
-        # The match is non-greedy but tolerant of inline ``<svg>``
-        # icons inside the anchor (the Cook label sits after an
-        # inline flame SVG). DOTALL so we can span the multi-line
-        # template output.
         action_re = re.compile(
             r'<(a|button)\b[^>]*class="vp-btn-ghost planner-meal-action'
             r'[^"]*"[^>]*>(?:(?!</\1>).)*</\1>',
@@ -610,23 +606,19 @@ class PlannerHomeViewTests(TestCase):
         for m in action_re.finditer(body):
             actions.append((m.group(1), compact_attr(m.group(0)).strip()))
 
-        # Locator helpers scoped to the recipe card's three buttons.
-        view_href = reverse(
-            "recipes:recipe_detail", args=[self.recipe.pk]
-        )
         cook_meal = MealPlan.objects.get(recipe=self.recipe)
         cook_href = reverse(
             "meal_planner:cooking_reconcile", args=[cook_meal.pk]
         )
 
-        view_present = any(
+        cook_present = any(
             tag == "a"
-            and f'href="{view_href}"' in compact_attr(action_html)
-            and "View" in compact_attr(action_html)
+            and f'href="{cook_href}"' in compact_attr(action_html)
+            and "Cook" in compact_attr(action_html).split("</svg>")[-1]
             and 'draggable="false"' in compact_attr(action_html)
             for tag, action_html in actions
         )
-        cookbook_button_present = any(
+        preview_present = any(
             tag == "button"
             and "js-open-recipe-modal" in compact_attr(action_html)
             and f'data-recipe-id="{self.recipe.pk}"' in compact_attr(action_html)
@@ -634,35 +626,42 @@ class PlannerHomeViewTests(TestCase):
             and 'draggable="false"' in compact_attr(action_html)
             for tag, action_html in actions
         )
-        cook_present = any(
+        view_present = any(
             tag == "a"
-            and f'href="{cook_href}"' in compact_attr(action_html)
-            # The Cook label sits after an inline flame SVG, so a
-            # regex-style substring match beats a strict end-anchor
-            # one. ``compact_attr`` collapses the multi-line HTML so
-            # SVG + label are contiguous.
-            and "Cook" in compact_attr(action_html).split("</svg>")[-1]
+            and f'href="{reverse("recipes:recipe_detail", args=[self.recipe.pk])}"'
+            in compact_attr(action_html)
+            and "View" in compact_attr(action_html)
             and 'draggable="false"' in compact_attr(action_html)
             for tag, action_html in actions
         )
-
-        # One prev test mistakenly anchored `meal-edit` URLs here; that
-        # isn't currently wired. If a future commit adds Edit Meal to
-        # the recipe-meal branch, loosen the negative assertion below.
-        meal_edit_href_prefix = reverse(
-            "meal_planner:edit_meal", args=[0]
-        ).rsplit("/", 1)[0]
-        actions_in_lines = "\n".join(
-            compact_attr(html) for _, html in actions
-        )
-        # The action row carries View + Preview + Cook, all drag-locked.
-        self.assertTrue(view_present, "Missing View link to recipe_detail.")
-        self.assertTrue(
-            cookbook_button_present, "Missing Preview modal button."
-        )
         self.assertTrue(cook_present, "Missing Cook anchor.")
-        # And, for now, no Edit Meal anchor on the recipe-meal branch.
-        self.assertNotIn(meal_edit_href_prefix, actions_in_lines)
+        self.assertTrue(
+            preview_present, "Missing Preview modal button."
+        )
+        self.assertFalse(
+            view_present,
+            "View link should be removed from recipe-meal action row.",
+        )
+
+        # Order: Cook comes BEFORE Preview inside the same
+        # dashed-divider row, so the index of the Cook anchor in
+        # the rendered HTML is smaller than the index of the
+        # Preview button.
+        cook_idx = body.find(cook_href)
+        preview_marker = f'data-recipe-id="{self.recipe.pk}"'
+        preview_idx = body.find(preview_marker, cook_idx or 0)
+        # Both anchors exist on the page.
+        self.assertGreater(
+            cook_idx, -1, msg="Cook anchor not present."
+        )
+        self.assertGreater(
+            preview_idx, -1, msg="Preview marker not present."
+        )
+        self.assertLess(
+            cook_idx, preview_idx,
+            msg="Cook should appear before Preview on the recipe-meal "
+                "card action row.",
+        )
 
         # Divider is still drawn above the action row.
         self.assertIn("border-top: 1px dashed var(--border-subtle)", body)
@@ -914,12 +913,43 @@ class PlannerHomeViewTests(TestCase):
             msg="Recipe title must come after the Edit link in the card.",
         )
         # The dashed-divider action row still carries
-        # ``vp-btn-ghost planner-meal-action`` for View + Preview + Cook.
+        # ``vp-btn-ghost planner-meal-action`` for Cook + Preview
+        # (View was deliberately dropped from this branch).
         self.assertRegex(
             body.replace("\n", " "),
             r'<a\b[^>]*class="vp-btn-ghost planner-meal-action"'
-            r'[^>]*>\s*View\s*</a>',
+            r'[^>]*>.*?Cook\s*</a>',
         )
+
+    def test_dinner_meal_card_omits_add_sides_link(self):
+        """The planner meal card no longer surfaces an inline
+        "+ Add sides" link for empty dinners. Sides are still
+        managed inside the meal-edit form, so the planner page
+        can stay focused on the meal itself rather than inviting
+        the user to keep extending a card.
+        """
+        self.client.login(username="alice", password="pass1234")
+        # Dinner meal — historically the branch that surfaced the
+        # "+ Add sides" link.
+        MealPlan.objects.create(
+            household=self.household,
+            meal_date=self.monday,
+            meal_type=MealType.DINNER,
+            recipe=self.recipe,
+        )
+        response = self.client.get(reverse("meal_planner:planner"))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # The placeholder link is gone.
+        self.assertNotIn("+ Add sides", body)
+        # And no "Edit sides" link either (neither branch renders
+        # the existence/empty-state side-dishes panel).
+        self.assertNotIn("Edit sides", body)
+
+
+# =============================================================================
+# Form Tests
+# =============================================================================
 
 
 # =============================================================================
