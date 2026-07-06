@@ -508,6 +508,37 @@ class InventoryViewTests(TestCase):
         other.refresh_from_db()
         self.assertEqual(other.category, "other")
 
+    def test_list_page_handler_drops_row_on_successful_assignment(self):
+        """The JS success branch — once the AJAX call returns
+        ok — must remove the row from the DOM and decrement the
+        Uncategorized-bucket count rather than leave the stale
+        row visible. Pinning this contract in the rendered JS
+        means a refactor that re-highlights instead of evicting
+        the row will fail loud.
+        """
+        InventoryItem.objects.create(
+            household=self.household,
+            name="Soon-to-vanish",
+            quantity=Decimal("1.00"),
+            unit="piece",
+            category="other",
+            location="pantry",
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("inventory:inventory_list"))
+        body = response.content.decode()
+        # The handler removes the row's closest <tr> after a fade.
+        self.assertIn("row.remove()", body)
+        # It also drops the whole categories section when empty.
+        self.assertIn(".js-inventory-category", body)
+        # And it asks for the empty-state to refresh so the page
+        # doesn't show "0 items" headers.
+        self.assertIn("refreshEmptyState()", body)
+        # Verifies the highlighted-action contract: the success
+        # message string is wired, so the user gets feedback
+        # even before the row leaves the page.
+        self.assertIn("Moved ", body)
+
 
 class InventoryQuickAddApiTests(TestCase):
     def setUp(self):

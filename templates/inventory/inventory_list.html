@@ -291,21 +291,43 @@
                 }
                 select.disabled = false;
                 showFeedback('Moved ' + itemName + ' to ' + newCategory + '.', false);
-                // Drop the row from the Uncategorized bucket — the
-                // user can refresh to land the item under its new
-                // category. We don't auto-mute the dropdown because
-                // they may want to switch it again before reload.
-                if (newCategory !== 'other') {
-                    select.value = '';
-                }
-                // Briefly highlight to acknowledge the change.
+                // The row no longer belongs to the Uncategorized
+                // bucket — fade it out and remove it from the
+                // DOM so the page reflects the new state without
+                // a full reload. The item still exists in the
+                // database under its new category; a refresh
+                // brings it back inside the "<Category> · 1 ITEM"
+                // card on the page.
                 const row = select.closest('tr');
+                const section = row
+                    ? row.closest('.js-inventory-category')
+                    : null;
                 if (row) {
-                    row.style.transition = 'background 0.4s ease';
-                    row.style.background = 'var(--bg-elevated)';
+                    row.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(-12px)';
                     setTimeout(function () {
-                        row.style.background = '';
-                    }, 1200);
+                        row.remove();
+                        if (section) {
+                            const remainingRows = section.querySelectorAll(
+                                'tbody tr'
+                            );
+                            if (remainingRows.length === 0) {
+                                // Last row in the Uncategorized
+                                // bucket — drop the section itself
+                                // so the page doesn't show a
+                                // header pointing at zero items.
+                                section.style.transition = 'opacity 0.3s ease';
+                                section.style.opacity = '0';
+                                setTimeout(function () {
+                                    section.remove();
+                                    refreshEmptyState();
+                                }, 300);
+                            } else {
+                                updateCount(section, -1);
+                            }
+                        }
+                    }, 380);
                 }
             })
             .catch(function (err) {
