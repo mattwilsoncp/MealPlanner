@@ -72,4 +72,24 @@ urlpatterns = [
         views.InventoryQuickAddView.as_view(),
         name="inventory_create_api",
     ),
+    path(
+        "settings/categories/",
+        views.InventoryCategoryListView.as_view(),
+        name="inventory_categories",
+    ),
+    path(
+        "settings/categories/add/",
+        views.InventoryCategoryCreateView.as_view(),
+        name="inventory_categories_add",
+    ),
+    path(
+        "settings/categories/<int:pk>/edit/",
+        views.InventoryCategoryUpdateView.as_view(),
+        name="inventory_categories_edit",
+    ),
+    path(
+        "settings/categories/<int:pk>/delete/",
+        views.InventoryCategoryDeleteView.as_view(),
+        name="inventory_categories_delete",
+    ),
 ]

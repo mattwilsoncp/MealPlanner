@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Category{% endblock %}
+
+{% block content %}
+<section class="vp-section" style="max-width: 720px;">
+    <a href="{% url 'inventory:inventory_categories' %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Categories</a>
+
+    <span class="vp-eyebrow">{% if object %}Edit{% else %}Add{% endif %} Category</span>
+    <h1 class="vp-display-secondary">{% if object %}Edit category{% else %}Add a category{% endif %}</h1>
+    <p class="vp-subhead" style="font-size: 1.125rem; margin-top: 12px;">Categories surface in the inventory list filter, the per-row assign dropdown, and the add/edit form. The slug is the immutable join key; the display name is what users see everywhere else.</p>
+
+    <form method="post" class="vp-card" style="margin-top: 40px;">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom: 24px;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="{{ form.slug.id_for_label }}">Slug</label>
+            {{ form.slug }}
+            {% if form.slug.errors %}
+            <p class="vp-label-mono mt-2" style="color: var(--error-text);">{{ form.slug.errors|join:", " }}</p>
+            {% elif form.slug.help_text %}
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); font-size: 0.75rem;">{{ form.slug.help_text }}</p>
+            {% endif %}
+        </div>
+
+        <div class="mb-6">
+            <label class="vp-label-mono mb-2" for="{{ form.name.id_for_label }}">Display Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+            <p class="vp-label-mono mt-2" style="color: var(--error-text);">{{ form.name.errors|join:", " }}</p>
+            {% elif form.name.help_text %}
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); font-size: 0.75rem;">{{ form.name.help_text }}</p>
+            {% endif %}
+        </div>
+
+        <div class="mb-8">
+            <label class="vp-label-mono mb-2" for="{{ form.sort_order.id_for_label }}">Sort Order</label>
+            {{ form.sort_order }}
+            <p class="vp-label-mono mt-2" style="color: var(--text-muted); font-size: 0.75rem;">Lower numbers appear first. The Uncategorized bucket uses 999 to sort last.</p>
+            {% if form.sort_order.errors %}
+            <p class="vp-label-mono mt-2" style="color: var(--error-text);">{{ form.sort_order.errors|join:", " }}</p>
+            {% endif %}
+        </div>
+
+        <hr class="vp-divider" style="margin: 32px 0 24px;">
+
+        <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <a href="{% url 'inventory:inventory_categories' %}" class="vp-btn-ghost">Cancel</a>
+            <button type="submit" class="vp-btn-primary">{% if object %}Save Changes{% else %}Add Category{% endif %}</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

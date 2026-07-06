@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from household.models import Household
-from inventory.models import InventoryItem
+from inventory.models import InventoryCategory, InventoryItem
 
 
 class InventoryItemModelTests(TestCase):
@@ -596,3 +596,216 @@ class InventoryQuickAddApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+
+class InventoryCategoryModelTests(TestCase):
+    """Model-level contracts for the user-editable inventory categories."""
+
+    def setUp(self):
+        InventoryCategory.add("produce", "Produce", sort_order=10)
+        InventoryCategory.add("dairy", "Dairy", sort_order=20)
+        InventoryCategory.add("other", "Other", sort_order=999, is_protected=True)
+        # `add` ignores is_protected unless we go through update on
+        # the row directly. Use update_or_create when we need the
+        # flag — `add` is a label-only helper.
+        InventoryCategory.objects.filter(slug="other").update(is_protected=True)
+
+    def test_choices_returns_pairs_from_the_table(self):
+        pairs = InventoryCategory.choices()
+        self.assertIn(("produce", "Produce"), pairs)
+        self.assertIn(("dairy", "Dairy"), pairs)
+        self.assertIn(("other", "Other"), pairs)
+
+    def test_protected_slug_blocks_delete(self):
+        self.assertFalse(InventoryCategory.is_protected_slug("produce"))
+        self.assertTrue(InventoryCategory.is_protected_slug("other"))
+
+    def test_add_idempotently_renames(self):
+        # Re-adding the same slug updates only the label.
+        InventoryCategory.add("dairy", "Dairy & Eggs", sort_order=20)
+        dairy = InventoryCategory.objects.get(slug="dairy")
+        self.assertEqual(dairy.name, "Dairy & Eggs")
+        self.assertEqual(dairy.sort_order, 20)
+
+
+class InventoryCategorySettingsViewTests(TestCase):
+    """CRUD tests for the inventory-category settings page.
+
+    The page lives at ``/inventory/settings/categories/`` and lets
+    the user add/rename/delete entries from the live catalogue.
+    """
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.household = Household.objects.create(name="Primary")
+        self.other_household = Household.objects.create(name="Other")
+        self.user = user_model.objects.create_user(
+            username="cats-user",
+            password="pass1234",
+            household=self.household,
+        )
+        self.client.force_login(self.user)
+        # Re-seed the catalogue to the standard defaults — the
+        # migration only ran once on the dev DB but each test runs
+        # against a fresh in-memory database.
+        for slug, label, sort_order, is_protected in [
+            ("produce", "Produce", 10, False),
+            ("dairy", "Dairy", 20, False),
+            ("pantry", "Pantry", 50, False),
+            ("other", "Other", 999, True),
+        ]:
+            InventoryCategory.objects.update_or_create(
+                slug=slug,
+                defaults={
+                    "name": label,
+                    "sort_order": sort_order,
+                    "is_protected": is_protected,
+                },
+            )
+
+    def test_settings_page_requires_login(self):
+        from django.test import Client
+
+        anon_client = Client()
+        response = anon_client.get(
+            reverse("inventory:inventory_categories")
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_settings_page_lists_seeded_categories(self):
+        response = self.client.get(
+            reverse("inventory:inventory_categories")
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        self.assertIn("Produce", body)
+        self.assertIn("Dairy", body)
+        # Protected chip is visible on the Other row.
+        self.assertIn("PROTECTED", body)
+
+    def test_create_view_persists_a_new_category(self):
+        response = self.client.post(
+            reverse("inventory:inventory_categories_add"),
+            data={
+                "slug": "baking",
+                "name": "Baking",
+                "sort_order": "55",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            InventoryCategory.objects.filter(
+                slug="baking", name="Baking"
+            ).exists()
+        )
+
+    def test_update_view_persists_a_label_change(self):
+        barley = InventoryCategory.objects.create(
+            slug="grains", name="Grains", sort_order=45
+        )
+        response = self.client.post(
+            reverse(
+                "inventory:inventory_categories_edit", args=[barley.pk]
+            ),
+            data={
+                "slug": "grains",
+                "name": "Grains & Cereals",
+                "sort_order": "45",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        barley.refresh_from_db()
+        self.assertEqual(barley.name, "Grains & Cereals")
+
+    def test_delete_view_keeps_other_protected(self):
+        other = InventoryCategory.objects.get(slug="other")
+        response = self.client.post(
+            reverse(
+                "inventory:inventory_categories_delete", args=[other.pk]
+            )
+        )
+        # Protected categories cannot be deleted — the view
+        # still redirects but the row must still exist.
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            InventoryCategory.objects.filter(slug="other").exists()
+        )
+
+    def test_delete_view_reassigns_items_to_other(self):
+        # Two items sitting in `pantry` get moved to `other`
+        # when the `pantry` category is deleted.
+        InventoryItem.objects.create(
+            household=self.household, name="Brown Rice",
+            quantity=Decimal("1"), category="pantry", location="pantry",
+        )
+        InventoryItem.objects.create(
+            household=self.household, name="Lentils",
+            quantity=Decimal("1"), category="pantry", location="pantry",
+        )
+        pantry = InventoryCategory.objects.get(slug="pantry")
+        response = self.client.post(
+            reverse(
+                "inventory:inventory_categories_delete", args=[pantry.pk]
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            InventoryCategory.objects.filter(slug="pantry").exists()
+        )
+        # Every former Pantry item is now in Uncategorized.
+        self.assertEqual(
+            InventoryItem.objects.filter(category="pantry").count(),
+            0,
+        )
+        self.assertEqual(
+            InventoryItem.objects.filter(category="other").count(),
+            2,
+        )
+
+    def test_settings_page_shows_item_counts_per_category(self):
+        InventoryItem.objects.create(
+            household=self.household, name="Apples",
+            quantity=Decimal("1"), category="produce", location="pantry",
+        )
+        InventoryItem.objects.create(
+            household=self.household, name="Carrots",
+            quantity=Decimal("1"), category="produce", location="pantry",
+        )
+        InventoryItem.objects.create(
+            household=self.household, name="Cheddar",
+            quantity=Decimal("1"), category="dairy", location="refrigerator",
+        )
+        response = self.client.get(
+            reverse("inventory:inventory_categories")
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        # Two rows means the page renders 2 next to the Produce slug.
+        self.assertIn("2", body)
+
+    def test_inventory_list_page_sources_choices_from_live_table(self):
+        """The inventory list filter dropdown reads from the live
+        table — renaming a category must reach the page."""
+        InventoryCategory.objects.filter(slug="produce").update(
+            name="Fruits & Veg"
+        )
+        InventoryItem.objects.create(
+            household=self.household, name="Tomato",
+            quantity=Decimal("1"), category="produce", location="pantry",
+        )
+        response = self.client.get(
+            reverse("inventory:inventory_list")
+        )
+        body = response.content.decode()
+        self.assertIn("Fruits &amp; Veg", body)
+        # And the per-row assign-category select picks up the new
+        # label too — only for uncat rows.
+        InventoryItem.objects.create(
+            household=self.household, name="Mystery Bag",
+            quantity=Decimal("1"), category="other", location="pantry",
+        )
+        response = self.client.get(
+            reverse("inventory:inventory_list")
+        )
+        body = response.content.decode()
+        self.assertIn("Fruits &amp; Veg", body)
