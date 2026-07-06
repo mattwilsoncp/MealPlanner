@@ -181,3 +181,101 @@ class UpcLookupUsage(models.Model):
         return cls.objects.filter(
             service=service, date=timezone.localdate()
         ).update(count=0)
+
+
+class InventoryCategory(models.Model):
+    """User-editable inventory category.
+
+    Replaces the static ``InventoryItem.CATEGORY_CHOICES`` tuple so the
+    categories offered on the inventory list page, add/edit form, and
+    AJAX-assign dropdown can be added, renamed, and removed at runtime
+    via the inventory settings page (``/inventory/settings/categories/``).
+
+    The ``InventoryItem`` still stores ``category`` as a slug CharField
+    so we don't need a destructive FK migration; the slug is the stable
+    join key. The display label comes from this table.
+
+    Conventions
+    -----------
+    * ``slug`` is the immutable key used by ``InventoryItem.category``
+      and the JS assign-category endpoint. Renaming a category edits
+      ``name`` only; the slug never changes.
+    * ``is_protected`` categories cannot be deleted (currently: only
+      the ``"other"`` Uncategorized fallback bucket). POSTing a delete
+      on them returns 409.
+    * Items currently in a deleted category are reassigned to
+      ``"other"`` so no rows are lost.
+    """
+
+    slug = models.SlugField(max_length=32, unique=True)
+    name = models.CharField(max_length=64)
+    sort_order = models.PositiveIntegerField(default=100)
+    is_protected = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "slug"]
+        verbose_name_plural = "inventory categories"
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def choices(cls) -> list[tuple[str, str]]:
+        """Live ``(slug, name)`` pairs from this table, falling back to
+        ``InventoryItem.CATEGORY_CHOICES`` if the table is empty
+        (e.g. before the seeding migration runs).
+        """
+        rows = list(cls.objects.all().values_list("slug", "name"))
+        if rows:
+            return rows
+        return list(InventoryItem.CATEGORY_CHOICES)
+
+    @classmethod
+    def is_protected_slug(cls, slug: str) -> bool:
+        """A category is protected if it's the ``other`` fallback bucket
+        or it's marked ``is_protected`` on the row. Both forms reach
+        the same ``"cannot be deleted"`` answer.
+        """
+        if slug == "other":
+            return True
+        try:
+            return cls.objects.get(slug=slug).is_protected
+        except cls.DoesNotExist:
+            return False
+
+    @classmethod
+    def add(
+        cls,
+        slug: str,
+        name: str,
+        sort_order: int = 100,
+        is_protected: bool = False,
+    ) -> "InventoryCategory":
+        """Create-or-update a category by ``slug``.
+
+        Slugs are immutable keys. Re-adding the same slug only updates
+        ``name``/``sort_order`` so the rename flow on the settings
+        page is idempotent. ``is_protected`` is only honoured on the
+        initial create — once a category is protected, no caller can
+        unlock it without going through the admin or a custom fixup.
+        """
+        row, _ = cls.objects.get_or_create(
+            slug=slug,
+            defaults={
+                "name": name,
+                "sort_order": sort_order,
+                "is_protected": is_protected,
+            },
+        )
+        updated = False
+        if row.name != name:
+            row.name = name
+            updated = True
+        if row.sort_order != sort_order:
+            row.sort_order = sort_order
+            updated = True
+        if updated:
+            row.save(update_fields=["name", "sort_order", "updated_at"])
+        return row

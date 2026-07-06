@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Categories{% endblock %}
+
+{% block content %}
+<section class="vp-hero">
+    <div class="vp-hero-inner">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between;">
+            <div>
+                <span class="vp-eyebrow">Inventory · Settings</span>
+                <h1 class="vp-display">Categories.</h1>
+                <p class="vp-subhead">The labels available when sorting inventory. Add, rename, or remove them here. Protected rows stay locked.</p>
+            </div>
+            <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+                <a href="{% url 'inventory:inventory_list' %}" class="vp-btn-ghost">Back to Inventory</a>
+                <a href="{% url 'inventory:inventory_categories_add' %}" class="vp-btn-primary">+ Add Category</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="vp-section">
+    <div class="vp-card-tight" style="padding: 0;">
+        <div style="padding: 24px 28px;">
+            <table class="vp-table">
+                <thead>
+                    <tr>
+                        <th>Slug</th>
+                        <th>Display Name</th>
+                        <th style="text-align: right;">Items</th>
+                        <th style="text-align: right;">Sort</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>
+                            <code style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.8125rem;">{{ category.slug }}</code>
+                            {% if category.is_locked %}
+                            <span class="vp-label-mono" style="margin-left: 10px; color: var(--text-muted); font-size: 0.6875rem;">PROTECTED</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight: 500;">{{ category.name }}</td>
+                        <td style="text-align: right; font-variant-numeric: tabular-nums;">
+                            {{ category.item_count }}
+                        </td>
+                        <td style="text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary);">
+                            {{ category.sort_order }}
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <a href="{% url 'inventory:inventory_categories_edit' category.pk %}" class="link">Edit</a>
+                            {% if category.is_locked %}
+                            <span class="vp-label-mono" style="margin-left: 12px; color: var(--text-muted); font-size: 0.6875rem;">LOCKED</span>
+                            {% else %}
+                            <a href="{% url 'inventory:inventory_categories_delete' category.pk %}" class="link" style="margin-left: 12px; color: var(--text-secondary);" onclick="return confirm('Delete &quot;{{ category.name|escapejs }}&quot;? Items in that category will move to Uncategorized.');">Delete</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 32px;">
+                            No categories yet. <a href="{% url 'inventory:inventory_categories_add' %}">Add the first</a> or run the seed migration.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="vp-label-mono" style="margin-top: 24px; color: var(--text-muted); font-size: 0.75rem;">
+        The Uncategorized bucket (<code>other</code>) is the system fallback. Items in a deleted category are moved there automatically.
+    </p>
+</section>
+{% endblock %}

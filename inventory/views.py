@@ -19,8 +19,8 @@ from django.views.generic import CreateView, DeleteView, ListView, UpdateView, V
 from django.views.generic.base import TemplateView
 from openai import OpenAI
 
-from .forms import InventoryItemForm, InventoryQuickAddForm, ReceiptImportForm
-from .models import InventoryItem, Store, UpcLookupUsage
+from .forms import InventoryCategoryForm, InventoryItemForm, InventoryQuickAddForm, ReceiptImportForm
+from .models import InventoryCategory, InventoryItem, Store, UpcLookupUsage
 from .services.receipt_barcode_enrichment import enrich_receipt_items
 from .services.upc_lookup import lookup_upc
 
@@ -64,7 +64,10 @@ class InventoryListView(LoginRequiredMixin, ListView):
             grouped_items.setdefault(category_key, []).append(item)
 
         context["grouped_items"] = grouped_items
-        context["category_choices"] = InventoryItem.CATEGORY_CHOICES
+        # Categories are sourced live from the InventoryCategory
+        # table so the settings page can add / rename entries
+        # without a model migration.
+        context["category_choices"] = InventoryCategory.choices()
         context["location_choices"] = InventoryItem.LOCATION_CHOICES
         context["filters"] = {
             "q": self.request.GET.get("q", "").strip(),
@@ -142,7 +145,9 @@ class InventoryAssignCategoryView(LoginRequiredMixin, View):
 
     http_method_names = ["post"]
 
-    VALID_CATEGORIES = {value for value, _ in InventoryItem.CATEGORY_CHOICES}
+    # Live catalogue — InventoryCategory.choices() returns a tuple
+    # list that respects any categories added via the settings page.
+    VALID_CATEGORIES = {value for value, _ in InventoryCategory.choices()}
 
     def post(self, request, *args, **kwargs):
         item_id = request.POST.get("item_id") or kwargs.get("item_id")
@@ -408,7 +413,7 @@ class BarcodeCreateView(LoginRequiredMixin, View):
             )
 
         category = payload.get("category")
-        category_values = {value for value, _ in InventoryItem.CATEGORY_CHOICES}
+        category_values = {value for value, _ in InventoryCategory.choices()}
         normalized_category = category if category in category_values else "other"
 
         notes_parts = []
@@ -891,3 +896,114 @@ class UpcUsageView(LoginRequiredMixin, TemplateView):
             }
         )
         return context
+
+
+class InventoryCategoryListView(LoginRequiredMixin, ListView):
+    """Settings page: manage inventory categories.
+
+    Categories are system-wide (one shared list across all
+    households) — see ``InventoryCategory.Meta``. The page is a
+    table of rows sorted by ``sort_order`` (then slug), with
+    edit/delete actions and a single ``+ Add category`` button.
+
+    The Uncategorized / ``other`` bucket is rendered with a small
+    `vp-label-mono PROTECTED` chip and its delete link is replaced
+    with an inline note explaining the lock.
+    """
+
+    template_name = "inventory/category_settings.html"
+    context_object_name = "categories"
+
+    def get_queryset(self):
+        return InventoryCategory.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        rows = list(context["categories"])
+        ids = [r.slug for r in rows]
+        item_counts = {
+            slug: InventoryItem.objects.filter(category=slug).count()
+            for slug in ids
+        }
+        for row in rows:
+            row.item_count = item_counts.get(row.slug, 0)
+            row.is_locked = row.is_protected or row.slug == "other"
+        context["categories"] = rows
+        context["used_slugs"] = {row.slug for row in rows}
+        return context
+
+
+class InventoryCategoryCreateView(LoginRequiredMixin, CreateView):
+    """Add a new inventory category to the shared catalogue."""
+
+    form_class = InventoryCategoryForm
+    template_name = "inventory/category_form.html"
+    success_url = reverse_lazy("inventory:inventory_categories")
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Added category '{form.instance.name}'.")
+        return super().form_valid(form)
+
+
+class InventoryCategoryUpdateView(LoginRequiredMixin, UpdateView):
+    """Edit the display label / sort order of an existing category."""
+
+    model = InventoryCategory
+    form_class = InventoryCategoryForm
+    template_name = "inventory/category_form.html"
+    pk_url_kwarg = "pk"
+    success_url = reverse_lazy("inventory:inventory_categories")
+
+    def form_valid(self, form):
+        messages.success(
+            self.request, f"Updated category to '{form.instance.name}'.",
+        )
+        return super().form_valid(form)
+
+
+class InventoryCategoryDeleteView(LoginRequiredMixin, View):
+    """POST-only delete of a category.
+
+    Deleting a category automatically moves every inventory
+    item that still references it into ``"other"`` so no rows
+    are lost. Protected categories (``other`` and any row marked
+    ``is_protected``) return 409 and a flash message so the
+    user gets feedback rather than a silent no-op.
+    """
+
+    http_method_names = ["post"]
+    pk_url_kwarg = "pk"
+    success_url = reverse_lazy("inventory:inventory_categories")
+
+    def post(self, request, *args, **kwargs):
+        pk = kwargs.get(self.pk_url_kwarg)
+        try:
+            category = InventoryCategory.objects.get(pk=pk)
+        except InventoryCategory.DoesNotExist:
+            messages.error(request, "That category no longer exists.")
+            return HttpResponseRedirect(self.success_url)
+
+        if InventoryCategory.is_protected_slug(category.slug):
+            messages.error(
+                request,
+                f"'{category.name}' is protected and cannot be deleted. "
+                "It's the Uncategorized fallback bucket.",
+            )
+            return HttpResponseRedirect(
+                f"{self.success_url}?protected={category.slug}"
+            )
+
+        moved = InventoryItem.objects.filter(category=category.slug).update(
+            category="other",
+        )
+        name = category.name
+        category.delete()
+        if moved:
+            messages.success(
+                request,
+                f"Deleted '{name}'. {moved} item{'s' if moved != 1 else ''} "
+                "moved to Uncategorized.",
+            )
+        else:
+            messages.success(request, f"Deleted '{name}'.")
+        return HttpResponseRedirect(self.success_url)
