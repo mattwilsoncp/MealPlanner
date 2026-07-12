@@ -14,10 +14,10 @@ from django.views.generic import TemplateView
 from ingredients.models import Ingredient, IngredientLink
 from instructions.models import Instruction
 from inventory.models import InventoryItem
-from recipes.models import Recipe
+from recipes.models import Recipe, RecipeWatchSegment, RecipeWatchSession
 from tags.models import RecipeTag, Tag
 
-BACKUP_VERSION = 2
+BACKUP_VERSION = 3
 
 
 class BackupPageView(LoginRequiredMixin, TemplateView):
@@ -44,7 +44,7 @@ class ExportBackupView(LoginRequiredMixin, View):
                 status=400,
             )
 
-        recipes_data, photo_files = self._export_recipes(household)
+        recipes_data, photo_files, watch_files = self._export_recipes(household)
         data = {
             "version": BACKUP_VERSION,
             "exported_at": timezone.now().isoformat(),
@@ -53,12 +53,14 @@ class ExportBackupView(LoginRequiredMixin, View):
             "inventory": self._export_inventory(household),
         }
 
-        # Build a ZIP containing backup.json + photos/
+        # Build a ZIP containing backup.json + photos/ + watch_frames/
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("backup.json", json.dumps(data, indent=2, ensure_ascii=False))
             for photo_path, photo_bytes in photo_files:
                 zf.writestr(f"photos/{photo_path}", photo_bytes)
+            for frame_path, frame_bytes in watch_files:
+                zf.writestr(f"watch_frames/{frame_path}", frame_bytes)
 
         buffer.seek(0)
         filename = f"meal_planner_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
@@ -70,6 +72,7 @@ class ExportBackupView(LoginRequiredMixin, View):
         recipes = Recipe.objects.filter(household=household)
         result = []
         photo_files = []  # list of (filename, bytes)
+        watch_files = []  # list of (filename, bytes)
         for recipe in recipes:
             ingredients = IngredientLink.objects.filter(recipe=recipe).select_related(
                 "ingredient"
@@ -88,6 +91,45 @@ class ExportBackupView(LoginRequiredMixin, View):
                     recipe.photo.close()
                 except Exception:
                     photo_filename = None
+
+            # Export watch session data and frame images
+            watch_session_data = None
+            if hasattr(recipe, "watch_session"):
+                session = recipe.watch_session
+                segments = []
+                for index, segment in enumerate(
+                    session.segments.order_by("start_time"), start=1
+                ):
+                    frame_filename = None
+                    if segment.image:
+                        try:
+                            ext = os.path.splitext(segment.image.name)[1] or ".jpg"
+                            frame_filename = (
+                                f"recipe_{recipe.pk}_segment_{index:04d}{ext}"
+                            )
+                            segment.image.open("rb")
+                            watch_files.append(
+                                (frame_filename, segment.image.read())
+                            )
+                            segment.image.close()
+                        except Exception:
+                            frame_filename = None
+
+                    segments.append(
+                        {
+                            "start_time": str(segment.start_time),
+                            "end_time": str(segment.end_time),
+                            "text": segment.text,
+                            "step_number": segment.step_number,
+                            "frame_filename": frame_filename,
+                        }
+                    )
+
+                watch_session_data = {
+                    "status": session.status,
+                    "error_message": session.error_message,
+                    "segments": segments,
+                }
 
             result.append(
                 {
@@ -116,9 +158,10 @@ class ExportBackupView(LoginRequiredMixin, View):
                         for inst in instructions
                     ],
                     "tags": [rt.tag.name for rt in recipe_tags],
+                    "watch_session": watch_session_data,
                 }
             )
-        return result, photo_files
+        return result, photo_files, watch_files
 
     def _export_inventory(self, household):
         items = InventoryItem.objects.filter(household=household)
@@ -246,6 +289,36 @@ class ImportBackupView(LoginRequiredMixin, View):
                     name=tag_name,
                 )
                 RecipeTag.objects.get_or_create(recipe=recipe, tag=tag)
+
+            # Import watch session and frame images
+            watch_session_data = recipe_data.get("watch_session")
+            if watch_session_data:
+                session = RecipeWatchSession.objects.create(
+                    recipe=recipe,
+                    status=watch_session_data.get("status", RecipeWatchSession.Status.PENDING),
+                    error_message=watch_session_data.get("error_message", ""),
+                )
+                for seg_data in watch_session_data.get("segments", []):
+                    segment = RecipeWatchSegment.objects.create(
+                        session=session,
+                        start_time=seg_data.get("start_time", "0"),
+                        end_time=seg_data.get("end_time", "0"),
+                        text=seg_data.get("text", ""),
+                        step_number=seg_data.get("step_number"),
+                    )
+                    frame_filename = seg_data.get("frame_filename")
+                    if frame_filename and photos_archive:
+                        try:
+                            frame_bytes = photos_archive.read(
+                                f"watch_frames/{frame_filename}"
+                            )
+                            segment.image.save(
+                                frame_filename,
+                                ContentFile(frame_bytes),
+                                save=True,
+                            )
+                        except (KeyError, Exception):
+                            pass
 
             stats["recipes_imported"] += 1
 
