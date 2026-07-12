@@ -10,6 +10,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from household.models import Household
+from inventory.models import InventoryCategory
 from recipes.models import Recipe, RecipeWatchSegment, RecipeWatchSession
 
 
@@ -93,7 +94,7 @@ class BackupWatchDataTests(TestCase):
         zf = zipfile.ZipFile(io.BytesIO(response.content))
         data = json.loads(zf.read("backup.json").decode("utf-8"))
 
-        self.assertEqual(data["version"], 3)
+        self.assertEqual(data["version"], 4)
         recipe_data = data["recipes"][0]
         self.assertIn("watch_session", recipe_data)
         self.assertEqual(
@@ -153,3 +154,47 @@ class BackupWatchDataTests(TestCase):
         imported_bytes = segments[0].image.read()
         segments[0].image.close()
         self.assertEqual(imported_bytes, frame_bytes)
+
+    def test_export_import_inventory_categories(self):
+        # Create custom categories
+        InventoryCategory.objects.create(
+            slug="bulk", name="Bulk Goods", sort_order=10, is_protected=False
+        )
+        InventoryCategory.objects.create(
+            slug="spices", name="Spices", sort_order=20, is_protected=False
+        )
+
+        export_response = self.client.get(reverse("backup_export"))
+        zf = zipfile.ZipFile(io.BytesIO(export_response.content))
+        data = json.loads(zf.read("backup.json").decode("utf-8"))
+
+        self.assertEqual(data["version"], 4)
+        category_data = data.get("inventory_categories", [])
+        self.assertTrue(any(c["slug"] == "bulk" and c["name"] == "Bulk Goods" for c in category_data))
+        self.assertTrue(any(c["slug"] == "spices" and c["name"] == "Spices" for c in category_data))
+
+        # Delete categories to simulate a clean target, then import
+        InventoryCategory.objects.filter(slug__in=["bulk", "spices"]).delete()
+
+        new_household = Household.objects.create(name="Category Import Household")
+        new_user = User.objects.create_user(
+            username="category-import-user",
+            email="category-import@example.com",
+            password="pass1234",
+            household=new_household,
+        )
+        self.client.force_login(new_user)
+
+        import_file = io.BytesIO(export_response.content)
+        import_file.name = "backup.zip"
+        response = self.client.post(
+            reverse("backup_import"),
+            {"backup_file": import_file},
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+
+        bulk = InventoryCategory.objects.get(slug="bulk")
+        self.assertEqual(bulk.name, "Bulk Goods")
+        self.assertEqual(bulk.sort_order, 10)
