@@ -19,3 +19,9 @@ media/
 
 # Transcripts
 logs/
+
+# Editor / merge backups
+*.orig
+*.bak
+*.rej
+*~
