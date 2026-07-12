@@ -13,6 +13,7 @@ urlpatterns = [
     path("import/image/", views.ImageRecipeImportView.as_view(), name="image_recipe_import"),
     path("<int:pk>/", views.RecipeDetailView.as_view(), name="recipe_detail"),
     path("<int:pk>/transcript/", views.RecipeTranscriptContentView.as_view(), name="recipe_transcript"),
+    path("<int:pk>/watch/", views.RecipeWatchView.as_view(), name="recipe_watch"),
     path("new/", views.RecipeCreateView.as_view(), name="recipe_create"),
     path("<int:pk>/edit/", views.RecipeUpdateView.as_view(), name="recipe_update"),
     path("<int:pk>/delete/", views.RecipeDeleteView.as_view(), name="recipe_delete"),

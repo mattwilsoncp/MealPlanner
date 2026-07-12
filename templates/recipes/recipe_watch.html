@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.title }} - Watch Recipe{% endblock %}
+
+{% block content %}
+<section class="vp-section" style="max-width: 1100px;">
+    <a href="{% url 'recipes:recipe_detail' recipe.pk %}" class="vp-label-mono" style="color: var(--text-secondary); margin-bottom: 24px; display: inline-block; text-decoration: none;">&larr; Recipe Detail</a>
+
+    <div class="vp-hero-inner" style="padding: 0 0 40px;">
+        <span class="vp-eyebrow">Watch Recipe</span>
+        <h1 class="vp-display-secondary" style="margin-top: 12px;">{{ recipe.title }}</h1>
+        {% if recipe.video_url %}
+        <p style="margin-top: 16px;">
+            <a href="{{ recipe.video_url }}" target="_blank" class="vp-btn-ghost">Open Source Video</a>
+        </p>
+        {% endif %}
+    </div>
+
+    {% if not recipe.video_url %}
+    <div class="vp-card-tight">
+        <span class="vp-label-mono" style="color: var(--text-secondary);">No video URL</span>
+        <p style="margin-top: 12px; color: var(--text-secondary);">
+            Add a video URL to the recipe to generate a frame-by-frame watch view.
+        </p>
+        <a href="{% url 'recipes:recipe_update' recipe.pk %}" class="vp-btn-primary" style="margin-top: 16px;">Edit Recipe</a>
+    </div>
+    {% elif not session or session.status == 'pending' %}
+    <div class="vp-card-tight">
+        <span class="vp-label-mono" style="color: var(--text-secondary);">Watch view not generated</span>
+        <p style="margin-top: 12px; color: var(--text-secondary);">
+            Generate screenshots and a timestamped transcript from the video. This downloads the video and extracts one frame per transcript segment, so it may take a moment.
+        </p>
+        <form method="post" action="{% url 'recipes:recipe_watch' recipe.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="vp-btn-primary" style="margin-top: 16px;">Generate Watch View</button>
+        </form>
+    </div>
+    {% elif session.status == 'error' %}
+    <div class="vp-card-tight">
+        <span class="vp-label-mono" style="color: var(--text-secondary);">Processing failed</span>
+        <p style="margin-top: 12px; color: var(--text-secondary); white-space: pre-wrap;">{{ session.error_message|default:"Unknown error" }}</p>
+        <form method="post" action="{% url 'recipes:recipe_watch' recipe.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="vp-btn-primary" style="margin-top: 16px;">Retry</button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if instructions %}
+    <div class="vp-section-header" style="margin-top: 48px;">
+        <h2 class="vp-section-header-title">Recipe Instructions</h2>
+    </div>
+    <div class="vp-card-tight" style="margin-bottom: 48px;">
+        <ol style="padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 16px;">
+            {% for inst in instructions %}
+            <li style="display: flex; gap: 16px;">
+                <span style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; color: var(--text-secondary); flex-shrink: 0;">{{ inst.step_number }}.</span>
+                <p style="color: var(--text-primary); line-height: 1.6; margin: 0;">{{ inst.text }}</p>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+
+    {% if segments %}
+    <div class="vp-section-header">
+        <h2 class="vp-section-header-title">Video Transcript & Screenshots</h2>
+        <span class="vp-label-mono" style="color: var(--text-muted);">{{ segments|length }} segment{{ segments|length|pluralize }}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 32px;">
+        {% for segment in segments %}
+        <div class="vp-card" style="padding: 24px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+                {% if segment.image %}
+                <div style="flex: 1 1 320px; min-width: 0;">
+                    <img src="{{ segment.image.url }}" alt="Screenshot at {{ segment.start_time_display }}" style="width: 100%; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                </div>
+                {% endif %}
+                <div style="flex: 2 1 400px; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <span class="badge">{{ segment.start_time_display }}</span>
+                        {% if segment.matched_instruction %}
+                        <span class="badge" style="border-color: var(--border-strong);">Step {{ segment.matched_instruction.step_number }}</span>
+                        {% endif %}
+                    </div>
+                    <p style="color: var(--text-primary); line-height: 1.6; margin: 0; white-space: pre-wrap;">{{ segment.text }}</p>
+                    {% if segment.matched_instruction %}
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <span class="vp-label-mono" style="font-size: 0.6875rem;">Matched instruction</span>
+                        <p style="margin-top: 8px; color: var(--text-secondary);">{{ segment.matched_instruction.text }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

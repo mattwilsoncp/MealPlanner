@@ -16,5 +16,9 @@ youtube-transcript-api>=1.2
 openai>=1.0
 requests>=2.28
 
+# Video watch pipeline (recipe watch view)
+# Requires ffmpeg/yt-dlp system binaries or Python packages below.
+yt-dlp>=2024.0
+
 # Optional: For image handling
 Pillow>=10.0
