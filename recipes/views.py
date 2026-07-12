@@ -21,11 +21,12 @@ from django.conf import settings
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db.models import Avg, Q
-from .models import Recipe
+from .models import Recipe, RecipeWatchSession
 from django.core.files.base import File
 from .forms import RecipeForm, RatingForm, ImportForm, LLMImportForm, ImageImportForm
 from .llm_json import extract_json_payload
 from .youtube import YouTubeService, InvalidVideoError, APIError
+from .watch_service import process_recipe_watch
 
 
 TRANSCRIPT_DIR = Path(__file__).resolve().parent.parent / "logs" / "transcripts"
@@ -1233,6 +1234,69 @@ class RecipeTranscriptContentView(LoginRequiredMixin, View):
         return JsonResponse(
             {"path": str(absolute.relative_to(TRANSCRIPT_DIR.resolve())), "content": content},
         )
+
+
+class RecipeWatchView(LoginRequiredMixin, DetailView):
+    """Detailed video view that pairs extracted frames with transcript
+    segments from the recipe's source video.
+    """
+
+    model = Recipe
+    template_name = "recipes/recipe_watch.html"
+    context_object_name = "recipe"
+
+    def get_queryset(self):
+        return Recipe.objects.filter(household=self.request.user.household)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        recipe = self.object
+
+        session = getattr(recipe, "watch_session", None)
+        context["session"] = session
+        context["segments"] = []
+        context["instructions"] = Instruction.objects.filter(
+            recipe=recipe
+        ).order_by("step_number")
+
+        if session and session.status == RecipeWatchSession.Status.READY:
+            segments = list(
+                session.segments.select_related("session").order_by("start_time")
+            )
+            # Attach the matching instruction text to each segment for the
+            # template so the recipe step can be shown next to the video frame.
+            instruction_map = {
+                inst.step_number: inst for inst in context["instructions"]
+            }
+            for segment in segments:
+                segment.matched_instruction = instruction_map.get(
+                    segment.step_number
+                )
+            context["segments"] = segments
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        recipe = self.object
+
+        if not recipe.video_url:
+            messages.error(request, "This recipe does not have a video URL.")
+            return redirect("recipes:recipe_watch", pk=recipe.pk)
+
+        try:
+            process_recipe_watch(recipe)
+            messages.success(
+                request,
+                "Watch view generated. Frames and transcript are ready.",
+            )
+        except Exception as exc:
+            messages.error(
+                request,
+                f"Could not generate watch view: {exc}",
+            )
+
+        return redirect("recipes:recipe_watch", pk=recipe.pk)
 
 
 class RecipeCreateView(LoginRequiredMixin, CreateView):

@@ -288,7 +288,10 @@
             {% if recipe.video_url %}
             <div style="margin-top: 40px;">
                 <span class="vp-label-mono">Video</span>
-                <a href="{{ recipe.video_url }}" target="_blank" class="vp-btn-ghost" style="display: inline-flex; margin-top: 12px;">Watch Video</a>
+                <div style="display: inline-flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+                    <a href="{{ recipe.video_url }}" target="_blank" class="vp-btn-ghost">Watch Video</a>
+                    <a href="{% url 'recipes:recipe_watch' recipe.pk %}" class="vp-btn-primary">Watch Recipe</a>
+                </div>
             </div>
             {% endif %}
 
