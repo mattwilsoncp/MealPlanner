@@ -13,11 +13,11 @@ from django.views.generic import TemplateView
 
 from ingredients.models import Ingredient, IngredientLink
 from instructions.models import Instruction
-from inventory.models import InventoryItem
+from inventory.models import InventoryCategory, InventoryItem
 from recipes.models import Recipe, RecipeWatchSegment, RecipeWatchSession
 from tags.models import RecipeTag, Tag
 
-BACKUP_VERSION = 3
+BACKUP_VERSION = 4
 
 
 class BackupPageView(LoginRequiredMixin, TemplateView):
@@ -51,6 +51,7 @@ class ExportBackupView(LoginRequiredMixin, View):
             "household_name": household.name,
             "recipes": recipes_data,
             "inventory": self._export_inventory(household),
+            "inventory_categories": self._export_inventory_categories(),
         }
 
         # Build a ZIP containing backup.json + photos/ + watch_frames/
@@ -179,6 +180,17 @@ class ExportBackupView(LoginRequiredMixin, View):
                 "barcode": item.barcode,
             }
             for item in items
+        ]
+
+    def _export_inventory_categories(self):
+        return [
+            {
+                "slug": category.slug,
+                "name": category.name,
+                "sort_order": category.sort_order,
+                "is_protected": category.is_protected,
+            }
+            for category in InventoryCategory.objects.order_by("sort_order", "slug")
         ]
 
 
@@ -321,6 +333,21 @@ class ImportBackupView(LoginRequiredMixin, View):
                             pass
 
             stats["recipes_imported"] += 1
+
+        # Import inventory categories (global table, restored before items so
+        # the display names/sort order match the imported item category slugs).
+        for category_data in data.get("inventory_categories", []):
+            slug = category_data.get("slug", "").strip()
+            if not slug:
+                continue
+            InventoryCategory.objects.update_or_create(
+                slug=slug,
+                defaults={
+                    "name": category_data.get("name", slug),
+                    "sort_order": category_data.get("sort_order", 100),
+                    "is_protected": category_data.get("is_protected", False),
+                },
+            )
 
         # Import inventory
         for item_data in data.get("inventory", []):
