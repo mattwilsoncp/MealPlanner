@@ -19,7 +19,7 @@ from recipes.models import Recipe, RecipeWatchSegment, RecipeWatchSession
 from shopping.models import ShoppingListItem, ShoppingListWeek
 from tags.models import RecipeTag, Tag
 
-BACKUP_VERSION = 5
+BACKUP_VERSION = 6
 
 
 class BackupPageView(LoginRequiredMixin, TemplateView):
@@ -187,7 +187,7 @@ class ExportBackupView(LoginRequiredMixin, View):
                         frame_filename = f"recipe_{recipe.pk}_segment_{index:04d}{ext}"
                         frame_bytes = self._read_image(segment.image)
                         if frame_bytes:
-                            frame_path = f"watch_frames/{frame_filename}"
+                            frame_path = f"watch_frames/{recipe.pk}/{frame_filename}"
                             media_files.append((frame_path, frame_bytes))
 
                     segments.append(
@@ -395,7 +395,7 @@ class ImportBackupView(LoginRequiredMixin, View):
                 )
 
         version = data.get("version")
-        if version not in (1, 2, 3, 4, BACKUP_VERSION):
+        if version is None or version < 1 or version > BACKUP_VERSION:
             return JsonResponse(
                 {
                     "ok": False,

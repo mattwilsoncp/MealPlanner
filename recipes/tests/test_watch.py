@@ -273,7 +273,7 @@ class ProcessRecipeWatchServiceTests(TestCase):
     @patch("recipes.watch_service._fetch_transcript_items")
     @patch("recipes.watch_service._download_video")
     @patch("recipes.watch_service._extract_frame")
-    @patch("recipes.watch_service.default_storage.save")
+    @patch("django.core.files.storage.default_storage.save")
     def test_process_recipe_watch_creates_segments(
         self, mock_save, mock_extract, mock_download, mock_fetch
     ):
@@ -292,7 +292,7 @@ class ProcessRecipeWatchServiceTests(TestCase):
                 "text": "Second chunk",
             },
         ]
-        mock_save.return_value = "watch/recipe_1/frame_0001.jpg"
+        mock_save.return_value = f"watch/{self.recipe.pk}/frame_0001.jpg"
 
         with TemporaryDirectory() as tmp_dir:
             video_path = Path(tmp_dir) / "video.mp4"
@@ -315,7 +315,7 @@ class ProcessRecipeWatchServiceTests(TestCase):
         segments = list(session.segments.order_by("start_time"))
         self.assertEqual(len(segments), 1)
         self.assertEqual(segments[0].text, "First chunk Second chunk")
-        self.assertEqual(segments[0].image, "watch/recipe_1/frame_0001.jpg")
+        self.assertEqual(segments[0].image, f"watch/{self.recipe.pk}/frame_0001.jpg")
         mock_download.assert_called_once()
 
 
