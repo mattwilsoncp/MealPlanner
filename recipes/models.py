@@ -3,6 +3,11 @@ from django.urls import reverse
 from household.models import Household
 
 
+def watch_segment_frame_path(instance, filename):
+    """Store watch segment frames under watch/<recipe_id>/."""
+    return f"watch/{instance.session.recipe_id}/{filename}"
+
+
 class Recipe(models.Model):
     household = models.ForeignKey(
         Household, on_delete=models.CASCADE, related_name="recipes"
@@ -95,7 +100,7 @@ class RecipeWatchSegment(models.Model):
     )
     text = models.TextField(blank=True)
     image = models.ImageField(
-        upload_to="watch/%Y/%m/%d/",
+        upload_to=watch_segment_frame_path,
         blank=True,
         null=True,
     )

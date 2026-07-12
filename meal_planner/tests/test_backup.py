@@ -220,7 +220,7 @@ class BackupRoundTripTests(TestCase):
 
     def test_backup_version(self):
         data, _zf, _bytes = self._export_and_parse()
-        self.assertEqual(data["version"], 5)
+        self.assertEqual(data["version"], 6)
 
     def test_watch_session_round_trip(self):
         data, zf, backup_bytes = self._export_and_parse()
@@ -228,6 +228,7 @@ class BackupRoundTripTests(TestCase):
         self.assertIn("watch_session", recipe_data)
         segment_data = recipe_data["watch_session"]["segments"][0]
         frame_path = segment_data["frame_path"]
+        self.assertTrue(frame_path.startswith(f"watch_frames/{self.recipe.pk}/"))
         self.assertIn(frame_path, zf.namelist())
         frame_bytes = zf.read(frame_path)
 

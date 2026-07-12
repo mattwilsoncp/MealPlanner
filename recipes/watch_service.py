@@ -409,19 +409,18 @@ def process_recipe_watch(
                 frame_path = work_dir / f"frame_{index:04d}.jpg"
                 _extract_frame(video_path, start, frame_path)
 
-                rel_name = f"watch/recipe_{recipe.pk}/frame_{index:04d}.jpg"
-                with open(frame_path, "rb") as fh:
-                    saved_name = default_storage.save(rel_name, File(fh))
-
                 step_number = _best_matching_step(text, instructions)
-                RecipeWatchSegment.objects.create(
+                segment = RecipeWatchSegment.objects.create(
                     session=session,
                     start_time=start,
                     end_time=end,
                     text=text,
-                    image=saved_name,
                     step_number=step_number,
                 )
+                with open(frame_path, "rb") as fh:
+                    segment.image.save(
+                        f"frame_{index:04d}.jpg", File(fh), save=True
+                    )
 
         session.status = RecipeWatchSession.Status.READY
         session.save()
