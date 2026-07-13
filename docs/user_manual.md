@@ -23,6 +23,9 @@ reviewing imports, backups, and AI-assisted features.
 14. [Backup & Restore](#14-backup--restore)
 15. [UPC Lookup Usage](#15-upc-lookup-usage)
 16. [Reference: Data Scope](#16-reference-data-scope)
+17. [Watch Recipe View](#17-watch-recipe-view)
+18. [AI Settings — Per-Feature Model Picker](#18-ai-settings--per-feature-model-picker)
+19. [Telegram YouTube Importer](#19-telegram-youtube-importer)
 
 ---
 
@@ -133,6 +136,12 @@ step-by-step instructions, tags, the average rating, your personal rating,
 and any embedded video URL. Calories/servings and nutrition facts (protein,
 carbs, fat) appear when ingredient data is linked to inventory items.
 
+**Per-ingredient nutrition breakdown.** When ingredients have USDA FoodData
+links (added via the row-level **Link USDA** action), the detail page surfaces
+a breakdown table showing each ingredient's kcal/protein/carbs/fat
+contribution alongside the recipe total. Click the link icon on any
+ingredient row to search USDA and apply the canonical nutrition snapshot.
+
 ### Creating Recipes
 
 `/recipes/new/` opens the manual create form. Fields include title,
@@ -153,6 +162,11 @@ Paste a YouTube URL and the app routes the request through
 structured recipe data: title, description, ingredients, and steps. The
 imported recipe enters the **review queue** so you can verify the parsed
 ingredients against your inventory before publishing.
+
+**Multi-recipe videos.** When a single YouTube video contains more than one
+recipe (e.g. a "3 dinners for the week" roundup) the importer returns an
+array of recipes instead of one. Each becomes its own entry in the review
+queue so you can publish them independently.
 
 ### Importing from an Image
 
@@ -219,6 +233,14 @@ inventory.
 Both views respect your household's configured expiration threshold days.
 
 ![Expiring items](screenshots/fresh/16-inventory-expiring.png)
+
+### Inventory Categories
+
+`/inventory/categories/` is the settings page for the categorical metadata
+that inventory items carry — categories (e.g. Produce, Dairy, Bulk), storage
+locations (Pantry, Fridge, Freezer), and stores. Add, rename, or retire
+entries here without leaving the app; changes propagate immediately to the
+inventory list filters and to the receipt-line review screen.
 
 ---
 
@@ -411,6 +433,71 @@ worrying about cross-household visibility.
 
 ---
 
+## 17. Watch Recipe View
+
+`/recipes/<id>/watch/` pairs an imported YouTube video with its transcript
+and frame-by-frame timeline so you can follow along without scrubbing:
+
+- **Video pane** on top, transcript synced beneath. Each transcript line is
+  timestamped to the moment it was spoken in the video.
+- **Watch frames** — extracted screenshots captured at meaningful moments
+  in the recipe — are stored per recipe ID and surface in the sidebar so the
+  page renders consistently across sessions.
+- **Segment-driven navigation.** Sidebar buttons jump the playhead to the
+  start of the segment matching the current instruction step, so the
+  transcript scroll and video position stay in lockstep.
+- **Watch session log.** Each cook-through writes a session log so a recipe
+  can be closed, opened later, and resumed from where you left off; backups
+  include these logs so your watch history survives a restore.
+
+This is the same view that backs the planner-card **Cook** action — opening
+the cook button on a meal jumps straight into the recipe's Watch view.
+
+---
+
+## 18. AI Settings — Per-Feature Model Picker
+
+`/tools/ai-models/` is the household-level configuration page for every AI
+feature. It surfaces:
+
+- **One model per feature.** Pick a different OpenRouter model for
+  recipe-import-text, recipe-import-image, receipt-enrichment, and
+  AI-meal-planning. Defaults come from the server environment, but each
+  household can override independently.
+- **Per-household OpenRouter key.** Paste your own key (stored as plain text
+  in v1) so your household runs on its own budget instead of the server-wide
+  key.
+- **Per-household USDA key.** Same idea for USDA FoodData Central. Leave
+  blank to use the server-wide `USDA_FDC_API_KEY`, which defaults to the
+  public rate-limited `DEMO_KEY` for development.
+- **Live model catalog.** The model dropdown is fed by OpenRouter's
+  `/models` endpoint with a configurable TTL cache so the picker stays in
+  sync with new releases without thrashing the upstream API.
+
+Any feature that reads a key from settings resolves in this order:
+household override → env default → empty (feature degrades or prompts).
+
+---
+
+## 19. Telegram YouTube Importer
+
+The repo ships `telegram_youtube_recipe_importer.py` — a side-car bot you
+can run alongside the web app for one-line recipe imports from your phone:
+
+1. Set `TELEGRAM_BOT_TOKEN` and run the script on your server, laptop, or a
+   small VPS with the same `DATABASE_URL` as the web app.
+2. Send a YouTube URL to the bot in a private chat.
+3. The bot downloads the transcript, calls the LLM with the **same prompt
+   template** as the web importer, and writes the parsed recipe straight
+   into the database so it appears in the household's review queue.
+4. The bot reply shows stage progress (transcript fetch → LLM parse → DB
+   write) so a flaky video is easy to diagnose without opening the web UI.
+
+Useful when you don't want to fight the web import form on a small phone
+screen — paste the link, get the recipe in MealPlanner.
+
+---
+
 *This manual reflects the in-app behavior observed on a live deployment as of
-the latest screenshot pass. File paths and feature names map directly to the
+the latest feature pass. File paths and feature names map directly to the
 running app under `127.0.0.1:8000`.*
