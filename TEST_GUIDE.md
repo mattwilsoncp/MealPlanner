@@ -259,3 +259,30 @@ def test_full_import_success(self, mock_api):
 - **`OPENROUTER_API_KEY`** — read at runtime in `form_valid`. No `importlib.reload()` needed; patch directly.
 - **`accounts/tests.py` and `household/tests.py`** — use `unittest.TestCase` (Django `TestCase`), not pytest `def test_` style. They work fine in the full suite but may need explicit file paths for `--collect-only`.
 - **`meal_planner_app/tests.py` vs `meal_planner_app/tests/test_views.py`** — both exist and both run; `tests.py` covers models/forms, `test_views.py` covers view logic. They are complementary.
+
+---
+
+## Recent Test Additions (post-v1.2)
+
+The table above reflects an older inventory; several new test files cover
+recent feature passes. Regenerate the totals by running the suite with
+`--collect-only -q`:
+
+```bash
+./.venv/bin/python -m pytest --ds=meal_planner.settings --collect-only -q | tail -1
+./.venv/bin/coverage run --source=accounts,household,ingredients,instructions,inventory,meal_planner_app,ratings,recipes,reviews,shopping,tags -m pytest --ds=meal_planner.settings -q
+./.venv/bin/coverage report
+```
+
+New test files and the features they cover:
+
+| File | Feature area |
+|------|-------------|
+| `ingredients/tests/test_usda_link.py` | USDA FoodData Central per-ingredient linking |
+| `ingredients/tests/test_nutrition_summary.py` | Per-ingredient nutrition breakdown (protein/carbs/fat/kcal) |
+| `inventory/tests/test_receipt_barcode_enrichment.py` | Receipt import line-item barcode enrichment via Open Food Facts |
+| `inventory/tests/test_store_views.py` | Stores catalog + per-item price + store association |
+| `recipes/tests/test_watch.py` | Watch Recipe view (video + transcript + frames) |
+| `recipes/tests/test_transcript_log.py` | Transcript log dialog + log persistence |
+| `recipes/tests/test_llm_json.py` | Robust LLM JSON extraction (multi-recipe, prose-wrapped) |
+| `meal_planner/tests/test_backup.py` | Backup & restore — recipes, inventory, AI settings, watch frames |
